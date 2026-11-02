@@ -159,7 +159,7 @@ public partial class MainWindow
         }
 
         if (focused is TextBox) VirtualKeyboard.Hide();
-        if (TryGameMenuMove(direction)) return;
+        if (TryGameMenuMove(direction) || TrySettingsMove(direction)) return;
         if (direction == FocusNavigationDirection.Down && TryOpenFeedFromRow()) return;
         if (TryListMove(direction)) return;
         _navUntil = DateTime.UtcNow.AddMilliseconds(200);
@@ -178,6 +178,12 @@ public partial class MainWindow
         }
 
         if (Keyboard.FocusedElement is not UIElement element) return;
+        if (IsSettingsNav(element))
+        {
+            // The section is already showing: A goes into its options.
+            if (FirstSettingsControl() is { } first) first.Focus();
+            return;
+        }
         var peer = UIElementAutomationPeer.CreatePeerForElement(element);
         if (peer?.GetPattern(PatternInterface.Toggle) is IToggleProvider toggle) toggle.Toggle();
         else if (peer?.GetPattern(PatternInterface.SelectionItem) is ISelectionItemProvider selection) selection.Select();

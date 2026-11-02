@@ -69,7 +69,7 @@
         </Setter>
     </Style>
 
-    <!-- Game tile: narrow cover that opens up to a wide hero card when focused. -->
+    <!-- Game tile: a narrow cover; only the last played game (IsFeatured) is a wide hero card. -->
     <Style x:Key="GameTile" TargetType="Button">
         <Setter Property="Width" Value="207"/>
         <Setter Property="Height" Value="311"/>
@@ -79,38 +79,72 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}">
-                        <ContentPresenter/>
+                    <!-- On focus the card pops up a little, glows and a light streak sweeps across it. -->
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}"
+                            RenderTransformOrigin="0.5,0.5" ClipToBounds="True">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="Zoom" ScaleX="1" ScaleY="1"/>
+                        </Border.RenderTransform>
+                        <Grid>
+                            <ContentPresenter/>
+                            <Rectangle x:Name="Shine" Width="120" HorizontalAlignment="Left" IsHitTestVisible="False" Opacity="0">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#00FFFFFF" Offset="0"/>
+                                        <GradientStop Color="#40FFFFFF" Offset="0.5"/>
+                                        <GradientStop Color="#00FFFFFF" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                                <Rectangle.RenderTransform>
+                                    <TransformGroup>
+                                        <SkewTransform AngleX="-18"/>
+                                        <TranslateTransform x:Name="ShineMove" X="-180"/>
+                                    </TransformGroup>
+                                </Rectangle.RenderTransform>
+                            </Rectangle>
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                            <Setter TargetName="Frame" Property="Effect">
+                                <Setter.Value><DropShadowEffect Color="#1A9FFF" BlurRadius="16" ShadowDepth="0" Opacity="0.6"/></Setter.Value>
+                            </Setter>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" From="1" To="1.05" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.5"/></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" From="1" To="1.05" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.5"/></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="Shine" Storyboard.TargetProperty="Opacity" From="1" To="1" Duration="0:0:0.75"/>
+                                        <DoubleAnimation Storyboard.TargetName="ShineMove" Storyboard.TargetProperty="X" From="-180" To="760" Duration="0:0:0.75">
+                                            <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="Shine" Storyboard.TargetProperty="Opacity" BeginTime="0:0:0.75" To="0" Duration="0:0:0.01"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.18"/>
+                                        <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.18"/>
+                                        <DoubleAnimation Storyboard.TargetName="Shine" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.01"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
         <Style.Triggers>
-            <Trigger Property="IsKeyboardFocused" Value="True">
-                <Trigger.EnterActions>
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation Storyboard.TargetProperty="Width" To="640" Duration="0:0:0.24">
-                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
-                            </DoubleAnimation>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </Trigger.EnterActions>
-                <Trigger.ExitActions>
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation Storyboard.TargetProperty="Width" To="207" Duration="0:0:0.2">
-                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
-                            </DoubleAnimation>
-                        </Storyboard>
-                    </BeginStoryboard>
-                </Trigger.ExitActions>
-            </Trigger>
+            <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                <Setter Property="Width" Value="640"/>
+            </DataTrigger>
         </Style.Triggers>
     </Style>
 
@@ -163,6 +197,24 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- The home row: the featured (last played) game shows its wide picture and logo, every other game its cover. -->
+    <Style x:Key="ShowWhenFeatured" TargetType="FrameworkElement">
+        <Setter Property="Visibility" Value="Collapsed"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                <Setter Property="Visibility" Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="ShowWhenNotFeatured" TargetType="FrameworkElement">
+        <Setter Property="Visibility" Value="Visible"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                <Setter Property="Visibility" Value="Collapsed"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <!-- Visibility helpers for a tile: show something only while its button has the focus (or only while it does not). -->

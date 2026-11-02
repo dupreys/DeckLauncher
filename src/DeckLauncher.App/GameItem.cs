@@ -33,6 +33,20 @@ public sealed class GameItem : INotifyPropertyChanged
 
     public ImageSource? Logo => _logo;
 
+    private bool _featured;
+
+    /// <summary>The last played game on the home row: the only tile shown wide, with its background and logo.</summary>
+    public bool IsFeatured
+    {
+        get => _featured;
+        set
+        {
+            if (_featured == value) return;
+            _featured = value;
+            Raise(nameof(IsFeatured));
+        }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>True when nothing the tile shows has changed, so the same item can be reused after a refresh.</summary>

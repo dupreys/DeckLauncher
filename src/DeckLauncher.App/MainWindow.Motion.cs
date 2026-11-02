@@ -33,7 +33,9 @@ public partial class MainWindow
         if (e.Key is not (Key.Left or Key.Right or Key.Up or Key.Down or Key.Tab)) return;
         if (Keyboard.FocusedElement is TextBox) return;
 
-        if (e.Key is Key.Left or Key.Right && TryGameMenuMove(e.Key == Key.Left ? FocusNavigationDirection.Left : FocusNavigationDirection.Right))
+        if (e.Key is Key.Left or Key.Right &&
+            (TryGameMenuMove(e.Key == Key.Left ? FocusNavigationDirection.Left : FocusNavigationDirection.Right) ||
+             TrySettingsMove(e.Key == Key.Left ? FocusNavigationDirection.Left : FocusNavigationDirection.Right)))
         {
             e.Handled = true;
             return;
@@ -141,13 +143,16 @@ public partial class MainWindow
 
     // ---- Smooth scrolling of the recent games row --------------------------------------------
 
+    /// <summary>Left margin of the row (room for the zoom of the first card); scroll positions include it.</summary>
+    private const double RecentHostLeft = 12;
+
     private void OnRecentBringIntoView(object sender, RequestBringIntoViewEventArgs e)
     {
         if (e.TargetObject is not FrameworkElement target) return;
         e.Handled = true; // we scroll ourselves, with an animation
 
-        var left = target.TranslatePoint(new Point(0, 0), RecentHost).X;
-        var finalWidth = target.DataContext is GameItem ? 640 : target.ActualWidth;
+        var left = target.TranslatePoint(new Point(0, 0), RecentHost).X + RecentHostLeft;
+        var finalWidth = target.ActualWidth; // tiles no longer change size when focused
         var viewport = RecentScroll.ViewportWidth;
         if (viewport <= 0) return;
 
@@ -155,7 +160,7 @@ public partial class MainWindow
         if (left < offset + 20) offset = left - 20 - 221; // keep one game visible before the focused one
         else if (left + finalWidth + 40 > offset + viewport) offset = left + finalWidth + 40 - viewport;
 
-        var contentWidth = RecentHost.ActualWidth + (target.DataContext is GameItem && target.ActualWidth < finalWidth ? finalWidth - target.ActualWidth : 0);
+        var contentWidth = RecentHost.ActualWidth + RecentHostLeft;
         offset = Math.Clamp(offset, 0, Math.Max(0, contentWidth - viewport));
         if (Math.Abs(offset - _rowTarget) < 0.5 && Math.Abs(RecentScroll.HorizontalOffset - offset) < 0.5) return;
 

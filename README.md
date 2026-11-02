@@ -26,22 +26,18 @@
   <img src="docs/screenshots/game-page.png" alt="Página do jogo com logotipo, botão Jogar, última sessão e tempo de jogo" width="860">
 </p>
 
-<!--
-Quando tiver novos prints, salve em docs/screenshots/ e tire o comentário das linhas abaixo:
-
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="Início: jogos recentes" width="420">
+  <img src="docs/screenshots/home.png" alt="Início: jogos recentes, com o último jogo em destaque" width="420">
   <img src="docs/screenshots/library.png" alt="Biblioteca" width="420">
 </p>
 <p align="center">
   <img src="docs/screenshots/feed.png" alt="Novidades, Amigos e Recomendados" width="420">
   <img src="docs/screenshots/menu.png" alt="Menu lateral" width="420">
 </p>
--->
 
 ## Recursos
 
-- **Início:** linha de jogos recentes (até 20); o jogo em foco abre num cartão largo com o fundo e o logotipo dele.
+- **Início:** linha de jogos recentes (até 20); só o último jogo jogado aparece num cartão largo, com o fundo e o logotipo; os outros ficam em capa estreita. Ao passar de um jogo para o outro, o cartão dá um pequeno zoom, brilha e recebe um reflexo de luz, e o fundo da tela muda conforme o jogo em foco.
 - **Biblioteca:** abas Todos / Steam / Epic / Adicionados / Favoritos, busca e grade de capas centralizada.
 - **Página do jogo:** logotipo sobre o banner, botão **Jogar**, última sessão, tempo de jogo (Steam), favorito, descrição e informações.
 - **Novidades, Amigos e Recomendados:** anúncios dos seus jogos da Steam, jogos atualizados neste PC, quem está jogando agora, atividade dos amigos e calendário de lançamentos.

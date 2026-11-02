@@ -25,11 +25,11 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="96"/>
             </Grid.RowDefinitions>
-            <StackPanel Grid.Row="1" Margin="46,0,0,0">
-                <TextBlock x:Name="RecentTitle" Text="Jogos recentes" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" Margin="0,0,0,16"/>
+            <StackPanel Grid.Row="1" Margin="34,0,0,0">
+                <TextBlock x:Name="RecentTitle" Text="Jogos recentes" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" Margin="12,0,0,4"/>
                 <TextBlock x:Name="EmptyText" Visibility="Collapsed" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,0,40"/>
                 <ScrollViewer x:Name="RecentScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" Focusable="False">
-                    <StackPanel x:Name="RecentHost" Orientation="Horizontal" RequestBringIntoView="OnRecentBringIntoView">
+                    <StackPanel x:Name="RecentHost" Orientation="Horizontal" Margin="12,12,0,12" RequestBringIntoView="OnRecentBringIntoView">
                     <ItemsControl x:Name="RecentRow">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
@@ -40,10 +40,10 @@
                                     <Grid>
                                         <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"
                                                    VerticalAlignment="Center" Margin="16"/>
-                                        <Image Source="{Binding Cover}" Stretch="UniformToFill" Style="{StaticResource ShowWhenUnfocused}"/>
-                                        <Image Source="{Binding Wide}" Stretch="UniformToFill" Style="{StaticResource ShowWhenFocused}"/>
+                                        <Image Source="{Binding Cover}" Stretch="UniformToFill" Style="{StaticResource ShowWhenNotFeatured}"/>
+                                        <Image Source="{Binding Wide}" Stretch="UniformToFill" Style="{StaticResource ShowWhenFeatured}"/>
                                         <Image Source="{Binding Logo}" Stretch="Uniform" MaxWidth="330" MaxHeight="130" HorizontalAlignment="Left"
-                                               VerticalAlignment="Bottom" Margin="22" Style="{StaticResource ShowWhenFocused}"/>
+                                               VerticalAlignment="Bottom" Margin="22" Style="{StaticResource ShowWhenFeatured}"/>
                                     </Grid>
                                 </Button>
                             </DataTemplate>
@@ -177,9 +177,9 @@
             </Grid.ColumnDefinitions>
             <Border Background="#E6141A22">
                 <StackPanel Margin="0,16,0,0">
-                    <RadioButton x:Name="NavSystem" Style="{StaticResource SettingsNav}" GroupName="SettingsNav" Tag="System" Content="Sistema" IsChecked="True" Checked="OnSettingsNavChecked"/>
-                    <RadioButton Style="{StaticResource SettingsNav}" GroupName="SettingsNav" Tag="Integrations" Content="Integrações" Checked="OnSettingsNavChecked"/>
-                    <RadioButton Style="{StaticResource SettingsNav}" GroupName="SettingsNav" Tag="Games" Content="Jogos" Checked="OnSettingsNavChecked"/>
+                    <RadioButton x:Name="NavSystem" Style="{StaticResource SettingsNav}" GroupName="SettingsNav" Tag="System" Content="Sistema" IsChecked="True" Checked="OnSettingsNavChecked" GotKeyboardFocus="OnSettingsNavFocus"/>
+                    <RadioButton Style="{StaticResource SettingsNav}" GroupName="SettingsNav" Tag="Integrations" Content="Integrações" Checked="OnSettingsNavChecked" GotKeyboardFocus="OnSettingsNavFocus"/>
+                    <RadioButton Style="{StaticResource SettingsNav}" GroupName="SettingsNav" Tag="Games" Content="Jogos" Checked="OnSettingsNavChecked" GotKeyboardFocus="OnSettingsNavFocus"/>
                 </StackPanel>
             </Border>
             <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Hidden" Focusable="False">

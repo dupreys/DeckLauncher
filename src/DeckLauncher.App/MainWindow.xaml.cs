@@ -91,6 +91,12 @@ public partial class MainWindow : Window
         _all = games.Select(ItemFor).OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
 
         var any = _all.Count > 0;
+        foreach (var item in _itemCache.Values) item.IsFeatured = false;
+        if (recent.Count > 0)
+        {
+            recent[0].IsFeatured = true; // the last played game is the wide one
+            recent[0].EnsureWideLoaded();
+        }
         RecentRow.ItemsSource = recent;
         MoreTile.Visibility = recent.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         RecentTitle.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
@@ -166,13 +172,14 @@ public partial class MainWindow : Window
 
     private void OnTileLoaded(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { DataContext: GameItem item }) item.EnsureCoverLoaded();
+        if (sender is not Button { DataContext: GameItem item }) return;
+        if (item.IsFeatured) item.EnsureWideLoaded(); else item.EnsureCoverLoaded();
     }
 
     private async void OnHomeTileFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
         if (sender is not Button { DataContext: GameItem item }) return;
-        item.EnsureWideLoaded();
+        if (item.IsFeatured) item.EnsureWideLoaded(); else item.EnsureCoverLoaded();
         _heroItem = item;
         var image = await item.LoadBackdropAsync();
         if (ReferenceEquals(_heroItem, item)) SetHero(image); // ignore pictures that arrive after the focus moved on

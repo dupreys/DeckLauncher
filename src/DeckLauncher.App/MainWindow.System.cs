@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using LiteLauncher.Core;
@@ -198,6 +199,52 @@ public partial class MainWindow
             _keySaveTimer.Tick += (_, _) => { _keySaveTimer.Stop(); SaveSettings(); };
             _keyTimerWired = true;
         }
+    }
+
+    // ---- Settings: the left list switches section as you move, Right / A enters the section ----------
+
+    private static bool IsSettingsNav(object? element) => element is RadioButton { GroupName: "SettingsNav" };
+
+    /// <summary>Moving onto a section in the left list shows it at once.</summary>
+    private void OnSettingsNavFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is RadioButton { IsChecked: not true } radio) radio.IsChecked = true;
+    }
+
+    private bool InSettingsContent(DependencyObject node) =>
+        IsAncestor(SetSystem, node) || IsAncestor(SetIntegrations, node) || IsAncestor(SetGames, node);
+
+    /// <summary>First thing to focus in the section being shown (null when it has nothing to select).</summary>
+    private UIElement? FirstSettingsControl()
+    {
+        var section = SetSystem.IsVisible ? SetSystem : SetIntegrations.IsVisible ? SetIntegrations : SetGames.IsVisible ? SetGames : null;
+        if (section is null) return null;
+        return FindAll<Control>(section).FirstOrDefault(c => c.Focusable && c.IsTabStop && c.IsEnabled && c.IsVisible);
+    }
+
+    private void FocusSettingsNav() =>
+        (FindAll<RadioButton>(SettingsPage).FirstOrDefault(r => IsSettingsNav(r) && r.IsChecked == true) ?? NavSystem).Focus();
+
+    /// <summary>Right from the left list enters the section; Left from the section's first column goes back to the list. True when handled.</summary>
+    private bool TrySettingsMove(FocusNavigationDirection direction)
+    {
+        if (_page != "Configurações" || Keyboard.FocusedElement is not DependencyObject focus) return false;
+
+        if (IsSettingsNav(focus) && direction == FocusNavigationDirection.Right)
+        {
+            if (FirstSettingsControl() is { } first) first.Focus();
+            return true; // nothing to enter: stay on the list
+        }
+
+        if (InSettingsContent(focus) && direction == FocusNavigationDirection.Left)
+        {
+            // Another control to the left in the same row? Then let the normal movement take it.
+            if (focus is UIElement element && element.PredictFocus(FocusNavigationDirection.Left) is DependencyObject neighbour && InSettingsContent(neighbour))
+                return false;
+            FocusSettingsNav();
+            return true;
+        }
+        return false;
     }
 
     private void OnSettingsNavChecked(object sender, RoutedEventArgs e)
