@@ -1,0 +1,609 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Colors read from the reference screenshots: deep navy background, gray focus, blue accent, green play button. -->
+    <Color x:Key="BgColor">#0D131A</Color>
+    <SolidColorBrush x:Key="Bg" Color="#0D131A"/>
+    <SolidColorBrush x:Key="BgDeep" Color="#080C11"/>
+    <SolidColorBrush x:Key="Panel" Color="#171D26"/>
+    <SolidColorBrush x:Key="PanelRaised" Color="#232A34"/>
+    <SolidColorBrush x:Key="Focus" Color="#3C4350"/>
+    <SolidColorBrush x:Key="Accent" Color="#1A9FFF"/>
+    <SolidColorBrush x:Key="PlayGreen" Color="#59BF3D"/>
+    <SolidColorBrush x:Key="Text" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TextSoft" Color="#C9CDD2"/>
+    <SolidColorBrush x:Key="TextMuted" Color="#8B939D"/>
+    <SolidColorBrush x:Key="Scrim" Color="#B3000000"/>
+
+    <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+    <!-- No Foreground here: text must inherit it from the button/window so focus colours (dark text on a white bar) work. -->
+    <Style TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+    </Style>
+
+    <Style x:Key="Icon" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource IconFont}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- A key or button hint in the bottom bar: "F1", or a coloured circle for A / B. -->
+    <Style x:Key="KeyChip" TargetType="Border">
+        <Setter Property="Background" Value="#F2F4F6"/>
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Padding" Value="8,3"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Left menu entry: grey bar when focused, blue marker at the edge. -->
+    <Style x:Key="MenuItem" TargetType="Button">
+        <Setter Property="Height" Value="68"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSoft}"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bar" Background="Transparent">
+                        <Grid>
+                            <Border x:Name="Marker" Width="3" HorizontalAlignment="Left" Background="{StaticResource Accent}" Visibility="Collapsed"/>
+                            <ContentPresenter VerticalAlignment="Center" Margin="40,0,16,0"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bar" Property="Background" Value="{StaticResource Focus}"/>
+                            <Setter TargetName="Marker" Property="Visibility" Value="Visible"/>
+                            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bar" Property="Background" Value="#2B323C"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Game tile: narrow cover that opens up to a wide hero card when focused. -->
+    <Style x:Key="GameTile" TargetType="Button">
+        <Setter Property="Width" Value="207"/>
+        <Setter Property="Height" Value="311"/>
+        <Setter Property="Margin" Value="0,0,14,0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Trigger.EnterActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetProperty="Width" To="640" Duration="0:0:0.24">
+                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetProperty="Width" To="207" Duration="0:0:0.2">
+                                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </Trigger.ExitActions>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- "See more in your library" tile at the end of the recent games row. -->
+    <Style x:Key="MoreTile" TargetType="Button">
+        <Setter Property="Width" Value="207"/>
+        <Setter Property="Height" Value="311"/>
+        <Setter Property="Margin" Value="0,0,60,0"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="FontSize" Value="18"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="#55808A96">
+                        <TextBlock Text="{TemplateBinding Content}" TextWrapping="Wrap" TextAlignment="Center" Margin="22"
+                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                            <Setter TargetName="Frame" Property="Background" Value="#99A0AAB6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Small text tab ("NOVIDADES", "AMIGOS"...). -->
+    <Style x:Key="TabText" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="22,10"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Pill" CornerRadius="20" Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="{StaticResource Focus}"/>
+                            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Visibility helpers for a tile: show something only while its button has the focus (or only while it does not). -->
+    <Style x:Key="ShowWhenFocused" TargetType="FrameworkElement">
+        <Setter Property="Visibility" Value="Collapsed"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                <Setter Property="Visibility" Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="ShowWhenUnfocused" TargetType="FrameworkElement">
+        <Setter Property="Visibility" Value="Visible"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                <Setter Property="Visibility" Value="Collapsed"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Library tile: portrait cover with a white frame and a slight zoom when focused. -->
+    <Style x:Key="LibTile" TargetType="Button">
+        <Setter Property="Width" Value="244"/>
+        <Setter Property="Height" Value="366"/>
+        <Setter Property="Margin" Value="33,0,33,60"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}"
+                            RenderTransformOrigin="0.5,0.5">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                            <Setter TargetName="Frame" Property="RenderTransform">
+                                <Setter.Value><ScaleTransform ScaleX="1.04" ScaleY="1.04"/></Setter.Value>
+                            </Setter>
+                            <Setter TargetName="Frame" Property="Panel.ZIndex" Value="5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Library tab (radio button that looks like a pill): grey when selected, lighter when focused. -->
+    <Style x:Key="LibTab" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource TextSoft}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Margin" Value="4,0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Pill" CornerRadius="22" Background="Transparent" Padding="22,12">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="#4A5260"/>
+                            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="#6B7686"/>
+                            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Big green Play button. -->
+    <Style x:Key="PlayButton" TargetType="Button">
+        <Setter Property="Width" Value="298"/>
+        <Setter Property="Height" Value="68"/>
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" Background="{StaticResource PlayGreen}" BorderThickness="3" BorderBrush="Transparent">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="&#xE768;" FontFamily="{StaticResource IconFont}" FontSize="26" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="White"/>
+                            <Setter TargetName="Frame" Property="Background" Value="#6ED24F"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Square button with an icon (favourite, manage). -->
+    <Style x:Key="SquareButton" TargetType="Button">
+        <Setter Property="Width" Value="68"/>
+        <Setter Property="Height" Value="68"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" Background="{StaticResource PanelRaised}" BorderThickness="3" BorderBrush="Transparent">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="White"/>
+                            <Setter TargetName="Frame" Property="Background" Value="{StaticResource Focus}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="StatLabel" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+    </Style>
+    <Style x:Key="StatValue" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+    </Style>
+
+    <!-- Picture offered in the art picker: plain frame, white border when focused. -->
+    <Style x:Key="PickTile" TargetType="Button">
+        <Setter Property="Margin" Value="0,0,14,14"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="White"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- On/off switch -->
+    <Style x:Key="Switch" TargetType="ToggleButton">
+        <Setter Property="Width" Value="64"/>
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Track" CornerRadius="17" Background="#4A5260" BorderThickness="2" BorderBrush="Transparent">
+                        <Ellipse x:Name="Knob" Width="24" Height="24" Fill="White" HorizontalAlignment="Left" Margin="3,0,0,0"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{StaticResource Accent}"/>
+                            <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right"/>
+                            <Setter TargetName="Knob" Property="Margin" Value="0,0,3,0"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Track" Property="BorderBrush" Value="White"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Settings: left navigation entry (blue gradient when selected) -->
+    <Style x:Key="SettingsNav" TargetType="RadioButton">
+        <Setter Property="Height" Value="62"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSoft}"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Bar" Background="Transparent" BorderThickness="3,0,0,0" BorderBrush="Transparent">
+                        <ContentPresenter VerticalAlignment="Center" Margin="26,0,12,0"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bar" Property="Background">
+                                <Setter.Value>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Color="#FF1A5C9E" Offset="0"/>
+                                        <GradientStop Color="#661A5C9E" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bar" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Settings row container -->
+    <Style x:Key="SettingsRow" TargetType="Border">
+        <Setter Property="Background" Value="#1B2129"/>
+        <Setter Property="Padding" Value="24,16"/>
+        <Setter Property="Margin" Value="0,0,0,10"/>
+    </Style>
+    <Style x:Key="SectionTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="19"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="0,26,0,12"/>
+    </Style>
+
+    <!-- Power menu entry: white bar with dark text when focused -->
+    <Style x:Key="PowerItem" TargetType="Button">
+        <Setter Property="Height" Value="68"/>
+        <Setter Property="FontSize" Value="21"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSoft}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bar" Background="#232830">
+                        <ContentPresenter VerticalAlignment="Center" Margin="20,0,12,0"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bar" Property="Background" Value="White"/>
+                            <Setter Property="Foreground" Value="#14181F"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Icon button in the top bar -->
+    <Style x:Key="TopIcon" TargetType="Button">
+        <Setter Property="Width" Value="46"/>
+        <Setter Property="Height" Value="46"/>
+        <Setter Property="Margin" Value="0,0,10,0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" Background="Transparent" CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="Background" Value="{StaticResource Focus}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AvatarButton" TargetType="Button">
+        <Setter Property="Width" Value="50"/>
+        <Setter Property="Height" Value="50"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" Background="{StaticResource PanelRaised}" BorderThickness="3" BorderBrush="Transparent">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== Novidades / Amigos / Recomendados ===== -->
+    <Style x:Key="HorizontalList" TargetType="ItemsControl">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="ItemsPanel">
+            <Setter.Value><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="FeedCard" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <DataTemplate x:Key="NewsTemplate">
+        <StackPanel Width="426">
+            <TextBlock Text="{Binding DateLabel}" FontSize="18" Foreground="{StaticResource TextSoft}" Margin="0,0,0,8"/>
+            <Button Style="{StaticResource FeedCard}" Width="409" HorizontalAlignment="Left">
+                <StackPanel>
+                    <Border Height="236" Background="#10151C"><Image Source="{Binding Image}" Stretch="UniformToFill"/></Border>
+                    <Border Background="#2B323C" Height="134" Padding="14,12">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Title}" FontSize="21" TextWrapping="Wrap" MaxHeight="58" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextSoft}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                <Image Source="{Binding Icon}" Width="46" Height="22" Stretch="UniformToFill" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding GameName}" FontSize="17" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate x:Key="UpdatedTemplate">
+        <Button Style="{StaticResource FeedCard}" Width="409" Margin="0,0,17,0">
+            <StackPanel>
+                <Border Background="#2B323C" Padding="14,12">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="{Binding Image}" Width="96" Height="45" Stretch="UniformToFill" Margin="0,0,14,0"/>
+                        <TextBlock Text="{Binding Name}" FontSize="22" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="250"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#232A34" Padding="14,10" Height="52">
+                    <TextBlock Text="{Binding Detail}" FontSize="15" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                </Border>
+            </StackPanel>
+        </Button>
+    </DataTemplate>
+
+    <DataTemplate x:Key="CapsuleTemplate">
+        <Button Style="{StaticResource FeedCard}" Width="324" Height="157" Margin="0,0,28,0">
+            <Grid Background="#10151C">
+                <TextBlock Text="{Binding Name}" FontSize="18" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" Margin="12"/>
+                <Image Source="{Binding Image}" Stretch="UniformToFill"/>
+                <Border Background="#CC1B6FA8" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="8,3" Visibility="{Binding InLibraryVisibility}">
+                    <TextBlock Text="NA BIBLIOTECA" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
+                </Border>
+            </Grid>
+        </Button>
+    </DataTemplate>
+
+    <DataTemplate x:Key="CalendarCapsuleTemplate">
+        <Button Style="{StaticResource FeedCard}" Height="191" Margin="0,0,0,11">
+            <Grid Background="#10151C">
+                <TextBlock Text="{Binding Name}" FontSize="18" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" Margin="12"/>
+                <Image Source="{Binding Image}" Stretch="UniformToFill"/>
+            </Grid>
+        </Button>
+    </DataTemplate>
+
+    <DataTemplate x:Key="CalendarTemplate">
+        <Border Width="369" Margin="0,0,17,0" Padding="16,12,16,6">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#1B4C80" Offset="0"/>
+                    <GradientStop Color="#0F2A47" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel>
+                <TextBlock Text="{Binding Header}" FontSize="20" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource CalendarCapsuleTemplate}" Focusable="False"/>
+            </StackPanel>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="FriendGameTemplate">
+        <Button Style="{StaticResource FeedCard}" Width="523" Height="216" Margin="0,0,14,0">
+            <Grid Margin="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="122" Height="183" Background="#10151C" VerticalAlignment="Top"><Image Source="{Binding Image}" Stretch="UniformToFill"/></Border>
+                <StackPanel Grid.Column="1" Margin="18,6,0,0">
+                    <TextBlock Text="{Binding GameName}" FontSize="24" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Count}" FontSize="16" Foreground="{StaticResource PlayGreen}" Margin="0,4,0,12"/>
+                    <TextBlock Text="{Binding Friends}" FontSize="22" Foreground="{StaticResource PlayGreen}" TextWrapping="Wrap" MaxHeight="62"/>
+                    <TextBlock Text="{Binding LibraryText}" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,12,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Button>
+    </DataTemplate>
+
+    <DataTemplate x:Key="ActivityTemplate">
+        <Button Style="{StaticResource FeedCard}" Margin="0,0,54,14">
+            <StackPanel>
+                <Border Background="#2B323C" Height="62" Padding="12,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Image Source="{Binding Icon}" Width="46" Height="46" Stretch="UniformToFill" Margin="0,0,14,0"/>
+                        <TextBlock Text="{Binding FriendName}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Text}" FontSize="21" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#1F2630" Padding="34,22">
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="{Binding Image}" Width="290" Height="136" Stretch="UniformToFill"/>
+                        <TextBlock Text="{Binding Detail}" FontSize="19" Foreground="{StaticResource TextSoft}" Margin="26,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Button>
+    </DataTemplate>
+</ResourceDictionary>

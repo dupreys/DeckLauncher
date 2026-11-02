@@ -1,0 +1,350 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
+using LiteLauncher.Core;
+using LiteLauncher.Core.Epic;
+using LiteLauncher.Core.Manual;
+using LiteLauncher.Core.Steam;
+
+namespace DeckLauncher.App;
+
+public partial class MainWindow : Window
+{
+    private const int HomeTileCount = 20;
+    private static readonly TimeSpan RefreshWhenBack = TimeSpan.FromSeconds(45);
+
+    private readonly LibraryService _library = new();
+    private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
+    private readonly DispatcherTimer _toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
+    private readonly Dictionary<string, GameItem> _itemCache = new();
+    private readonly Dictionary<string, RadioButton> _tabs = new();
+
+    private List<GameItem> _all = new();       // library order: by name
+    private string _filter = "all";
+    private string _page = "Início";
+    private GameItem? _heroItem;
+    private bool _refreshing;
+    private DateTime _lastRefresh = DateTime.MinValue;
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        _clock.Tick += (_, _) => UpdateClock();
+        _clock.Start();
+        UpdateClock();
+        _toastTimer.Tick += (_, _) => { _toastTimer.Stop(); Toast.Visibility = Visibility.Collapsed; };
+        BuildTabs();
+        InitInput();
+    }
+
+    private void UpdateClock() => Clock.Text = DateTime.Now.ToString("HH:mm");
+
+    private async void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        ApplyFullscreen(App.Settings.StartFullscreen);
+        ApplyMouseMode();
+        await RefreshAsync();
+    }
+
+    private async void OnActivated(object? sender, EventArgs e)
+    {
+        // Back from a game or from the store: pick up what was installed or played meanwhile.
+        if (!_refreshing && DateTime.UtcNow - _lastRefresh > RefreshWhenBack) await RefreshAsync();
+    }
+
+    // ---- Library data -----------------------------------------------------------------------
+
+    private async Task RefreshAsync()
+    {
+        if (_refreshing) return;
+        _refreshing = true;
+        try
+        {
+            var games = await _library.LoadAsync();
+            ApplyGames(games);
+            _ = DownloadArtAsync(games);
+        }
+        finally
+        {
+            _refreshing = false;
+            _lastRefresh = DateTime.UtcNow;
+        }
+    }
+
+    private async Task DownloadArtAsync(List<Game> games)
+    {
+        if (await _library.DownloadMissingArtAsync(games)) await RefreshAsync();
+    }
+
+    private GameItem ItemFor(Game game)
+    {
+        var key = GameSorter.Key(game);
+        if (_itemCache.TryGetValue(key, out var item) && item.Matches(game)) return item;
+        return _itemCache[key] = new GameItem(game);
+    }
+
+    private void ApplyGames(List<Game> games)
+    {
+        var recent = GameSorter.MostRecentFirst(games).Take(HomeTileCount).Select(ItemFor).ToList();
+        _all = games.Select(ItemFor).OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+
+        var any = _all.Count > 0;
+        RecentRow.ItemsSource = recent;
+        MoreTile.Visibility = recent.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        RecentTitle.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
+        EmptyText.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
+        EmptyText.Text = _library.AnyStoreFound
+            ? "Nenhum jogo instalado foi encontrado. Instale um jogo na Steam ou na Epic, ou adicione um manualmente."
+            : "Steam e Epic não foram encontradas neste PC. Instale uma delas ou adicione jogos manualmente.";
+
+        ApplyFilter();
+        if (_page == "Início" && !MenuOpen && !IsFocusInside(HomePage)) FocusHome();
+    }
+
+    // ---- Library tabs, search and grid ------------------------------------------------------
+
+    private static readonly (string Key, string Title)[] TabDefs =
+    {
+        ("all", "TODOS OS JOGOS"), ("steam", "STEAM"), ("epic", "EPIC"), ("manual", "ADICIONADOS"), ("fav", "FAVORITOS"),
+    };
+
+    private void BuildTabs()
+    {
+        foreach (var (key, title) in TabDefs)
+        {
+            var tab = new RadioButton { Style = (Style)FindResource("LibTab"), GroupName = "LibTabs", Tag = key, Content = title, IsChecked = key == _filter };
+            tab.Checked += (_, _) => { _filter = key; ApplyFilter(); };
+            _tabs[key] = tab;
+            TabsPanel.Children.Add(tab);
+        }
+    }
+
+    private bool InFilter(GameItem item, string filter) => filter switch
+    {
+        "steam" => item.Source == SteamProvider.ProviderName,
+        "epic" => item.Source == EpicProvider.ProviderName,
+        "manual" => item.Source == ManualProvider.ProviderName,
+        "fav" => item.IsFavorite,
+        _ => true,
+    };
+
+    private void ApplyFilter()
+    {
+        foreach (var (key, title) in TabDefs)
+        {
+            var count = _all.Count(i => InFilter(i, key));
+            _tabs[key].Content = BuildTabLabel(title, count);
+        }
+
+        var text = SearchBox.Text.Trim();
+        var shown = _all.Where(i => InFilter(i, _filter)
+                                    && (text.Length == 0 || i.Name.Contains(text, StringComparison.CurrentCultureIgnoreCase))).ToList();
+        LibGrid.ItemsSource = shown;
+        LibEmpty.Visibility = shown.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        LibEmpty.Text = _all.Count == 0 ? "Sua biblioteca está vazia." : "Nenhum jogo nesta lista.";
+    }
+
+    private object BuildTabLabel(string title, int count)
+    {
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        var name = new TextBlock { Text = title };
+        name.SetBinding(TextBlock.ForegroundProperty, new System.Windows.Data.Binding("Foreground") { RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.FindAncestor, typeof(RadioButton), 1) });
+        panel.Children.Add(name);
+        panel.Children.Add(new TextBlock { Text = count.ToString(), Margin = new Thickness(10, 0, 0, 0), Opacity = 0.6, Foreground = (Brush)FindResource("TextMuted") });
+        return panel;
+    }
+
+    private void OnSearchChanged(object sender, TextChangedEventArgs e)
+    {
+        SearchHint.Visibility = SearchBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ApplyFilter();
+    }
+
+    // ---- Tiles ------------------------------------------------------------------------------
+
+    private void OnTileLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: GameItem item }) item.EnsureCoverLoaded();
+    }
+
+    private async void OnHomeTileFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is not Button { DataContext: GameItem item }) return;
+        item.EnsureWideLoaded();
+        _heroItem = item;
+        var image = await item.LoadBackdropAsync();
+        if (ReferenceEquals(_heroItem, item)) SetHero(image); // ignore pictures that arrive after the focus moved on
+    }
+
+    private void OnMoreTileClick(object sender, RoutedEventArgs e)
+    {
+        ShowPage("Biblioteca");
+        FocusLibrary();
+    }
+
+    /// <summary>Keeps the whole focus frame (and its zoom) inside the visible area while scrolling.</summary>
+    private void OnLibTileFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is FrameworkElement tile)
+            tile.BringIntoView(new Rect(-24, -24, tile.ActualWidth + 48, tile.ActualHeight + 48));
+    }
+
+    /// <summary>Whole columns only, so the grid can be centred instead of leaving a wide empty strip on the right.</summary>
+    private void OnLibScrollSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        const double cell = 244 + 66; // tile + both side margins
+        var columns = Math.Max(1, (int)Math.Floor((e.NewSize.Width - 40) / cell));
+        LibGrid.Width = columns * cell;
+    }
+
+    private void OnTileClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: GameItem item }) return;
+        OpenGame(item);
+    }
+
+    private void ShowToast(string text)
+    {
+        ToastText.Text = text;
+        Toast.Visibility = Visibility.Visible;
+        _toastTimer.Stop();
+        _toastTimer.Start();
+    }
+
+    // ---- Focus helpers ----------------------------------------------------------------------
+
+    private static bool IsFocusInside(DependencyObject root) =>
+        Keyboard.FocusedElement is DependencyObject focused && IsAncestor(root, focused);
+
+    private static bool IsAncestor(DependencyObject root, DependencyObject node)
+    {
+        for (var current = node; current is not null; current = current is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current))
+            if (ReferenceEquals(current, root)) return true;
+        return false;
+    }
+
+    private static T? FindFirst<T>(DependencyObject root) where T : DependencyObject
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T match) return match;
+            if (FindFirst<T>(child) is { } deeper) return deeper;
+        }
+        return null;
+    }
+
+    private void FocusHome(int attempt = 0)
+    {
+        if (RecentRow.Items.Count > 0 && FindFirst<Button>(RecentRow) is { } first) { first.Focus(); return; }
+        if (attempt < 20 && RecentRow.Items.Count > 0) Dispatcher.BeginInvoke(() => FocusHome(attempt + 1), DispatcherPriority.Loaded);
+    }
+
+    private void FocusLibrary(int attempt = 0)
+    {
+        if (FindFirst<Button>(LibGrid) is { } first) { first.Focus(); return; }
+        if (_tabs.TryGetValue(_filter, out var tab) && (attempt >= 3 || LibGrid.Items.Count == 0)) { tab.Focus(); return; }
+        if (attempt < 3) Dispatcher.BeginInvoke(() => FocusLibrary(attempt + 1), DispatcherPriority.Loaded);
+    }
+
+    // ---- Menu and pages ---------------------------------------------------------------------
+
+    private bool MenuOpen => MenuLayer.Visibility == Visibility.Visible;
+
+    private void OpenMenu()
+    {
+        MenuLayer.Visibility = Visibility.Visible;
+        UiSound.Play("menu_open");
+        SlideInMenu();
+        var shown = _page == "Jogo" ? _returnPage : _page;
+        var current = MenuList.Children.OfType<Button>().FirstOrDefault(b => (string)b.Tag == shown) ?? MenuList.Children.OfType<Button>().First(b => b.Visibility == Visibility.Visible);
+        current.Focus();
+    }
+
+    private void CloseMenu(bool silent = false)
+    {
+        if (!silent && MenuOpen) UiSound.Play("menu_close");
+        MenuLayer.Visibility = Visibility.Collapsed;
+        FocusPage();
+    }
+
+    private void FocusPage()
+    {
+        if (_page == "Início") FocusHome();
+        else if (_page == "Biblioteca") FocusLibrary();
+        else if (_page == "Jogo") PlayButton.Focus();
+        else if (_page == "Feed") FocusFeed();
+        else if (_page == "Downloads") OpenSteamDownloadsButton.Focus();
+        else if (_page == "Configurações")
+        {
+            var current = FindAll<RadioButton>(SettingsPage).FirstOrDefault(r => r.IsChecked == true);
+            current?.Focus();
+        }
+    }
+
+    private void OnScrimClick(object sender, MouseButtonEventArgs e) => CloseMenu();
+
+    private void OnMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string page }) return;
+        if (page == "Ligar/Desligar")
+        {
+            CloseMenu(silent: true);
+            OpenPower();
+            return;
+        }
+        ShowPage(page);
+        CloseMenu(silent: true);
+    }
+
+    private void ShowPage(string page)
+    {
+        var previous = _page;
+        _page = page;
+        var home = page == "Início";
+        var library = page == "Biblioteca";
+        var game = page == "Jogo";
+        HomePage.Visibility = home ? Visibility.Visible : Visibility.Collapsed;
+        LibraryPage.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
+        GamePage.Visibility = game ? Visibility.Visible : Visibility.Collapsed;
+        var downloads = page == "Downloads";
+        var settings = page == "Configurações";
+        DownloadsPage.Visibility = downloads ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPage.Visibility = settings ? Visibility.Visible : Visibility.Collapsed;
+        if (downloads) StartDownloads(); else StopDownloads();
+        if (settings) LoadSettingsUi();
+        var feed = page == "Feed";
+        FeedPage.Visibility = feed ? Visibility.Visible : Visibility.Collapsed;
+        OtherPage.Visibility = home || library || game || downloads || settings || feed ? Visibility.Collapsed : Visibility.Visible;
+        SearchHost.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
+        HeroImage.Visibility = home || game ? Visibility.Visible : Visibility.Collapsed;
+        HeroImagePrev.Visibility = HeroImage.Visibility;
+        if (previous != page) PlayPageTransition(page);
+        OtherTitle.Text = page;
+    }
+
+    private void OnKeyDown(object sender, KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.F1:
+                ToggleMenu();
+                e.Handled = true;
+                break;
+            case Key.Escape:
+                GoBack();
+                e.Handled = true;
+                break;
+            case Key.F5:
+                _ = RefreshAsync();
+                e.Handled = true;
+                break;
+            case Key.F11: // handy while developing: window <-> full screen
+                ApplyFullscreen(WindowStyle != WindowStyle.None);
+                e.Handled = true;
+                break;
+        }
+    }
+}

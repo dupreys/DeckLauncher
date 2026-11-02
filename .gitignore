@@ -1,0 +1,15 @@
+## .NET / Visual Studio
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+publish/
+artifacts/
+TestResults/
+*.log
+
+## Pacotes de teste locais
+*.zip

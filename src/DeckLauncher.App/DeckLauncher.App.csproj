@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>DeckLauncher.App</RootNamespace>
+    <AssemblyName>DeckLauncher</AssemblyName>
+    <Version>0.13.1</Version>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\Sounds\*.wav" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LiteLauncher.Core\LiteLauncher.Core.csproj" />
+  </ItemGroup>
+
+</Project>

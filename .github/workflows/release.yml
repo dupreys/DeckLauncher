@@ -1,0 +1,70 @@
+name: Release
+
+# Publica uma versão quando uma tag "v*" é enviada (ex.: git tag v0.11.0 && git push origin v0.11.0).
+# Também dá para rodar à mão em Actions > Release > Run workflow (gera os arquivos sem criar a release).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Versão
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if ($tag -match '^v(\d+\.\d+(\.\d+)*)$') { $version = $Matches[1] } else { $version = "0.0.0-dev" }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Testes
+        run: dotnet test DeckLauncher.sln -c Release
+
+      - name: Publicar (autônomo, não precisa do .NET instalado)
+        run: >
+          dotnet publish src/DeckLauncher.App -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:Version=${{ steps.version.outputs.version }} -o out/autonomo
+
+      - name: Publicar (leve, precisa do .NET 8 Desktop Runtime)
+        run: >
+          dotnet publish src/DeckLauncher.App -c Release -r win-x64 --self-contained false
+          -p:PublishSingleFile=true -p:Version=${{ steps.version.outputs.version }} -o out/leve
+
+      - name: Compactar e gerar checksums
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.version }}"
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item README.md, LICENSE out/autonomo
+          Copy-Item README.md, LICENSE out/leve
+          Compress-Archive -Path out/autonomo/* -DestinationPath "dist/DeckLauncher-$v-win-x64.zip"
+          Compress-Archive -Path out/leve/* -DestinationPath "dist/DeckLauncher-$v-win-x64-requer-dotnet8.zip"
+          Get-ChildItem dist/*.zip | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)" | Out-File -Append -Encoding ascii dist/SHA256SUMS.txt
+          }
+
+      - name: Guardar os arquivos desta execução
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeckLauncher-${{ steps.version.outputs.version }}
+          path: dist/*
+
+      - name: Criar a release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
