@@ -48,8 +48,12 @@ public partial class MainWindow : Window
         await RefreshAsync();
     }
 
+    /// <summary>With a game (or the store) in front, the launcher stops animating the wallpaper so it does not take frames from it.</summary>
+    private void OnDeactivated(object? sender, EventArgs e) => StopHeroDrift();
+
     private async void OnActivated(object? sender, EventArgs e)
     {
+        if (_page == "Início") StartHeroDrift();
         // Back from a game or from the store: pick up what was installed or played meanwhile.
         if (!_refreshing && DateTime.UtcNow - _lastRefresh > RefreshWhenBack) await RefreshAsync();
     }
@@ -181,8 +185,12 @@ public partial class MainWindow : Window
         if (sender is not Button { DataContext: GameItem item }) return;
         if (item.IsFeatured) item.EnsureWideLoaded(); else item.EnsureCoverLoaded();
         _heroItem = item;
+        CaptionTitle.Text = item.Name;
+        CaptionSub.Text = item.RecentText;
         var image = await item.LoadBackdropAsync();
-        if (ReferenceEquals(_heroItem, item)) SetHero(image); // ignore pictures that arrive after the focus moved on
+        if (!ReferenceEquals(_heroItem, item)) return; // ignore pictures that arrive after the focus moved on
+        SetHero(image);
+        SetGlow(item.Cover ?? image);
     }
 
     private void OnMoreTileClick(object sender, RoutedEventArgs e)
@@ -195,7 +203,7 @@ public partial class MainWindow : Window
     private void OnLibTileFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
         if (sender is FrameworkElement tile)
-            tile.BringIntoView(new Rect(-24, -24, tile.ActualWidth + 48, tile.ActualHeight + 48));
+            tile.BringIntoView(new Rect(-24, -24, tile.ActualWidth + 48, tile.ActualHeight + 48 + 56)); // + room for the caption
     }
 
     /// <summary>Whole columns only, so the grid can be centred instead of leaving a wide empty strip on the right.</summary>
@@ -283,6 +291,9 @@ public partial class MainWindow : Window
         else if (_page == "Biblioteca") FocusLibrary();
         else if (_page == "Jogo") PlayButton.Focus();
         else if (_page == "Feed") FocusFeed();
+        else if (_page == "Mídias") FocusMedia(_mediaIndex);
+        else if (_page == "Lojas") StoreSteamButton.Focus();
+        else if (_page == "Amigos") FocusFriends();
         else if (_page == "Downloads") OpenSteamDownloadsButton.Focus();
         else if (_page == "Configurações")
         {
@@ -324,7 +335,16 @@ public partial class MainWindow : Window
         if (settings) LoadSettingsUi();
         var feed = page == "Feed";
         FeedPage.Visibility = feed ? Visibility.Visible : Visibility.Collapsed;
-        OtherPage.Visibility = home || library || game || downloads || settings || feed ? Visibility.Collapsed : Visibility.Visible;
+        var media = page == "Mídias";
+        MediaPage.Visibility = media ? Visibility.Visible : Visibility.Collapsed;
+        if (media) LoadMedia(); else _mediaLoadGen++;
+        var stores = page == "Lojas";
+        StoresPage.Visibility = stores ? Visibility.Visible : Visibility.Collapsed;
+        var friendsPage = page == "Amigos";
+        FriendsPage.Visibility = friendsPage ? Visibility.Visible : Visibility.Collapsed;
+        if (friendsPage) StartFriends(); else StopFriends();
+        OtherPage.Visibility = home || library || game || downloads || settings || feed || media || stores || friendsPage ? Visibility.Collapsed : Visibility.Visible;
+        if (home) StartHeroDrift(); else StopHeroDrift();
         SearchHost.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
         HeroImage.Visibility = home || game ? Visibility.Visible : Visibility.Collapsed;
         HeroImagePrev.Visibility = HeroImage.Visibility;

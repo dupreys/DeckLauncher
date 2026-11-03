@@ -5,13 +5,16 @@ using LiteLauncher.Core.Steam;
 
 namespace DeckLauncher.App;
 
-// Play time for games outside Steam (Epic and added games): the launcher watches the running programs and
-// counts the time a game's program is open, whether it was started from here or not.
+// Play time: the launcher watches the running programs and counts the time a game's program is open, whether it was
+// started from here or not. Every game gets a session in the history (the "last two weeks" text under the tile and the
+// play time screen read it, and it grows while the game runs); only games outside Steam also get their total minutes here,
+// because Steam keeps its own total.
 public partial class MainWindow
 {
     private readonly PlayTracker _playTracker = new();
     private readonly DispatcherTimer _playTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private readonly Dictionary<string, double> _playCarry = new();
+    private readonly Dictionary<string, PlaySession> _liveSessions = new();
     private DateTime _lastPlayTick = DateTime.UtcNow;
     private bool _playChecking;
 
@@ -27,7 +30,7 @@ public partial class MainWindow
         _playChecking = true;
         try
         {
-            var games = _all.Select(i => i.Game).Where(g => g.Source != SteamProvider.ProviderName).ToList();
+            var games = _all.Select(i => i.Game).ToList();
             if (games.Count == 0 && _playTracker.Running.Count == 0) return;
 
             var now = DateTime.UtcNow;
@@ -40,10 +43,19 @@ public partial class MainWindow
             var names = games.ToDictionary(GameSorter.Key, g => g.Name);
             var changed = false;
 
+            var touched = new HashSet<string>();
+            foreach (var item in _all)
+            {
+                var key = GameSorter.Key(item.Game);
+                var isRunning = running.Contains(key);
+                if (item.IsRunning == isRunning) continue;
+                item.IsRunning = isRunning; // "JOGANDO AGORA" appears and disappears with the game
+                touched.Add(key);
+            }
+
             foreach (var key in started)
             {
-                var record = RecordFor(key);
-                record.LastPlayed = DateTimeOffset.Now;
+                RecordFor(key).LastPlayed = DateTimeOffset.Now;
                 changed = true;
             }
 
@@ -54,20 +66,22 @@ public partial class MainWindow
                 var whole = (int)(carry / 60);
                 if (whole > 0)
                 {
-                    RecordFor(key).Minutes += whole;
+                    if (!key.StartsWith(SteamProvider.ProviderName + ":", StringComparison.Ordinal)) RecordFor(key).Minutes += whole;
+                    AddToLiveSession(key, names.TryGetValue(key, out var gameName) ? gameName : key, whole);
                     carry -= whole * 60;
+                    touched.Add(key);
                     changed = true;
                 }
                 _playCarry[key] = carry;
             }
 
-            foreach (var (key, minutes) in stopped)
+            foreach (var (key, _) in stopped)
             {
-                names.TryGetValue(key, out var name);
-                PlayHistory.Add(App.Settings.PlaySessions, key, name ?? key, DateTimeOffset.Now - TimeSpan.FromMinutes(minutes), minutes);
+                _liveSessions.Remove(key); // the session was written minute by minute while it ran
                 _playCarry.Remove(key);
-                changed = true;
             }
+
+            if (touched.Count > 0) RefreshRecentText(touched);
 
             if (!changed) return;
             SaveSettings();
@@ -76,6 +90,28 @@ public partial class MainWindow
         finally
         {
             _playChecking = false;
+        }
+    }
+
+    /// <summary>The running game's session in the history grows by the minutes that passed (a new session starts after a stop).</summary>
+    private void AddToLiveSession(string key, string name, int minutes)
+    {
+        if (_liveSessions.TryGetValue(key, out var session) && App.Settings.PlaySessions.Contains(session))
+        {
+            session.Minutes = Math.Min(session.Minutes + minutes, 24 * 60);
+            return;
+        }
+        if (!PlayHistory.Add(App.Settings.PlaySessions, key, name, DateTimeOffset.Now - TimeSpan.FromMinutes(minutes), minutes)) return;
+        _liveSessions[key] = App.Settings.PlaySessions[^1];
+    }
+
+    /// <summary>Refreshes the "last two weeks" text of the games that were just played.</summary>
+    private void RefreshRecentText(HashSet<string> keys)
+    {
+        foreach (var item in _all.Where(i => keys.Contains(GameSorter.Key(i.Game))))
+        {
+            item.RefreshRecent();
+            if (ReferenceEquals(item, _heroItem)) CaptionSub.Text = item.RecentText;
         }
     }
 

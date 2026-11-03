@@ -44,7 +44,7 @@ internal sealed class LibraryService
 
     private static HttpClient CreateHttp(TimeSpan? timeout = null)
     {
-        var client = new HttpClient { Timeout = timeout ?? TimeSpan.FromSeconds(15) };
+        var client = new HttpClient { Timeout = timeout ?? TimeSpan.FromSeconds(15), MaxResponseContentBufferSize = 64 * 1024 * 1024 }; // pictures and JSON only
         client.DefaultRequestHeaders.UserAgent.ParseAdd("DeckLauncher/0.2");
         return client;
     }

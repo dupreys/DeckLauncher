@@ -34,6 +34,9 @@ public sealed class AppSettings
 
     /// <summary>False (default): the mouse cursor is hidden and the launcher ignores the mouse; only controller and keyboard work.</summary>
     public bool MouseEnabled { get; set; }
+
+    /// <summary>"Preto OLED": every dark tone of the interface becomes neutral black/grey instead of navy blue.</summary>
+    public bool OledBlack { get; set; }
     public double UiVolume { get; set; } = 0.5;
 
     // General
@@ -74,6 +77,26 @@ public sealed class AppSettings
     /// <summary>SteamGridDB API key: needed to download covers, backgrounds and logos.</summary>
     public string? SteamGridDbApiKey { get; set; }
 
+    /// <summary>
+    /// Token the Steam app gave the launcher after the user approved the QR code (never the password). Lets the launcher
+    /// read and send Steam chat messages. Stored encrypted; "Sair do chat" in Settings deletes it.
+    /// </summary>
+    public string? SteamChatToken { get; set; }
+
+    /// <summary>Number of slots on the quick message wheel.</summary>
+    public const int QuickMessageSlots = 8;
+
+    public const int MaxQuickMessageLength = 60;
+
+    /// <summary>The wheel's messages, clockwise from the top.</summary>
+    public static readonly string[] DefaultQuickMessages =
+    {
+        "E aí!!", "Sim", "Não", "Quer jogar?", "Me dá uns minutinhos", "Se apronta", "Me chama no jogo", "Não posso pausar agora",
+    };
+
+    /// <summary>Quick messages of the chat wheel (hold Select), clockwise from the top. Always <see cref="QuickMessageSlots"/> entries.</summary>
+    public List<string> QuickMessages { get; set; } = new(DefaultQuickMessages);
+
     /// <summary>Last played and minutes LiteLauncher recorded itself (Epic has no local play history), keyed by "Source:Id".</summary>
     public Dictionary<string, PlayRecord> PlayRecords { get; set; } = new();
 
@@ -101,6 +124,20 @@ public sealed class AppSettings
     /// <summary>Games the user added by hand (an .exe outside Steam and Epic).</summary>
     public List<ManualGame> ManualGames { get; set; } = new();
 
+    /// <summary>Exactly eight trimmed, non-empty messages: blanks and missing slots take the default for that slot.</summary>
+    public static List<string> NormalizeQuickMessages(IEnumerable<string>? messages)
+    {
+        var given = (messages ?? Array.Empty<string>()).ToList();
+        var result = new List<string>(QuickMessageSlots);
+        for (var i = 0; i < QuickMessageSlots; i++)
+        {
+            var text = i < given.Count ? (given[i] ?? "").Trim() : "";
+            if (text.Length > MaxQuickMessageLength) text = text[..MaxQuickMessageLength].TrimEnd();
+            result.Add(text.Length == 0 ? DefaultQuickMessages[i] : text);
+        }
+        return result;
+    }
+
     /// <summary>Clamps values that may have been hand-edited into something unusable.</summary>
     public void Normalize()
     {
@@ -119,6 +156,8 @@ public sealed class AppSettings
         if (HomeStyle is not ("Xbox" or "Simple" or "Cinema")) HomeStyle = "Xbox";
         SteamWebApiKey = string.IsNullOrWhiteSpace(SteamWebApiKey) ? null : SteamWebApiKey.Trim();
         SteamGridDbApiKey = string.IsNullOrWhiteSpace(SteamGridDbApiKey) ? null : SteamGridDbApiKey.Trim();
+        SteamChatToken = string.IsNullOrWhiteSpace(SteamChatToken) ? null : SteamChatToken.Trim();
+        QuickMessages = NormalizeQuickMessages(QuickMessages);
         if (LibrarySort is not ("Recent" or "Name" or "Size")) LibrarySort = "Recent";
         GameOverrides ??= new();
         PlayRecords ??= new();

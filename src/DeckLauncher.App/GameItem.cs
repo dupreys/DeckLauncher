@@ -33,6 +33,29 @@ public sealed class GameItem : INotifyPropertyChanged
 
     public ImageSource? Logo => _logo;
 
+    /// <summary>"ÚLTIMAS DUAS SEMANAS: 13,1 H": time played through the launcher in the last 14 days.</summary>
+    public string RecentText
+    {
+        get
+        {
+            var key = GameSorter.Key(Game);
+            var cutoff = DateTimeOffset.Now.AddDays(-14);
+            var minutes = App.Settings.PlaySessions.Where(s => s.Key == key && s.Start >= cutoff).Sum(s => s.Minutes);
+            var prefix = IsRunning ? "JOGANDO AGORA" : "";
+            if (minutes <= 0) return IsRunning ? prefix : "NÃO JOGADO NAS ÚLTIMAS DUAS SEMANAS";
+            var text = minutes < 60
+                ? $"ÚLTIMAS DUAS SEMANAS: {minutes} MIN"
+                : $"ÚLTIMAS DUAS SEMANAS: {(minutes / 60.0).ToString("0.0", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))} H";
+            return IsRunning ? $"{prefix}  ·  {text}" : text;
+        }
+    }
+
+    /// <summary>True while the game's program is open (set by the play monitor).</summary>
+    public bool IsRunning { get; set; }
+
+    /// <summary>Tells the tile (and the caption under it) that the recent play time changed.</summary>
+    public void RefreshRecent() => Raise(nameof(RecentText));
+
     private bool _featured;
 
     /// <summary>The last played game on the home row: the only tile shown wide, with its background and logo.</summary>

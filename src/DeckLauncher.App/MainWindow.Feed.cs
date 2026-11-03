@@ -380,6 +380,12 @@ public partial class MainWindow
 
     private void OpenExternal(string url)
     {
+        // Links come from outside (news, store pages): only web and Steam links may be opened, never files or programs.
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http" or "steam"))
+        {
+            ShowToast("Este link não pode ser aberto.");
+            return;
+        }
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true })?.Dispose(); }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
         {

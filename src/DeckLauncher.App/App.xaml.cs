@@ -67,7 +67,10 @@ internal static class CrashLog
         try
         {
             Directory.CreateDirectory(SettingsStore.DefaultDirectory);
-            File.AppendAllText(FilePath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {ex}\n\n");
+            if (File.Exists(FilePath) && new FileInfo(FilePath).Length > 512 * 1024) File.Delete(FilePath); // keep the log small
+            // Steam Web API addresses carry the key in the query string: never write it down.
+            var text = System.Text.RegularExpressions.Regex.Replace(ex?.ToString() ?? "", @"(?i)(key|token|password)=[^&\s""]+", "$1=***");
+            File.AppendAllText(FilePath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {text}\n\n");
         }
         catch (Exception io) when (io is IOException or UnauthorizedAccessException)
         {

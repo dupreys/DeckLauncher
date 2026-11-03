@@ -62,3 +62,28 @@
 - Iniciar com o Windows: Autostart.cs (HKCU Run), switch em Configurações > Sistema.
 - Tempo de jogo Epic/manual: MainWindow.Play.cs (a cada 15 s lista processos via Native.RunningImagePaths, soma minutos em PlayRecords e grava PlaySessions).
 - Renomear/esconder: botão "..." na página do jogo (MainWindow.Options.cs); AppSettings.HiddenGames; lista "Jogos escondidos" em Configurações > Jogos; LibraryService filtra os escondidos.
+
+## v0.18.0 — Amigos com chat, roda de mensagens rápidas, Configurações > Interface
+- Menu lateral "Amigos" (antes "Amigos e conversas" abria placeholder): MainWindow.Friends.cs. Lista on-line/off-line via SteamFeeds.FetchFriendsAsync (agora lê personastate; FriendData.PersonaState), atualiza a cada 30 s. Conversa à direita; B volta do chat para a lista.
+- Chat: SteamChat.cs fala só com api.steampowered.com (IFriendMessagesService GetRecentMessages/SendMessage; polling de 4 s com a conversa aberta). Login por QR aprovado no app da Steam (IAuthenticationService BeginAuthSessionViaQR/PollAuthSessionStatus, platform MobileApp) -> refresh token em AppSettings.SteamChatToken (campo secreto, DPAPI); access token por GenerateAccessTokenForApp. NÃO TESTADO COM A STEAM REAL (sem rede/compilador aqui): se o login falhar, mostrar o texto do erro; "ABRIR NO STEAM" (steam://friends/message/ID) é o plano B. Envia via input_json (POST form).
+- QR desenhado com o pacote NuGet QRCoder 1.6.0 (PngByteQRCode).
+- Roda: Gamepad.cs ganhou SelectHoldStarted/Ended/Tapped (segurar 350 ms, sem Start/B) e RightStick (XInput; PlayStation/Switch pelo winmm Z/R). Numa conversa o Select só abre o menu ao soltar rápido (OnSelectTapped). A envia, B/soltar Select fecha; setas como alternativa.
+- Configurações > Interface: Preto OLED (movido de Sistema) + edição das 8 mensagens (AppSettings.QuickMessages, NormalizeQuickMessages). Integrações: linha "Chat da Steam" com SAIR DO CHAT.
+- Testes novos: QuickMessageTests.cs.
+
+## v0.18.1
+- Corrigido CS0102: campo Portuguese duplicado (já existe em MainWindow.GamePage.cs); o de Friends agora se chama PtBr.
+
+## v0.18.2
+- Corrigido CS0103: faltava using System.Net.Http em MainWindow.Friends.cs (projetos WPF não o importam implicitamente).
+
+## v0.18.3 — chat reescrito com SteamKit2
+- Erro 404 ao enviar: IFriendMessagesService/SendMessage NÃO existe na API web (só GetRecentMessages etc.). Envio/recebimento agora via SteamKit2 3.4.0 (SteamLink.cs): QR (BeginAuthSessionViaQRAsync) -> AccountName + RefreshToken salvos como "conta:token" em AppSettings.SteamChatToken (formato antigo sem conta é descartado); LogOn com AccessToken=refresh token, LoginID fixo; SetPersonaState(Online) enquanto a página Amigos está aberta (a sessão cai ao sair da página).
+- Mensagens recebidas chegam por FriendMsgCallback (sem polling). Histórico: GetRecentMessages via web com access token, melhor esforço (erros ignorados). Mensagens enviadas por outro dispositivo não aparecem (sem FriendMsgEcho).
+- O login por QR do v0.18.0 funcionou (REST), mas foi substituído porque o refresh token agora precisa da conta para o LogOn.
+
+## v0.18.4
+- "Últimas duas semanas" sob o card não atualizava: só jogos fora da Steam eram monitorados e a sessão só era gravada ao fechar o jogo. Agora MainWindow.Play.cs monitora todos os jogos, grava a sessão minuto a minuto (_liveSessions), só soma PlayRecords.Minutes fora da Steam (a Steam tem total próprio) e atualiza o texto (GameItem.RefreshRecent / IsRunning -> "JOGANDO AGORA") e a legenda do card em foco.
+
+## v1.0.0
+- Versão final: README reescrito (todas as funções, 7 prints novos em docs/screenshots, Download simplificado, removidos Como rodar/Gerar executável/Testes/Publicar). Tag sugerida: v1.0.0.

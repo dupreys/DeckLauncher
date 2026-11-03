@@ -33,14 +33,20 @@ public partial class MainWindow
         InitPlayMonitor();
         InitProfile();
         InitSession();
+        ApplyOled();
+        InitMedia();
+        InitFriends();
+        StartHeroDrift();
     }
 
     // ---- Back, menu, search -----------------------------------------------------------------
 
     private void GoBack()
     {
-        if (!MenuOpen && (PowerOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen || ManageOpen || _page != "Início")) UiSound.Play("back");
-        if (LaunchOverlayOpen) _ = CancelLaunchAsync();
+        if (!MenuOpen && (WheelOpen || MediaViewerOpen || PowerOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen || ManageOpen || _page != "Início")) UiSound.Play("back");
+        if (WheelOpen) CloseWheel();
+        else if (MediaViewerOpen) CloseMediaViewer();
+        else if (LaunchOverlayOpen) _ = CancelLaunchAsync();
         else if (PowerOpen) PowerBack();
         else if (ProfileOpen) CloseProfile();
         else if (OptionsOpen) CloseOptions();
@@ -49,20 +55,21 @@ public partial class MainWindow
         else if (MenuOpen) CloseMenu();
         else if (ManageOpen) CloseManage();
         else if (_page == "Jogo") CloseGame();
+        else if (_page == "Amigos" && ChatOpen && FocusInChat) FocusFriendList();
         else if (_page != "Início") { ShowPage("Início"); FocusHome(); }
         if (!IsKeyboardFocusWithin || Keyboard.FocusedElement is not TextBox) VirtualKeyboard.Hide();
     }
 
     private void ToggleMenu()
     {
-        if (PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
+        if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
         if (QuickOpen) CloseQuick();
         if (MenuOpen) CloseMenu(); else OpenMenu();
     }
 
     private void OpenSearch(bool keyboard)
     {
-        if (PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
+        if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
         if (QuickOpen) CloseQuick();
         if (MenuOpen) MenuLayer.Visibility = Visibility.Collapsed;
         ShowPage("Biblioteca");
@@ -131,6 +138,18 @@ public partial class MainWindow
         if (!IsActive) return;
         SetHints(true);
 
+        if (MediaViewerOpen)
+        {
+            HandleViewerButton(button);
+            return;
+        }
+
+        if (WheelOpen)
+        {
+            HandleWheelButton(button);
+            return;
+        }
+
         switch (button)
         {
             case GamepadButton.Up: Move(FocusNavigationDirection.Up); break;
@@ -139,7 +158,12 @@ public partial class MainWindow
             case GamepadButton.Right: Move(FocusNavigationDirection.Right); break;
             case GamepadButton.A: ActivateFocused(); break;
             case GamepadButton.B: GoBack(); break;
-            case GamepadButton.Select: ToggleMenu(); break; // the side menu (power is its last item)
+            case GamepadButton.Select:
+                // In a conversation Select is held for the quick message wheel; a quick tap (see OnSelectTapped) still opens the menu.
+                if (ChatOpen && !MenuOpen) { _selectIgnored = true; break; }
+                _selectIgnored = false;
+                ToggleMenu(); // the side menu (power is its last item)
+                break;
             case GamepadButton.LeftShoulder: CycleTabs(-1); break;
             case GamepadButton.RightShoulder: CycleTabs(+1); break;
             case GamepadButton.Y: OpenSearch(keyboard: true); break;
@@ -159,7 +183,7 @@ public partial class MainWindow
         }
 
         if (focused is TextBox) VirtualKeyboard.Hide();
-        if (TryGameMenuMove(direction) || TrySettingsMove(direction)) return;
+        if (TryGameMenuMove(direction) || TrySettingsMove(direction) || TryFriendsMove(direction)) return;
         if (direction == FocusNavigationDirection.Down && TryOpenFeedFromRow()) return;
         if (TryListMove(direction)) return;
         _navUntil = DateTime.UtcNow.AddMilliseconds(200);
@@ -185,7 +209,13 @@ public partial class MainWindow
             return;
         }
         var peer = UIElementAutomationPeer.CreatePeerForElement(element);
-        if (peer?.GetPattern(PatternInterface.Toggle) is IToggleProvider toggle) toggle.Toggle();
+        if (peer?.GetPattern(PatternInterface.Toggle) is IToggleProvider toggle)
+        {
+            toggle.Toggle();
+            // Toggling through automation skips the Click event that the switches in Settings listen to, so raise it too.
+            if (element is System.Windows.Controls.Primitives.ToggleButton button)
+                button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent, button));
+        }
         else if (peer?.GetPattern(PatternInterface.SelectionItem) is ISelectionItemProvider selection) selection.Select();
         else if (peer?.GetPattern(PatternInterface.Invoke) is IInvokeProvider invoke) invoke.Invoke();
     }
@@ -193,7 +223,7 @@ public partial class MainWindow
     /// <summary>LB / RB: previous / next tab of the screen in front.</summary>
     private void CycleTabs(int delta)
     {
-        if (PowerOpen || MenuOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
+        if (MediaViewerOpen || PowerOpen || MenuOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
 
         if (ManageOpen) { CycleRadios(ManageTabs.Children.OfType<RadioButton>().ToList(), delta); return; }
         switch (_page)

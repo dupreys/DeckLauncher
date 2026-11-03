@@ -39,6 +39,22 @@ public sealed class Gamepad : IDisposable
     /// <summary>Select + B held together for two seconds: opens the launcher's menu over a running game.</summary>
     public event Action? MenuComboHeld;
 
+    /// <summary>Select held on its own (no Start / B) past a short delay: the chat's quick message wheel.</summary>
+    public event Action? SelectHoldStarted;
+
+    /// <summary>Select released after <see cref="SelectHoldStarted"/>.</summary>
+    public event Action? SelectHoldEnded;
+
+    /// <summary>Select pressed and released quickly, on its own.</summary>
+    public event Action? SelectTapped;
+
+    /// <summary>Right stick, -1..1 on both axes (Y positive is up). Zero when the controller has none we can read.</summary>
+    public (double X, double Y) RightStick { get; private set; }
+
+    private static readonly TimeSpan SelectHold = TimeSpan.FromMilliseconds(350);
+    private DateTime? _selectStart;
+    private bool _selectHeld, _selectTainted;
+
     private static readonly TimeSpan MenuComboHold = TimeSpan.FromMilliseconds(2000);
     private DateTime? _menuComboStart;
     private bool _menuComboFired;
@@ -55,11 +71,18 @@ public sealed class Gamepad : IDisposable
     private struct Pad
     {
         public bool Up, Down, Left, Right, A, B, X, Y, Start, Select, LeftShoulder, RightShoulder, LeftTrigger, RightTrigger;
+        public double RightX, RightY;
     }
 
     private void Poll()
     {
-        if (!TryReadXInput(out var pad) && !TryReadJoystick(out pad)) return;
+        if (!TryReadXInput(out var pad) && !TryReadJoystick(out pad))
+        {
+            RightStick = (0, 0);
+            return;
+        }
+
+        RightStick = (pad.RightX, pad.RightY);
 
         Update(GamepadButton.Up, pad.Up, repeat: true);
         Update(GamepadButton.Down, pad.Down, repeat: true);
@@ -75,6 +98,7 @@ public sealed class Gamepad : IDisposable
         Update(GamepadButton.RightTrigger, pad.RightTrigger, repeat: false);
         Update(GamepadButton.Start, pad.Start, repeat: false);
         Update(GamepadButton.Select, pad.Select, repeat: false);
+        UpdateSelectHold(pad.Select, pad.Start || pad.B);
         UpdateCombo(pad.Select && pad.Start);
         UpdateMenuCombo(pad.Select && pad.B);
     }
@@ -110,7 +134,15 @@ public sealed class Gamepad : IDisposable
         pad.RightTrigger = g.RightTrigger > TriggerThreshold;
         pad.Start = (g.Buttons & StartBtn) != 0;
         pad.Select = (g.Buttons & SelectBtn) != 0;
+        pad.RightX = StickValue(g.ThumbRX);
+        pad.RightY = StickValue(g.ThumbRY);
         return true;
+    }
+
+    private static double StickValue(double raw)
+    {
+        var value = Math.Clamp(raw / 32767.0, -1, 1);
+        return Math.Abs(value) < 0.2 ? 0 : value; // dead zone
     }
 
     // ---- DirectInput-style controllers (PlayStation, Switch Pro, generic) via winmm ----------------
@@ -207,6 +239,13 @@ public sealed class Gamepad : IDisposable
             Start = Down(map[9]),
         };
 
+        // Right stick: Z and R on PlayStation and Switch pads (other layouts differ too much to guess).
+        if (layout is JoyLayout.PlayStation or JoyLayout.Switch)
+        {
+            pad.RightX = StickValue((double)info.Z - 32768);
+            pad.RightY = StickValue(32768 - (double)info.R);
+        }
+
         // D-pad: the hat switch, in hundredths of a degree (0 = up); values above 36000 mean "centred".
         var hat = info.Pov;
         if (hat <= 36000)
@@ -227,6 +266,29 @@ public sealed class Gamepad : IDisposable
     }
 
     // ---- Select + Start hold ---------------------------------------------------------------
+
+    /// <summary>Select on its own: a tap, or (held for a moment) the start and end of a hold. Select with Start or B belongs to the combos.</summary>
+    private void UpdateSelectHold(bool select, bool otherCombo)
+    {
+        if (!select)
+        {
+            var wasHeld = _selectHeld;
+            var tap = _selectStart is not null && !wasHeld && !_selectTainted;
+            _selectStart = null;
+            _selectHeld = false;
+            _selectTainted = false;
+            if (wasHeld) SelectHoldEnded?.Invoke();
+            else if (tap) SelectTapped?.Invoke();
+            return;
+        }
+
+        _selectStart ??= DateTime.UtcNow;
+        if (otherCombo) _selectTainted = true;
+        if (_selectHeld || _selectTainted || DateTime.UtcNow - _selectStart < SelectHold) return;
+
+        _selectHeld = true;
+        SelectHoldStarted?.Invoke();
+    }
 
     private void UpdateMenuCombo(bool both)
     {

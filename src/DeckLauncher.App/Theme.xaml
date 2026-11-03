@@ -15,6 +15,39 @@
     <SolidColorBrush x:Key="TextMuted" Color="#8B939D"/>
     <SolidColorBrush x:Key="Scrim" Color="#B3000000"/>
 
+    
+
+    <SolidColorBrush x:Key="T_6B7686" Color="#6B7686"/>
+    <SolidColorBrush x:Key="T_99A0AAB6" Color="#99A0AAB6"/>
+    <!-- Dark tones that "Preto OLED" turns neutral/black at run time (see MainWindow.Theme.cs). -->
+    <SolidColorBrush x:Key="T_0D1117" Color="#0D1117"/>
+    <SolidColorBrush x:Key="T_10151C" Color="#10151C"/>
+    <SolidColorBrush x:Key="T_111823" Color="#111823"/>
+    <SolidColorBrush x:Key="T_14181F" Color="#14181F"/>
+    <SolidColorBrush x:Key="T_161C27" Color="#161C27"/>
+    <SolidColorBrush x:Key="T_171D26" Color="#171D26"/>
+    <SolidColorBrush x:Key="T_1A2230" Color="#1A2230"/>
+    <SolidColorBrush x:Key="T_1B2129" Color="#1B2129"/>
+    <SolidColorBrush x:Key="T_1B2330" Color="#1B2330"/>
+    <SolidColorBrush x:Key="T_1F2630" Color="#1F2630"/>
+    <SolidColorBrush x:Key="T_232830" Color="#232830"/>
+    <SolidColorBrush x:Key="T_232A34" Color="#232A34"/>
+    <SolidColorBrush x:Key="T_2A3442" Color="#2A3442"/>
+    <SolidColorBrush x:Key="T_2B323C" Color="#2B323C"/>
+    <SolidColorBrush x:Key="T_3A4556" Color="#3A4556"/>
+    <SolidColorBrush x:Key="T_4A5260" Color="#4A5260"/>
+    <SolidColorBrush x:Key="T_55808A96" Color="#55808A96"/>
+    <SolidColorBrush x:Key="T_6B7889" Color="#6B7889"/>
+    <SolidColorBrush x:Key="T_E6080C11" Color="#E6080C11"/>
+    <SolidColorBrush x:Key="T_E6141A22" Color="#E6141A22"/>
+    <SolidColorBrush x:Key="T_EE232A34" Color="#EE232A34"/>
+    <SolidColorBrush x:Key="T_F2101720" Color="#F2101720"/>
+    <SolidColorBrush x:Key="T_F2171D26" Color="#F2171D26"/>
+    <SolidColorBrush x:Key="T_FF05080C" Color="#FF05080C"/>
+    <Color x:Key="C_400D131A">#400D131A</Color>
+    <Color x:Key="C_F00D131A">#F00D131A</Color>
+    <Color x:Key="C_FF0D131A">#FF0D131A</Color>
+
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <!-- No Foreground here: text must inherit it from the button/window so focus colours (dark text on a white bar) work. -->
@@ -56,12 +89,42 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Bar" Property="Background" Value="{StaticResource Focus}"/>
+                            <Setter TargetName="Bar" Property="Background" Value="{DynamicResource Focus}"/>
                             <Setter TargetName="Marker" Property="Visibility" Value="Visible"/>
                             <Setter Property="Foreground" Value="{StaticResource Text}"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bar" Property="Background" Value="#2B323C"/>
+                            <Setter TargetName="Bar" Property="Background" Value="{DynamicResource T_2B323C}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Friend / conversation row (Amigos): a flat bar, lit when focused -->
+    <Style x:Key="FriendRow" TargetType="Button">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSoft}"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bar" Background="Transparent" Padding="22,6,16,6">
+                        <Grid>
+                            <Border x:Name="Marker" Width="3" HorizontalAlignment="Left" Margin="-22,0,0,0" Background="{StaticResource Accent}" Visibility="Collapsed"/>
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bar" Property="Background" Value="{DynamicResource Focus}"/>
+                            <Setter TargetName="Marker" Property="Visibility" Value="Visible"/>
+                            <Setter Property="Foreground" Value="{StaticResource Text}"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bar" Property="Background" Value="{DynamicResource T_2B323C}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -73,14 +136,14 @@
     <Style x:Key="GameTile" TargetType="Button">
         <Setter Property="Width" Value="207"/>
         <Setter Property="Height" Value="311"/>
-        <Setter Property="Margin" Value="0,0,14,0"/>
+        <Setter Property="Margin" Value="0,0,26,0"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <!-- On focus the card pops up a little, glows and a light streak sweeps across it. -->
-                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}"
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{DynamicResource Panel}"
                             RenderTransformOrigin="0.5,0.5" ClipToBounds="True">
                         <Border.RenderTransform>
                             <ScaleTransform x:Name="Zoom" ScaleX="1" ScaleY="1"/>
@@ -107,17 +170,14 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
-                            <Setter TargetName="Frame" Property="Effect">
-                                <Setter.Value><DropShadowEffect Color="#1A9FFF" BlurRadius="16" ShadowDepth="0" Opacity="0.6"/></Setter.Value>
-                            </Setter>
                             <Trigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" From="1" To="1.05" Duration="0:0:0.2">
-                                            <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.5"/></DoubleAnimation.EasingFunction>
+                                        <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" From="1" To="1.03" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.4"/></DoubleAnimation.EasingFunction>
                                         </DoubleAnimation>
-                                        <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" From="1" To="1.05" Duration="0:0:0.2">
-                                            <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.5"/></DoubleAnimation.EasingFunction>
+                                        <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" From="1" To="1.03" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.4"/></DoubleAnimation.EasingFunction>
                                         </DoubleAnimation>
                                         <DoubleAnimation Storyboard.TargetName="Shine" Storyboard.TargetProperty="Opacity" From="1" To="1" Duration="0:0:0.75"/>
                                         <DoubleAnimation Storyboard.TargetName="ShineMove" Storyboard.TargetProperty="X" From="-180" To="760" Duration="0:0:0.75">
@@ -144,8 +204,32 @@
         <Style.Triggers>
             <DataTrigger Binding="{Binding IsFeatured}" Value="True">
                 <Setter Property="Width" Value="640"/>
+                <Setter Property="Margin" Value="0,0,28,0"/>
             </DataTrigger>
         </Style.Triggers>
+    </Style>
+
+    <!-- Thumbnail of a capture on the Mídias page. -->
+    <Style x:Key="MediaTile" TargetType="Button">
+        <Setter Property="Width" Value="420"/>
+        <Setter Property="Height" Value="236"/>
+        <Setter Property="Margin" Value="0,0,24,24"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{DynamicResource Panel}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- "See more in your library" tile at the end of the recent games row. -->
@@ -160,14 +244,14 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="#55808A96">
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{DynamicResource T_55808A96}">
                         <TextBlock Text="{TemplateBinding Content}" TextWrapping="Wrap" TextAlignment="Center" Margin="22"
                                    VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
-                            <Setter TargetName="Frame" Property="Background" Value="#99A0AAB6"/>
+                            <Setter TargetName="Frame" Property="Background" Value="{DynamicResource T_99A0AAB6}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -190,7 +274,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Pill" Property="Background" Value="{StaticResource Focus}"/>
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Focus}"/>
                             <Setter Property="Foreground" Value="{StaticResource Text}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -245,17 +329,30 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}"
-                            RenderTransformOrigin="0.5,0.5">
-                        <ContentPresenter/>
-                    </Border>
+                    <Grid>
+                        <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{DynamicResource Panel}"
+                                RenderTransformOrigin="0.5,0.5">
+                            <ContentPresenter/>
+                        </Border>
+                        <!-- Name and recent play time under the focused cover (sits in the gap below the tile). -->
+                        <StackPanel x:Name="Caption" Visibility="Collapsed" VerticalAlignment="Bottom" Margin="3,0,0,-52">
+                            <TextBlock Text="{Binding DataContext.Name, RelativeSource={RelativeSource TemplatedParent}}" FontSize="17" FontWeight="Bold"
+                                       Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <TextBlock Text="&#x25B6;" FontSize="9" Foreground="#5BB52F" VerticalAlignment="Center" Margin="0,0,7,0"/>
+                                <TextBlock Text="{Binding DataContext.RecentText, RelativeSource={RelativeSource TemplatedParent}}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSoft}" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
                             <Setter TargetName="Frame" Property="RenderTransform">
                                 <Setter.Value><ScaleTransform ScaleX="1.04" ScaleY="1.04"/></Setter.Value>
                             </Setter>
-                            <Setter TargetName="Frame" Property="Panel.ZIndex" Value="5"/>
+                            <Setter TargetName="Caption" Property="Visibility" Value="Visible"/>
+                            <Setter Property="Panel.ZIndex" Value="5"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -279,11 +376,11 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Pill" Property="Background" Value="#4A5260"/>
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource T_4A5260}"/>
                             <Setter Property="Foreground" Value="{StaticResource Text}"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Pill" Property="Background" Value="#6B7686"/>
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource T_6B7686}"/>
                             <Setter Property="Foreground" Value="{StaticResource Text}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -331,13 +428,13 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Frame" Background="{StaticResource PanelRaised}" BorderThickness="3" BorderBrush="Transparent">
+                    <Border x:Name="Frame" Background="{DynamicResource PanelRaised}" BorderThickness="3" BorderBrush="Transparent">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Frame" Property="BorderBrush" Value="White"/>
-                            <Setter TargetName="Frame" Property="Background" Value="{StaticResource Focus}"/>
+                            <Setter TargetName="Frame" Property="Background" Value="{DynamicResource Focus}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -364,7 +461,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}">
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{DynamicResource Panel}">
                         <ContentPresenter/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -386,7 +483,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="Track" CornerRadius="17" Background="#4A5260" BorderThickness="2" BorderBrush="Transparent">
+                    <Border x:Name="Track" CornerRadius="17" Background="{DynamicResource T_4A5260}" BorderThickness="2" BorderBrush="Transparent">
                         <Ellipse x:Name="Knob" Width="24" Height="24" Fill="White" HorizontalAlignment="Left" Margin="3,0,0,0"/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -441,7 +538,7 @@
 
     <!-- Settings row container -->
     <Style x:Key="SettingsRow" TargetType="Border">
-        <Setter Property="Background" Value="#1B2129"/>
+        <Setter Property="Background" Value="{DynamicResource T_1B2129}"/>
         <Setter Property="Padding" Value="24,16"/>
         <Setter Property="Margin" Value="0,0,0,10"/>
     </Style>
@@ -462,13 +559,13 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bar" Background="#232830">
+                    <Border x:Name="Bar" Background="{DynamicResource T_232830}">
                         <ContentPresenter VerticalAlignment="Center" Margin="20,0,12,0"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Bar" Property="Background" Value="White"/>
-                            <Setter Property="Foreground" Value="#14181F"/>
+                            <Setter Property="Foreground" Value="{DynamicResource T_14181F}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -491,7 +588,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Frame" Property="Background" Value="{StaticResource Focus}"/>
+                            <Setter TargetName="Frame" Property="Background" Value="{DynamicResource Focus}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -507,7 +604,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Frame" Background="{StaticResource PanelRaised}" BorderThickness="3" BorderBrush="Transparent">
+                    <Border x:Name="Frame" Background="{DynamicResource PanelRaised}" BorderThickness="3" BorderBrush="Transparent">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -536,7 +633,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{StaticResource Panel}">
+                    <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{DynamicResource Panel}">
                         <ContentPresenter/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -554,8 +651,8 @@
             <TextBlock Text="{Binding DateLabel}" FontSize="18" Foreground="{StaticResource TextSoft}" Margin="0,0,0,8"/>
             <Button Style="{StaticResource FeedCard}" Width="409" HorizontalAlignment="Left">
                 <StackPanel>
-                    <Border Height="236" Background="#10151C"><Image Source="{Binding Image}" Stretch="UniformToFill"/></Border>
-                    <Border Background="#2B323C" Height="134" Padding="14,12">
+                    <Border Height="236" Background="{DynamicResource T_10151C}"><Image Source="{Binding Image}" Stretch="UniformToFill"/></Border>
+                    <Border Background="{DynamicResource T_2B323C}" Height="134" Padding="14,12">
                         <StackPanel>
                             <TextBlock Text="{Binding Title}" FontSize="21" TextWrapping="Wrap" MaxHeight="58" TextTrimming="CharacterEllipsis" Foreground="{StaticResource TextSoft}"/>
                             <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
@@ -572,13 +669,13 @@
     <DataTemplate x:Key="UpdatedTemplate">
         <Button Style="{StaticResource FeedCard}" Width="409" Margin="0,0,17,0">
             <StackPanel>
-                <Border Background="#2B323C" Padding="14,12">
+                <Border Background="{DynamicResource T_2B323C}" Padding="14,12">
                     <StackPanel Orientation="Horizontal">
                         <Image Source="{Binding Image}" Width="96" Height="45" Stretch="UniformToFill" Margin="0,0,14,0"/>
                         <TextBlock Text="{Binding Name}" FontSize="22" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="250"/>
                     </StackPanel>
                 </Border>
-                <Border Background="#232A34" Padding="14,10" Height="52">
+                <Border Background="{DynamicResource T_232A34}" Padding="14,10" Height="52">
                     <TextBlock Text="{Binding Detail}" FontSize="15" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                 </Border>
             </StackPanel>
@@ -587,7 +684,7 @@
 
     <DataTemplate x:Key="CapsuleTemplate">
         <Button Style="{StaticResource FeedCard}" Width="324" Height="157" Margin="0,0,28,0">
-            <Grid Background="#10151C">
+            <Grid Background="{DynamicResource T_10151C}">
                 <TextBlock Text="{Binding Name}" FontSize="18" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" Margin="12"/>
                 <Image Source="{Binding Image}" Stretch="UniformToFill"/>
                 <Border Background="#CC1B6FA8" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="8,3" Visibility="{Binding InLibraryVisibility}">
@@ -599,7 +696,7 @@
 
     <DataTemplate x:Key="CalendarCapsuleTemplate">
         <Button Style="{StaticResource FeedCard}" Height="191" Margin="0,0,0,11">
-            <Grid Background="#10151C">
+            <Grid Background="{DynamicResource T_10151C}">
                 <TextBlock Text="{Binding Name}" FontSize="18" TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center" Margin="12"/>
                 <Image Source="{Binding Image}" Stretch="UniformToFill"/>
             </Grid>
@@ -628,7 +725,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border Width="122" Height="183" Background="#10151C" VerticalAlignment="Top"><Image Source="{Binding Image}" Stretch="UniformToFill"/></Border>
+                <Border Width="122" Height="183" Background="{DynamicResource T_10151C}" VerticalAlignment="Top"><Image Source="{Binding Image}" Stretch="UniformToFill"/></Border>
                 <StackPanel Grid.Column="1" Margin="18,6,0,0">
                     <TextBlock Text="{Binding GameName}" FontSize="24" TextTrimming="CharacterEllipsis"/>
                     <TextBlock Text="{Binding Count}" FontSize="16" Foreground="{StaticResource PlayGreen}" Margin="0,4,0,12"/>
@@ -642,14 +739,14 @@
     <DataTemplate x:Key="ActivityTemplate">
         <Button Style="{StaticResource FeedCard}" Margin="0,0,54,14">
             <StackPanel>
-                <Border Background="#2B323C" Height="62" Padding="12,0">
+                <Border Background="{DynamicResource T_2B323C}" Height="62" Padding="12,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source="{Binding Icon}" Width="46" Height="46" Stretch="UniformToFill" Margin="0,0,14,0"/>
                         <TextBlock Text="{Binding FriendName}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding Text}" FontSize="21" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-                <Border Background="#1F2630" Padding="34,22">
+                <Border Background="{DynamicResource T_1F2630}" Padding="34,22">
                     <StackPanel Orientation="Horizontal">
                         <Image Source="{Binding Image}" Width="290" Height="136" Stretch="UniformToFill"/>
                         <TextBlock Text="{Binding Detail}" FontSize="19" Foreground="{StaticResource TextSoft}" Margin="26,0,0,0" VerticalAlignment="Center"/>

@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 
 namespace DeckLauncher.App;
 
@@ -143,8 +144,8 @@ public partial class MainWindow
 
     // ---- Smooth scrolling of the recent games row --------------------------------------------
 
-    /// <summary>Left margin of the row (room for the zoom of the first card); scroll positions include it.</summary>
-    private const double RecentHostLeft = 12;
+    /// <summary>Left margin of the row: room so the zoom and the outline of the first card are not clipped.</summary>
+    private const double RecentHostLeft = 28;
 
     private void OnRecentBringIntoView(object sender, RequestBringIntoViewEventArgs e)
     {
@@ -152,20 +153,145 @@ public partial class MainWindow
         e.Handled = true; // we scroll ourselves, with an animation
 
         var left = target.TranslatePoint(new Point(0, 0), RecentHost).X + RecentHostLeft;
+        var isGame = target is Button { DataContext: GameItem };
         var finalWidth = target.ActualWidth; // tiles no longer change size when focused
         var viewport = RecentScroll.ViewportWidth;
         if (viewport <= 0) return;
 
-        var offset = _rowTarget;
-        if (left < offset + 20) offset = left - 20 - 221; // keep one game visible before the focused one
-        else if (left + finalWidth + 40 > offset + viewport) offset = left + finalWidth + 40 - viewport;
+        // Like the Steam home: the focused game stays in the middle of the screen while the row slides under it.
+        // Near either end the row stops, and the selection keeps moving towards the edge instead.
+        var offset = left + finalWidth / 2 - viewport / 2;
 
         var contentWidth = RecentHost.ActualWidth + RecentHostLeft;
         offset = Math.Clamp(offset, 0, Math.Max(0, contentWidth - viewport));
+        MoveCaption(isGame, left - offset, finalWidth);
         if (Math.Abs(offset - _rowTarget) < 0.5 && Math.Abs(RecentScroll.HorizontalOffset - offset) < 0.5) return;
 
         _rowTarget = offset;
         BeginAnimation(RowOffsetProperty, new DoubleAnimation(RecentScroll.HorizontalOffset, offset, TimeSpan.FromMilliseconds(280)) { EasingFunction = EaseOut });
+    }
+
+    /// <summary>The name and play time under the focused game follow it as the row scrolls.</summary>
+    private void MoveCaption(bool visible, double tileX, double tileWidth)
+    {
+        if (!visible)
+        {
+            RecentCaption.Visibility = Visibility.Collapsed;
+            RecentGlow.Visibility = Visibility.Collapsed;
+            return;
+        }
+        var x = 18 + tileX + 3; // the row starts 18 px in; 3 px is the tile outline
+        var glowX = 18 + tileX + tileWidth / 2 - RecentGlow.Width / 2;
+        var wasHidden = RecentCaption.Visibility != Visibility.Visible;
+        RecentCaption.Visibility = Visibility.Visible;
+        RecentGlow.Visibility = Visibility.Visible;
+        if (wasHidden)
+        {
+            CaptionMove.BeginAnimation(TranslateTransform.XProperty, null);
+            GlowMove.BeginAnimation(TranslateTransform.XProperty, null);
+            CaptionMove.X = x;
+            GlowMove.X = glowX;
+            return;
+        }
+        var span = TimeSpan.FromMilliseconds(280);
+        CaptionMove.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(CaptionMove.X, x, span) { EasingFunction = EaseOut });
+        GlowMove.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(GlowMove.X, glowX, span) { EasingFunction = EaseOut });
+    }
+
+    /// <summary>Tints the light under the focused game with the main colours of its picture.</summary>
+    private void SetGlow(ImageSource? source)
+    {
+        var color = DominantColor(source);
+        var span = TimeSpan.FromMilliseconds(380);
+        GlowCore.BeginAnimation(GradientStop.ColorProperty, new ColorAnimation(Color.FromArgb(0x4C, color.R, color.G, color.B), span));
+        GlowEdge.BeginAnimation(GradientStop.ColorProperty, new ColorAnimation(Color.FromArgb(0x00, color.R, color.G, color.B), span));
+    }
+
+    /// <summary>The average colour of a picture, favouring vivid areas, brightened so it reads as light.</summary>
+    private static Color DominantColor(ImageSource? source)
+    {
+        var fallback = Color.FromRgb(0x1A, 0x9F, 0xFF);
+        if (source is not BitmapSource { PixelWidth: > 0, PixelHeight: > 0 } bitmap) return fallback;
+        try
+        {
+            var scaled = new TransformedBitmap(bitmap, new ScaleTransform(24.0 / bitmap.PixelWidth, 24.0 / bitmap.PixelHeight));
+            var converted = new FormatConvertedBitmap(scaled, PixelFormats.Bgra32, null, 0);
+            var width = converted.PixelWidth;
+            var height = converted.PixelHeight;
+            var pixels = new byte[width * height * 4];
+            converted.CopyPixels(pixels, width * 4, 0);
+
+            double r = 0, g = 0, b = 0, total = 0;
+            for (var i = 0; i + 3 < pixels.Length; i += 4)
+            {
+                double blue = pixels[i], green = pixels[i + 1], red = pixels[i + 2];
+                var max = Math.Max(red, Math.Max(green, blue));
+                var min = Math.Min(red, Math.Min(green, blue));
+                var saturation = max <= 0 ? 0 : (max - min) / max;
+                var weight = 0.1 + saturation * (max / 255.0);
+                r += red * weight; g += green * weight; b += blue * weight; total += weight;
+            }
+            if (total <= 0) return fallback;
+            r /= total; g /= total; b /= total;
+            var peak = Math.Max(r, Math.Max(g, b));
+            if (peak < 1) return fallback;
+            var scale = Math.Min(235 / peak, 3.0);
+            byte Clamp(double v) => (byte)Math.Clamp(v * scale, 0, 255);
+            return Color.FromRgb(Clamp(r), Clamp(g), Clamp(b));
+        }
+        catch (Exception)
+        {
+            return fallback;
+        }
+    }
+
+    // ---- Slow drift of the wallpaper on the home screen ---------------------------------------
+
+    private readonly ScaleTransform _heroScale = new(1.05, 1.05);
+    private readonly TranslateTransform _heroShift = new();
+    private bool _heroDrifting;
+
+    private void StartHeroDrift()
+    {
+        if (_heroDrifting) return;
+        _heroDrifting = true;
+        if (HeroLayer.RenderTransform is not TransformGroup)
+        {
+            var group = new TransformGroup();
+            group.Children.Add(_heroScale);
+            group.Children.Add(_heroShift);
+            HeroLayer.RenderTransform = group;
+        }
+
+        var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
+        // 30 frames a second look the same for a drift this slow and cost half the work.
+        DoubleAnimation Loop(double from, double to, double seconds)
+        {
+            var animation = new DoubleAnimation(from, to, TimeSpan.FromSeconds(seconds))
+            {
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever,
+                EasingFunction = ease,
+            };
+            Timeline.SetDesiredFrameRate(animation, 30);
+            return animation;
+        }
+        _heroScale.BeginAnimation(ScaleTransform.ScaleXProperty, Loop(1.05, 1.11, 16));
+        _heroScale.BeginAnimation(ScaleTransform.ScaleYProperty, Loop(1.05, 1.11, 16));
+        _heroShift.BeginAnimation(TranslateTransform.XProperty, Loop(-22, 22, 22));
+        _heroShift.BeginAnimation(TranslateTransform.YProperty, Loop(-8, 8, 19));
+    }
+
+    private void StopHeroDrift()
+    {
+        if (!_heroDrifting) return;
+        _heroDrifting = false;
+        _heroScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        _heroScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        _heroShift.BeginAnimation(TranslateTransform.XProperty, null);
+        _heroShift.BeginAnimation(TranslateTransform.YProperty, null);
+        _heroScale.ScaleX = _heroScale.ScaleY = 1;
+        _heroShift.X = _heroShift.Y = 0;
     }
 
     // ---- Page and menu transitions -----------------------------------------------------------
@@ -178,6 +304,9 @@ public partial class MainWindow
             "Biblioteca" => LibraryPage,
             "Jogo" => GamePage,
             "Feed" => FeedPage,
+            "Mídias" => MediaPage,
+            "Lojas" => StoresPage,
+            "Amigos" => FriendsPage,
             "Downloads" => DownloadsPage,
             "Configurações" => SettingsPage,
             _ => OtherPage,

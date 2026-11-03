@@ -45,7 +45,7 @@ internal static class SteamFeeds
 
     public sealed record UpdatedData(string AppId, string Name, long Size, DateTimeOffset Updated);
 
-    public sealed record FriendData(string SteamId, string Name, string? Avatar, string? GameId, string? GameName, long LastLogoff);
+    public sealed record FriendData(string SteamId, string Name, string? Avatar, string? GameId, string? GameName, long LastLogoff, int PersonaState = 0);
 
     public sealed record ActivityData(string FriendName, string? Avatar, string AppId, string GameName, int Minutes);
 
@@ -192,7 +192,8 @@ internal static class SteamFeeds
                     var id = Str("steamid");
                     if (id is null) continue;
                     var last = p.TryGetProperty("lastlogoff", out var l) && l.TryGetInt64(out var seconds) ? seconds : 0;
-                    friends.Add(new FriendData(id, Str("personaname") ?? "Amigo", Str("avatarmedium") ?? Str("avatar"), Str("gameid"), Str("gameextrainfo"), last));
+                    friends.Add(new FriendData(id, Str("personaname") ?? "Amigo", Str("avatarmedium") ?? Str("avatar"), Str("gameid"), Str("gameextrainfo"), last,
+                        p.TryGetProperty("personastate", out var state) && state.TryGetInt32(out var stateValue) ? stateValue : 0));
                 }
             }
             catch (JsonException) { }
