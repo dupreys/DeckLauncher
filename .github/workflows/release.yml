@@ -1,7 +1,8 @@
 name: Release
 
-# Publica uma versão quando uma tag "v*" é enviada (ex.: git tag v0.11.0 && git push origin v0.11.0).
-# Também dá para rodar à mão em Actions > Release > Run workflow (gera os arquivos sem criar a release).
+# Publica uma versão quando uma tag "v*" é enviada (ex.: git tag v1.0.0 && git push origin v1.0.0).
+# A release contém só o instalador (DeckLauncher-Setup-<versão>.exe), gerado com o Inno Setup (installer/DeckLauncher.iss).
+# Também dá para rodar à mão em Actions > Release > Run workflow (gera o instalador sem criar a release).
 on:
   push:
     tags: ["v*"]
@@ -23,38 +24,34 @@ jobs:
       - name: Versão
         id: version
         shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
-          $tag = "${{ github.ref_name }}"
+          $tag = $env:TAG
           if ($tag -match '^v(\d+\.\d+(\.\d+)*)$') { $version = $Matches[1] } else { $version = "0.0.0-dev" }
           "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Testes
         run: dotnet test DeckLauncher.sln -c Release
 
-      - name: Publicar (autônomo, não precisa do .NET instalado)
+      - name: Publicar o programa (autônomo, não precisa do .NET instalado)
         run: >
           dotnet publish src/DeckLauncher.App -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:Version=${{ steps.version.outputs.version }} -o out/autonomo
+          -p:Version=${{ steps.version.outputs.version }} -o out/app
 
-      - name: Publicar (leve, precisa do .NET 8 Desktop Runtime)
-        run: >
-          dotnet publish src/DeckLauncher.App -c Release -r win-x64 --self-contained false
-          -p:PublishSingleFile=true -p:Version=${{ steps.version.outputs.version }} -o out/leve
+      - name: Instalar o Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
 
-      - name: Compactar e gerar checksums
+      - name: Gerar o instalador
         shell: pwsh
         run: |
           $v = "${{ steps.version.outputs.version }}"
-          New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item README.md, LICENSE out/autonomo
-          Copy-Item README.md, LICENSE out/leve
-          Compress-Archive -Path out/autonomo/* -DestinationPath "dist/DeckLauncher-$v-win-x64.zip"
-          Compress-Archive -Path out/leve/* -DestinationPath "dist/DeckLauncher-$v-win-x64-requer-dotnet8.zip"
-          Get-ChildItem dist/*.zip | ForEach-Object {
-            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
-            "$hash  $($_.Name)" | Out-File -Append -Encoding ascii dist/SHA256SUMS.txt
-          }
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc "/DAppVersion=$v" installer\DeckLauncher.iss
+          if ($LASTEXITCODE -ne 0) { throw "Falha ao gerar o instalador" }
+          Get-ChildItem dist
 
       - name: Guardar os arquivos desta execução
         uses: actions/upload-artifact@v4
