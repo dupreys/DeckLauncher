@@ -293,7 +293,6 @@ public partial class MainWindow : Window
         else if (_page == "Feed") FocusFeed();
         else if (_page == "Mídias") FocusMedia(_mediaIndex);
         else if (_page == "Lojas") StoreSteamButton.Focus();
-        else if (_page == "Amigos") FocusFriends();
         else if (_page == "Downloads") OpenSteamDownloadsButton.Focus();
         else if (_page == "Configurações")
         {
@@ -340,10 +339,7 @@ public partial class MainWindow : Window
         if (media) LoadMedia(); else _mediaLoadGen++;
         var stores = page == "Lojas";
         StoresPage.Visibility = stores ? Visibility.Visible : Visibility.Collapsed;
-        var friendsPage = page == "Amigos";
-        FriendsPage.Visibility = friendsPage ? Visibility.Visible : Visibility.Collapsed;
-        if (friendsPage) StartFriends(); else StopFriends();
-        OtherPage.Visibility = home || library || game || downloads || settings || feed || media || stores || friendsPage ? Visibility.Collapsed : Visibility.Visible;
+        OtherPage.Visibility = home || library || game || downloads || settings || feed || media || stores ? Visibility.Collapsed : Visibility.Visible;
         if (home) StartHeroDrift(); else StopHeroDrift();
         SearchHost.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
         HeroImage.Visibility = home || game ? Visibility.Visible : Visibility.Collapsed;

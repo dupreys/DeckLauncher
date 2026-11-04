@@ -279,11 +279,6 @@
                                 <ToggleButton x:Name="OledSwitch" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="OnOledSwitchClick"/>
                             </Grid>
                         </Border>
-                        <TextBlock Text="Mensagens rápidas" Style="{StaticResource SectionTitle}"/>
-                        <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="{StaticResource TextMuted}" Margin="0,0,0,14"
-                                   Text="Mensagens da roda do chat (segure SELECT numa conversa e escolha com o analógico direito). Aperte A num campo para digitar; as mudanças são salvas sozinhas."/>
-                        <StackPanel x:Name="QuickMessageList"/>
-                        <Button x:Name="QuickMessagesResetButton" Style="{StaticResource TabText}" Content="RESTAURAR PADRÃO" HorizontalAlignment="Left" Margin="0,6,0,0" Click="OnQuickMessagesResetClick"/>
                     </StackPanel>
 
                     <StackPanel x:Name="SetIntegrations" Visibility="Collapsed">
@@ -311,15 +306,6 @@
                                     <Button Style="{StaticResource TabText}" Content="OBTER CHAVE" Margin="10,0,0,0" Click="OnGetSteamKeyClick"/>
                                 </StackPanel>
                             </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource SettingsRow}">
-                            <Grid>
-                                <StackPanel VerticalAlignment="Center" Margin="0,0,200,0">
-                                    <TextBlock Text="Chat da Steam" FontSize="19"/>
-                                    <TextBlock x:Name="ChatAccountText" TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/>
-                                </StackPanel>
-                                <Button x:Name="ChatSignOutButton" Style="{StaticResource TabText}" Content="SAIR DO CHAT" HorizontalAlignment="Right" Click="OnChatSignOutClick"/>
-                            </Grid>
                         </Border>
                     </StackPanel>
 
@@ -401,84 +387,6 @@
                     </Button>
                 </StackPanel>
             </StackPanel>
-        </Grid>
-
-        <!-- Amigos: friends list on the left, the conversation on the right -->
-        <Grid x:Name="FriendsPage" Margin="0,56,0,56" Visibility="Collapsed" Background="{DynamicResource Bg}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="400"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Border Background="{DynamicResource T_E6141A22}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="Amigos" FontSize="30" FontWeight="SemiBold" Margin="26,20,0,12"/>
-                    <TextBlock x:Name="FriendsNotice" Grid.Row="1" Visibility="Collapsed" TextWrapping="Wrap" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="26,10,26,0"/>
-                    <ScrollViewer x:Name="FriendsScroll" Grid.Row="1" VerticalScrollBarVisibility="Hidden" Focusable="False">
-                        <StackPanel x:Name="FriendsList" Margin="0,0,0,20"/>
-                    </ScrollViewer>
-                </Grid>
-            </Border>
-
-            <Grid x:Name="ChatPane" Grid.Column="1">
-                <TextBlock x:Name="ChatEmpty" Text="SELECIONE UM AMIGO PARA COMEÇAR" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Grid x:Name="ChatView" Visibility="Collapsed">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Border Background="{DynamicResource T_171D26}" Padding="22,12">
-                        <Grid>
-                            <StackPanel Orientation="Horizontal">
-                                <Border Width="48" Height="48" Background="{DynamicResource PanelRaised}">
-                                    <Grid>
-                                        <TextBlock Text="&#xE77B;" Style="{StaticResource Icon}" FontSize="22" Foreground="{StaticResource TextMuted}"/>
-                                        <Image x:Name="ChatAvatar" Stretch="UniformToFill"/>
-                                    </Grid>
-                                </Border>
-                                <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock x:Name="ChatName" FontSize="20" FontWeight="SemiBold"/>
-                                    <TextBlock x:Name="ChatStatus" FontSize="14" Foreground="{StaticResource TextMuted}"/>
-                                </StackPanel>
-                            </StackPanel>
-                            <Button x:Name="ChatOpenSteamButton" Style="{StaticResource TabText}" Content="ABRIR NO STEAM" HorizontalAlignment="Right" VerticalAlignment="Center" Click="OnChatOpenSteamClick"/>
-                        </Grid>
-                    </Border>
-
-                    <ScrollViewer x:Name="ChatScroll" Grid.Row="1" VerticalScrollBarVisibility="Hidden" Focusable="False">
-                        <StackPanel x:Name="ChatMessages" Margin="26,16,26,16"/>
-                    </ScrollViewer>
-
-                    <StackPanel x:Name="ChatLogin" Grid.Row="1" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560">
-                        <TextBlock Text="Entre no chat da Steam" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        <TextBlock x:Name="ChatLoginText" TextWrapping="Wrap" TextAlignment="Center" FontSize="15" Foreground="{StaticResource TextSoft}" Margin="0,8,0,16"
-                                   Text="Para conversar por aqui, aprove o launcher no app da Steam no celular: Steam Guard > Entrar com código QR. Sua senha nunca passa pelo launcher."/>
-                        <Border x:Name="ChatQrHost" Visibility="Collapsed" Background="White" Padding="10" Width="230" Height="230" HorizontalAlignment="Center">
-                            <Image x:Name="ChatQr" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
-                        </Border>
-                        <TextBlock x:Name="ChatLoginStatus" TextWrapping="Wrap" TextAlignment="Center" FontSize="14" Foreground="{StaticResource TextMuted}" Margin="0,12,0,12"/>
-                        <Button x:Name="ChatLoginButton" Style="{StaticResource TabText}" Content="MOSTRAR CÓDIGO QR" HorizontalAlignment="Center" Click="OnChatLoginClick"/>
-                    </StackPanel>
-
-                    <StackPanel x:Name="ChatInputBar" Grid.Row="2" Margin="22,8,22,16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="ChatInput" FontSize="17" Padding="12,10" MaxLength="500" Background="{DynamicResource Panel}" Foreground="White"
-                                     BorderBrush="{DynamicResource Focus}" CaretBrush="White" KeyDown="OnChatInputKeyDown"/>
-                            <Button x:Name="ChatSendButton" Grid.Column="1" Style="{StaticResource TabText}" Content="ENVIAR" Margin="10,0,0,0" Click="OnChatSendClick"/>
-                        </Grid>
-                        <TextBlock x:Name="ChatHint" Text="Segure SELECT para mensagens rápidas" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="2,8,0,0"/>
-                    </StackPanel>
-                </Grid>
-            </Grid>
         </Grid>
 
         <Grid x:Name="MediaPage" Margin="0,56,0,56" Visibility="Collapsed">
@@ -615,22 +523,6 @@
             </Border>
         </Grid>
 
-        <!-- Quick message wheel: hold Select in a conversation, pick with the right stick, A sends -->
-        <Grid x:Name="WheelLayer" Visibility="Collapsed">
-            <Rectangle Fill="#CC000000"/>
-            <Border Width="900" Height="580" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{DynamicResource T_F2171D26}">
-                <Grid>
-                    <TextBlock Text="Mensagens rápidas" FontSize="22" FontWeight="SemiBold" Margin="26,18,0,0" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                    <Grid x:Name="WheelCanvas" Margin="0,30,0,0">
-                        <Ellipse Width="260" Height="260" Stroke="{DynamicResource T_3A4556}" StrokeThickness="6"/>
-                        <TextBlock Text="&#xE7FC;" Style="{StaticResource Icon}" FontSize="56" Foreground="{StaticResource TextSoft}"/>
-                    </Grid>
-                    <TextBlock Text="Segure SELECT   ·   analógico direito escolhe   ·   A envia   ·   solte SELECT para sair" FontSize="14"
-                               Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,16"/>
-                </Grid>
-            </Border>
-        </Grid>
-
         <!-- Side menu -->
         <Grid x:Name="MenuLayer" Visibility="Collapsed">
             <Rectangle x:Name="MenuScrim" Fill="{StaticResource Scrim}" MouseDown="OnScrimClick"/>
@@ -650,8 +542,6 @@
                         <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8F1;" Style="{StaticResource Icon}" Width="40"/><TextBlock Text="Biblioteca" FontSize="22"/></StackPanel></Button>
                     <Button Style="{StaticResource MenuItem}" Tag="Lojas" Click="OnMenuItemClick">
                         <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE719;" Style="{StaticResource Icon}" Width="40"/><TextBlock Text="Lojas" FontSize="22"/></StackPanel></Button>
-                    <Button Style="{StaticResource MenuItem}" Tag="Amigos" Click="OnMenuItemClick">
-                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE716;" Style="{StaticResource Icon}" Width="40"/><TextBlock Text="Amigos e conversas" FontSize="22"/></StackPanel></Button>
                     <Button Style="{StaticResource MenuItem}" Tag="Mídias" Click="OnMenuItemClick">
                         <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE91B;" Style="{StaticResource Icon}" Width="40"/><TextBlock Text="Mídias" FontSize="22"/></StackPanel></Button>
                     <Button Style="{StaticResource MenuItem}" Tag="Downloads" Click="OnMenuItemClick">

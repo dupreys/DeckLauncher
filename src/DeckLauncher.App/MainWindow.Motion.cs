@@ -306,7 +306,6 @@ public partial class MainWindow
             "Feed" => FeedPage,
             "Mídias" => MediaPage,
             "Lojas" => StoresPage,
-            "Amigos" => FriendsPage,
             "Downloads" => DownloadsPage,
             "Configurações" => SettingsPage,
             _ => OtherPage,

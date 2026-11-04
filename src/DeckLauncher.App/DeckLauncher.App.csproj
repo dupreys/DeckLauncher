@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>DeckLauncher.App</RootNamespace>
     <AssemblyName>DeckLauncher</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -17,13 +17,6 @@
     <Resource Include="Assets\Sounds\*.wav" />
     <!-- Optional store logos (Lojas page): drop store-steam.png / store-epic.png here and they ship next to the program. -->
     <None Include="Assets\store-*.png" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Draws the Steam chat sign-in QR code (MIT licence). -->
-    <PackageReference Include="QRCoder" Version="1.6.0" />
-    <!-- Talks to Steam like the Steam client does (chat messages). MIT licence. -->
-    <PackageReference Include="SteamKit2" Version="3.4.0" />
   </ItemGroup>
 
   <ItemGroup>

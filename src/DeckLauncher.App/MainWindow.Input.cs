@@ -35,7 +35,6 @@ public partial class MainWindow
         InitSession();
         ApplyOled();
         InitMedia();
-        InitFriends();
         StartHeroDrift();
     }
 
@@ -43,9 +42,8 @@ public partial class MainWindow
 
     private void GoBack()
     {
-        if (!MenuOpen && (WheelOpen || MediaViewerOpen || PowerOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen || ManageOpen || _page != "Início")) UiSound.Play("back");
-        if (WheelOpen) CloseWheel();
-        else if (MediaViewerOpen) CloseMediaViewer();
+        if (!MenuOpen && (MediaViewerOpen || PowerOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen || ManageOpen || _page != "Início")) UiSound.Play("back");
+        if (MediaViewerOpen) CloseMediaViewer();
         else if (LaunchOverlayOpen) _ = CancelLaunchAsync();
         else if (PowerOpen) PowerBack();
         else if (ProfileOpen) CloseProfile();
@@ -55,7 +53,6 @@ public partial class MainWindow
         else if (MenuOpen) CloseMenu();
         else if (ManageOpen) CloseManage();
         else if (_page == "Jogo") CloseGame();
-        else if (_page == "Amigos" && ChatOpen && FocusInChat) FocusFriendList();
         else if (_page != "Início") { ShowPage("Início"); FocusHome(); }
         if (!IsKeyboardFocusWithin || Keyboard.FocusedElement is not TextBox) VirtualKeyboard.Hide();
     }
@@ -144,12 +141,6 @@ public partial class MainWindow
             return;
         }
 
-        if (WheelOpen)
-        {
-            HandleWheelButton(button);
-            return;
-        }
-
         switch (button)
         {
             case GamepadButton.Up: Move(FocusNavigationDirection.Up); break;
@@ -158,12 +149,7 @@ public partial class MainWindow
             case GamepadButton.Right: Move(FocusNavigationDirection.Right); break;
             case GamepadButton.A: ActivateFocused(); break;
             case GamepadButton.B: GoBack(); break;
-            case GamepadButton.Select:
-                // In a conversation Select is held for the quick message wheel; a quick tap (see OnSelectTapped) still opens the menu.
-                if (ChatOpen && !MenuOpen) { _selectIgnored = true; break; }
-                _selectIgnored = false;
-                ToggleMenu(); // the side menu (power is its last item)
-                break;
+            case GamepadButton.Select: ToggleMenu(); break; // the side menu (power is its last item)
             case GamepadButton.LeftShoulder: CycleTabs(-1); break;
             case GamepadButton.RightShoulder: CycleTabs(+1); break;
             case GamepadButton.Y: OpenSearch(keyboard: true); break;
@@ -183,7 +169,7 @@ public partial class MainWindow
         }
 
         if (focused is TextBox) VirtualKeyboard.Hide();
-        if (TryGameMenuMove(direction) || TrySettingsMove(direction) || TryFriendsMove(direction)) return;
+        if (TryGameMenuMove(direction) || TrySettingsMove(direction)) return;
         if (direction == FocusNavigationDirection.Down && TryOpenFeedFromRow()) return;
         if (TryListMove(direction)) return;
         _navUntil = DateTime.UtcNow.AddMilliseconds(200);

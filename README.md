@@ -42,7 +42,7 @@
 
 ### Início e biblioteca
 - **Início:** linha de jogos recentes (até 20). Só o último jogo jogado aparece num cartão largo, com o fundo e o logotipo; os outros ficam em capa estreita. O fundo da tela muda conforme o jogo em foco e o papel de parede se move devagar. O jogo em foco ganha um brilho de luz por baixo, e sob ele aparecem o nome e o tempo jogado nas últimas duas semanas (ou **JOGANDO AGORA** enquanto o jogo está aberto).
-- **Novidades, Amigos e Recomendados:** apertando **para baixo** na linha de jogos. Mostra anúncios dos seus jogos da Steam, jogos atualizados neste PC, quem está jogando agora, atividade dos amigos e o calendário de lançamentos.
+- **Novidades, Amigos e Recomendados:** apertando **para baixo** na linha de jogos (ou escolhendo a aba abaixo dos cards). Mostra anúncios dos seus jogos da Steam, jogos atualizados neste PC, quem dos seus amigos está jogando agora, a atividade deles (o que jogaram nas últimas duas semanas) e o calendário de lançamentos. Só lê dados públicos da Steam com a sua chave de API; o launcher não faz login na sua conta nem envia mensagens.
 - **Biblioteca:** abas Todos / Steam / Epic / Adicionados / Favoritos, busca por nome e grade de capas centralizada.
 - **Página do jogo:** logotipo sobre o banner, botão **Jogar**, última sessão, tempo de jogo, loja, favorito, descrição, informações e quantos jogadores estão na Steam agora.
 - **Renomear e esconder:** botão "..." na página do jogo. Os jogos escondidos voltam em Configurações > Jogos.
@@ -57,18 +57,12 @@
 - **Entrando no jogo:** ao tocar em Jogar aparece uma tela com a arte e o logotipo do jogo, "Iniciando…" e um controle animado. Depois o jogo abre por cima.
 - **Menu durante o jogo:** segure **Select + B por 2 segundos** para abrir o menu do launcher por cima do jogo. O jogo continua aberto em segundo plano e mudo; no menu lateral aparece o jogo atual com **Voltar ao jogo** e **Encerrar jogo**.
 
-### Amigos e conversas
-- **Lista de amigos:** no menu lateral. Mostra os amigos on-line (com o jogo ou o status) e os off-line, com a última vez que ficaram on-line. Precisa da chave da API Web da Steam.
-- **Chat pelo launcher:** escolha um amigo e a conversa abre ao lado. Na primeira vez, aprove o código QR no app da Steam do celular (Steam Guard > Entrar com código QR). O launcher guarda só o nome da conta e um token da Steam, criptografados; a senha nunca passa por ele. As mensagens dos amigos chegam na hora. Enquanto a página Amigos está aberta, o launcher aparece como uma sessão on-line da sua conta. Em Configurações > Integrações, **Sair do chat** apaga o token.
-- **Abrir no Steam:** abre a mesma conversa no app da Steam.
-- **Mensagens rápidas:** numa conversa, **segure SELECT**, escolha com o **analógico direito** e aperte **A** para enviar; soltar o SELECT fecha a roda. Um toque rápido no SELECT continua abrindo o menu lateral. As 8 mensagens são editáveis em Configurações > Interface.
-
 ### Mídias
 - Mostra as capturas do Game Bar do Windows (pasta `Vídeos\Captures`) em miniaturas. Fotos e vídeos abrem dentro do launcher, só para visualizar.
 
 ### Sistema
 - **Configurações:** Sistema (tela cheia, efeitos sonoros, usar o mouse, iniciar com o Windows, atualizar a biblioteca, limpar o cache), Interface, Integrações e Jogos.
-- **Interface:** **Preto OLED** (toda a interface em preto, em vez do azul escuro) e edição das mensagens rápidas.
+- **Interface:** **Preto OLED** (toda a interface em preto, em vez do azul escuro).
 - **Perfil:** a foto no canto superior direito abre um painel para trocar a foto (qualquer imagem do PC ou a da Steam) e o nome mostrado no launcher; a conta da Steam não é alterada.
 - **Rede e som:** painéis na barra superior com as conexões ativas (Wi-Fi/Ethernet) e o volume do Windows.
 - **Ligar/Desligar:** suspender, desligar, reiniciar, finalizar sessão, minimizar e sair.
@@ -108,7 +102,6 @@ Coloque as chaves em **Configurações > Integrações**. Para a aba Amigos, o s
 | Select | F1 | Menu lateral (Ligar/Desligar é o último item) |
 | Select + B (segurar 2 s) | — | Abre o menu do launcher por cima de um jogo aberto |
 | LB / RB | — | Trocar de aba |
-| Segurar Select + analógico direito + A | — | Numa conversa: roda de mensagens rápidas |
 | Y | — | Buscar jogos (abre o teclado do Windows) |
 | X | — | Favoritar o jogo em foco |
 | — | F5 | Atualizar a biblioteca |
@@ -134,7 +127,6 @@ docs/screenshots/        prints usados neste README
 
 - A atividade dos amigos mostra o que eles jogaram nas últimas 2 semanas; a Steam não oferece o feed completo por API pública.
 - O calendário de lançamentos mostra lançamentos populares da Steam, não a sua lista de desejos.
-- O chat mostra as mensagens que chegam enquanto a página Amigos está aberta; o histórico antigo aparece só quando a Steam o fornece, e mensagens enviadas por outro dispositivo não aparecem.
 - O tempo de jogo recente só conta enquanto o launcher está aberto.
 - O tempo de jogo de Epic e jogos adicionados é medido pelo launcher (contado a partir desta versão, sem histórico anterior); jogos que abrem outro programa para rodar, como um launcher próprio, podem não ser detectados.
 

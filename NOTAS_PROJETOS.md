@@ -87,3 +87,9 @@
 
 ## v1.0.0
 - Versão final: README reescrito (todas as funções, 7 prints novos em docs/screenshots, Download simplificado, removidos Como rodar/Gerar executável/Testes/Publicar). Tag sugerida: v1.0.0.
+
+## v1.0.0 — instalador
+- Release agora gera só DeckLauncher-Setup-<versão>.exe (Inno Setup, installer/DeckLauncher.iss, igual ao LiteLauncher); sem zips. Instalação por usuário por padrão (PrivilegesRequired=lowest, pode pedir admin), pt-BR, atalho opcional na área de trabalho, abre o programa ao final. Dados do usuário (%AppData%\DeckLauncher) não são apagados ao desinstalar.
+
+## v1.0.1 — chat removido
+- A Steam restringiu a conta do usuário depois do login por QR (sessão SteamKit2 como cliente). TUDO do chat foi removido: SteamKit2/QRCoder, SteamLink/SteamChat, menu "Amigos e conversas", roda de mensagens rápidas, SteamChatToken/QuickMessages, Select-hold e analógico direito no Gamepad. Fica só a aba AMIGOS sob os cards (API pública com chave). NUNCA reintroduzir login/sessão de cliente na Steam.

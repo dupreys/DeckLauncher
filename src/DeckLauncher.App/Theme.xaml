@@ -102,36 +102,6 @@
         </Setter>
     </Style>
 
-    <!-- Friend / conversation row (Amigos): a flat bar, lit when focused -->
-    <Style x:Key="FriendRow" TargetType="Button">
-        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        <Setter Property="Foreground" Value="{StaticResource TextSoft}"/>
-        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-        <Setter Property="Cursor" Value="Hand"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border x:Name="Bar" Background="Transparent" Padding="22,6,16,6">
-                        <Grid>
-                            <Border x:Name="Marker" Width="3" HorizontalAlignment="Left" Margin="-22,0,0,0" Background="{StaticResource Accent}" Visibility="Collapsed"/>
-                            <ContentPresenter VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Bar" Property="Background" Value="{DynamicResource Focus}"/>
-                            <Setter TargetName="Marker" Property="Visibility" Value="Visible"/>
-                            <Setter Property="Foreground" Value="{StaticResource Text}"/>
-                        </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bar" Property="Background" Value="{DynamicResource T_2B323C}"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <!-- Game tile: a narrow cover; only the last played game (IsFeatured) is a wide hero card. -->
     <Style x:Key="GameTile" TargetType="Button">
         <Setter Property="Width" Value="207"/>

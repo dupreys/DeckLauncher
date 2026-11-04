@@ -281,8 +281,6 @@ public partial class MainWindow
         BuildAbout();
         BuildManualList();
         BuildHiddenList();
-        BuildQuickMessageEditor();
-        UpdateChatAccountText();
         if (!_keyTimerWired)
         {
             _keySaveTimer.Tick += (_, _) => { _keySaveTimer.Stop(); SaveSettings(); };
