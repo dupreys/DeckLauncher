@@ -88,6 +88,11 @@ public partial class MainWindow
             items = FindAll<Button>(LibGrid).Cast<UIElement>().ToList();
             columns = Math.Max(1, (int)Math.Round(LibGrid.ActualWidth / 310));
         }
+        else if (IsAncestor(AppsPanel, focused))
+        {
+            items = FindAll<Button>(AppsPanel).Cast<UIElement>().ToList();
+            columns = Math.Max(1, (int)Math.Floor(AppsScroll.ActualWidth / 444));
+        }
         else return false;
 
         // Down only matters inside the library grid (the home row hands it to the feed elsewhere).

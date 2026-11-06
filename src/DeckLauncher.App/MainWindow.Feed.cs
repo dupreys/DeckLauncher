@@ -7,8 +7,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using LiteLauncher.Core;
-using LiteLauncher.Core.Steam;
+using DeckLauncher.Core;
+using DeckLauncher.Core.Steam;
 
 namespace DeckLauncher.App;
 
@@ -250,6 +250,14 @@ public partial class MainWindow
             items.Add(CardRow(cards, "FriendGameTemplate"));
         }
 
+        var online = snapshot.Friends.Where(f => f.PersonaState != 0 && SteamFriends.ChatUrl(f.SteamId) is not null)
+            .OrderByDescending(f => f.GameId is not null).ThenBy(f => f.Name, StringComparer.CurrentCultureIgnoreCase).Take(30).ToList();
+        if (online.Count > 0)
+        {
+            items.Add(Section($"Amigos online ({online.Count})", "Ao escolher um amigo, a conversa abre no cliente oficial da Steam."));
+            items.Add(CardRow(online.Select(f => (object)new FriendChatCard(f)), "FriendChatTemplate"));
+        }
+
         items.Add(Section("Atividade"));
         items.Add(DayHeader("ÚLTIMAS 2 SEMANAS"));
         if (snapshot.Activity.Count == 0)
@@ -399,6 +407,7 @@ public partial class MainWindow
         var key = SteamKeyBox.Text.Trim();
         App.Settings.SteamWebApiKey = key.Length == 0 ? null : key;
         _friendsCache = null;
+        _library.ResetOwned();
         _feedCache.Clear();
         _keySaveTimer.Stop();
         _keySaveTimer.Start(); // saved shortly after typing stops

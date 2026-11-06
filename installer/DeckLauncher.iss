@@ -35,9 +35,15 @@ Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortugue
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "xboxmode"; Description: "Modo Xbox: usar o DeckLauncher como tela inicial da Experiência de Tela Cheia do Xbox (pede permissão de administrador)"; GroupDescription: "Modo Xbox:"
 
 [Files]
 Source: "..\out\app\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\out\fse\*"; DestDir: "{app}\fse"; Flags: ignoreversion; Tasks: xboxmode
+
+[Registry]
+; A ponte do Modo Xbox usa isto para achar o DeckLauncher.
+Root: HKCU; Subkey: "Software\DeckLauncher"; ValueType: string; ValueName: "InstallDir"; ValueData: "{app}"; Flags: uninsdeletekey
 
 [Icons]
 Name: "{autoprograms}\DeckLauncher"; Filename: "{app}\DeckLauncher.exe"
@@ -45,3 +51,33 @@ Name: "{autodesktop}\DeckLauncher"; Filename: "{app}\DeckLauncher.exe"; Tasks: d
 
 [Run]
 Filename: "{app}\DeckLauncher.exe"; Description: "{cm:LaunchProgram,DeckLauncher}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+// Instala o pacote do Modo Xbox (precisa de administrador: ele confia no certificado do pacote).
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
+begin
+  if (CurStep = ssPostInstall) and WizardIsTaskSelected('xboxmode') then
+  begin
+    WizardForm.StatusLabel.Caption := 'Instalando o Modo Xbox...';
+    if not ShellExec('runas', 'powershell.exe',
+        '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\fse\Install-FSE.ps1') + '"',
+        '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      ResultCode := -1;
+    if ResultCode <> 0 then
+      MsgBox('O DeckLauncher foi instalado, mas o Modo Xbox não pôde ser ativado (a permissão foi negada ou o Windows recusou o pacote).' + #13#10 +
+             'Você pode tentar de novo executando "Install-FSE.ps1" como administrador, na pasta "fse" dentro da pasta do programa.' + #13#10 +
+             'Detalhes: ' + ExpandConstant('{%TEMP}\DeckLauncher-ModoXbox.log'), mbInformation, MB_OK);
+  end;
+end;
+
+// Ao desinstalar, tira também o pacote do Modo Xbox.
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ResultCode: Integer;
+begin
+  if CurUninstallStep = usUninstall then
+    Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\fse\Remove-FSE.ps1') + '"',
+         '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;

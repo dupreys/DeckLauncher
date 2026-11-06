@@ -6,9 +6,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using LiteLauncher.Core;
-using LiteLauncher.Core.Settings;
-using LiteLauncher.Core.Steam;
+using DeckLauncher.Core;
+using DeckLauncher.Core.Settings;
+using DeckLauncher.Core.Steam;
 
 namespace DeckLauncher.App;
 

@@ -1,12 +1,14 @@
+using System.IO;
+using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using LiteLauncher.Core;
-using LiteLauncher.Core.Epic;
-using LiteLauncher.Core.Manual;
-using LiteLauncher.Core.Steam;
+using DeckLauncher.Core;
+using DeckLauncher.Core.Epic;
+using DeckLauncher.Core.Manual;
+using DeckLauncher.Core.Steam;
 
 namespace DeckLauncher.App;
 
@@ -26,6 +28,7 @@ public partial class MainWindow : Window
     private string _page = "Início";
     private GameItem? _heroItem;
     private bool _refreshing;
+    private List<GameItem> _notInstalled = new();
     private DateTime _lastRefresh = DateTime.MinValue;
 
     public MainWindow()
@@ -43,8 +46,10 @@ public partial class MainWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        ApplyFullscreen(App.Settings.StartFullscreen);
+        if (XboxMode.Active) XboxMode.Log("DeckLauncher aberto pelo Modo Xbox.");
+        ApplyFullscreen(App.Settings.StartFullscreen || XboxMode.Active);
         ApplyMouseMode();
+        _ = CheckForUpdateAsync(manual: false);
         await RefreshAsync();
     }
 
@@ -69,6 +74,7 @@ public partial class MainWindow : Window
             var games = await _library.LoadAsync();
             ApplyGames(games);
             _ = DownloadArtAsync(games);
+            _ = RefreshNotInstalledAsync(games);
         }
         finally
         {
@@ -76,6 +82,41 @@ public partial class MainWindow : Window
             _lastRefresh = DateTime.UtcNow;
         }
     }
+
+    /// <summary>Owned Steam games that are not installed (the "Não instalados" tab). Runs after the installed list is shown.</summary>
+    private async Task RefreshNotInstalledAsync(List<Game> installed)
+    {
+        try
+        {
+            var games = await _library.LoadNotInstalledAsync(installed, SteamIdValue());
+            ApplyNotInstalled(games);
+            if (games.Count > 0 && await _library.DownloadNotInstalledCoversAsync(games))
+                ApplyNotInstalled(await _library.LoadNotInstalledAsync(installed, SteamIdValue()));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+        {
+            // offline: the tab keeps what it had
+        }
+    }
+
+    private void ApplyNotInstalled(List<Game> games)
+    {
+        var items = games.Select(ItemFor).ToList();
+        var changed = !items.SequenceEqual(_notInstalled);
+        _notInstalled = items;
+        if (!changed) return;
+
+        // Re-setting the grid takes the focus away, so only redo it when the tab is the one in view.
+        if (_filter == "notinst") ApplyFilter();
+        else if (_tabs.TryGetValue("notinst", out var tab)) tab.Content = BuildTabLabel("NÃO INSTALADOS", items.Count);
+    }
+
+    private string NotInstalledEmptyText() => _library.NotInstalledProblem switch
+    {
+        "noid" => "Não achei a sua conta da Steam. Abra a Steam neste PC com a sua conta ou entre em Configurações > Integrações.",
+        "fetch" => "Não consegui ler os seus jogos da Steam. Veja a internet, a Web API key (Configurações > Integrações) e se os detalhes dos jogos estão públicos no seu perfil.",
+        _ => "Todos os seus jogos da Steam já estão instalados.",
+    };
 
     private async Task DownloadArtAsync(List<Game> games)
     {
@@ -117,7 +158,7 @@ public partial class MainWindow : Window
 
     private static readonly (string Key, string Title)[] TabDefs =
     {
-        ("all", "TODOS OS JOGOS"), ("steam", "STEAM"), ("epic", "EPIC"), ("manual", "ADICIONADOS"), ("fav", "FAVORITOS"),
+        ("all", "TODOS OS JOGOS"), ("steam", "STEAM"), ("epic", "EPIC"), ("manual", "ADICIONADOS"), ("fav", "FAVORITOS"), ("notinst", "NÃO INSTALADOS"), ("apps", "APLICATIVOS"),
     };
 
     private void BuildTabs()
@@ -129,6 +170,7 @@ public partial class MainWindow : Window
             _tabs[key] = tab;
             TabsPanel.Children.Add(tab);
         }
+        InitApps();
     }
 
     private bool InFilter(GameItem item, string filter) => filter switch
@@ -137,6 +179,7 @@ public partial class MainWindow : Window
         "epic" => item.Source == EpicProvider.ProviderName,
         "manual" => item.Source == ManualProvider.ProviderName,
         "fav" => item.IsFavorite,
+        "notinst" => item.Game.NotInstalled,
         _ => true,
     };
 
@@ -144,16 +187,27 @@ public partial class MainWindow : Window
     {
         foreach (var (key, title) in TabDefs)
         {
-            var count = _all.Count(i => InFilter(i, key));
+            var count = key == "apps" ? AppsCount : key == "notinst" ? _notInstalled.Count : _all.Count(i => InFilter(i, key));
             _tabs[key].Content = BuildTabLabel(title, count);
         }
 
         var text = SearchBox.Text.Trim();
-        var shown = _all.Where(i => InFilter(i, _filter)
+        var onApps = _filter == "apps";
+        LibScroll.Visibility = onApps ? Visibility.Collapsed : Visibility.Visible;
+        AppsScroll.Visibility = onApps ? Visibility.Visible : Visibility.Collapsed;
+        if (onApps)
+        {
+            LibEmpty.Visibility = Visibility.Collapsed;
+            RebuildApps();
+            return;
+        }
+
+        var shown = (_filter == "notinst" ? _notInstalled : _all).Where(i => InFilter(i, _filter)
                                     && (text.Length == 0 || i.Name.Contains(text, StringComparison.CurrentCultureIgnoreCase))).ToList();
         LibGrid.ItemsSource = shown;
         LibEmpty.Visibility = shown.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        LibEmpty.Text = _all.Count == 0 ? "Sua biblioteca está vazia." : "Nenhum jogo nesta lista.";
+        LibEmpty.Text = _filter == "notinst" ? NotInstalledEmptyText()
+            : _all.Count == 0 ? "Sua biblioteca está vazia." : "Nenhum jogo nesta lista.";
     }
 
     private object BuildTabLabel(string title, int count)
@@ -259,6 +313,12 @@ public partial class MainWindow : Window
 
     private void FocusLibrary(int attempt = 0)
     {
+        if (_filter == "apps")
+        {
+            if (FindFirst<Button>(AppsPanel) is { } firstApp) firstApp.Focus();
+            else if (_tabs.TryGetValue("apps", out var appsTab)) appsTab.Focus();
+            return;
+        }
         if (FindFirst<Button>(LibGrid) is { } first) { first.Focus(); return; }
         if (_tabs.TryGetValue(_filter, out var tab) && (attempt >= 3 || LibGrid.Items.Count == 0)) { tab.Focus(); return; }
         if (attempt < 3) Dispatcher.BeginInvoke(() => FocusLibrary(attempt + 1), DispatcherPriority.Loaded);

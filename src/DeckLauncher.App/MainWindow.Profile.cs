@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using LiteLauncher.Core.Settings;
+using DeckLauncher.Core.Settings;
 
 namespace DeckLauncher.App;
 

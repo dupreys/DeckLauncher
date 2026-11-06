@@ -1,0 +1,1 @@
+Aqui ficam arquivos publicos da extensao do app (a pasta precisa existir no pacote).

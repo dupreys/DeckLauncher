@@ -1,7 +1,7 @@
 using System.IO;
 using System.Windows.Threading;
-using LiteLauncher.Core;
-using LiteLauncher.Core.Steam;
+using DeckLauncher.Core;
+using DeckLauncher.Core.Steam;
 
 namespace DeckLauncher.App;
 

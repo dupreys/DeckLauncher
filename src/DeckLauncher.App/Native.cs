@@ -56,6 +56,12 @@ internal static class Native
         return (int)pid;
     }
 
+    /// <summary>Minimizes a window (used as a last resort to uncover the launcher when Windows refuses to move it to the front).</summary>
+    public static void Minimize(IntPtr window)
+    {
+        if (window != IntPtr.Zero) ShowWindow(window, 6 /* SW_MINIMIZE */);
+    }
+
     /// <summary>The main window of the first of these programs that has one (IntPtr.Zero when none).</summary>
     public static IntPtr FindMainWindow(IEnumerable<int> processIds)
     {

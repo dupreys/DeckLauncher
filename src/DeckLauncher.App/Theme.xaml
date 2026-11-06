@@ -706,6 +706,23 @@
         </Button>
     </DataTemplate>
 
+    <DataTemplate x:Key="FriendChatTemplate">
+        <Button Style="{StaticResource FeedCard}" Width="360" Height="96" Margin="0,0,14,0" AutomationProperties.Name="{Binding Name}">
+            <Grid Margin="14,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Image Source="{Binding Icon}" Width="64" Height="64" Stretch="UniformToFill" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Name}" FontSize="22" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Status}" FontSize="15" Foreground="{StaticResource PlayGreen}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                    <TextBlock Text="CONVERSAR NA STEAM" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Button>
+    </DataTemplate>
+
     <DataTemplate x:Key="ActivityTemplate">
         <Button Style="{StaticResource FeedCard}" Margin="0,0,54,14">
             <StackPanel>

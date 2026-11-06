@@ -9,7 +9,7 @@
 - Regras: responder em português; sem marcas/arte Xbox/Steam/Valve; avisar sobre RELEASE_NOTES.md antes de tag.
 
 ## Projeto novo — launcher com visual do Steam OS / Big Picture (iniciado 31/10/2026)
-- Pasta: /home/claude/deck (solução própria). Reaproveita o Core do LiteLauncher v59 (namespaces LiteLauncher.Core mantidos de propósito; renomear só com compilador à mão).
+- Pasta: /home/claude/deck (solução própria). Reaproveita o Core do LiteLauncher v59 (namespaces DeckLauncher.Core mantidos de propósito; renomear só com compilador à mão).
 - Mesmas funções: capas, fundos, logos e capturas do SteamGridDB; integração Steam e Epic; jogos manuais.
 - Visual (dos 8 prints do usuário): barra superior (busca, sino, globo, relógio, avatar); barra inferior com MENU (Xbox/F1) e dicas A SELECIONAR / B VOLTAR; início com fundo grande do jogo + "Jogos recentes" (primeiro cartão largo, demais capas) + abas NOVIDADES/AMIGOS/RECOMENDADOS; menu lateral (Início, Biblioteca, Loja, Amigos e conversas, Mídias, Downloads, Configurações, Ligar/Desligar); biblioteca com abas (Todos, Instalados, Favoritos, Coleções, Não Steam...) e grade de capas; página do jogo (banner + Jogar verde + última sessão/tempo + abas); Downloads; Configurações com menu esquerdo; diálogo Ligar/Desligar.
 - Sem logotipos/arte da Valve: só inspiração de layout e cores.
@@ -93,3 +93,28 @@
 
 ## v1.0.1 — chat removido
 - A Steam restringiu a conta do usuário depois do login por QR (sessão SteamKit2 como cliente). TUDO do chat foi removido: SteamKit2/QRCoder, SteamLink/SteamChat, menu "Amigos e conversas", roda de mensagens rápidas, SteamChatToken/QuickMessages, Select-hold e analógico direito no Gamepad. Fica só a aba AMIGOS sob os cards (API pública com chave). NUNCA reintroduzir login/sessão de cliente na Steam.
+
+## v1.1.0 — aba Aplicativos
+- Biblioteca > APLICATIVOS (MainWindow.Apps.cs): lê o menu Iniciar uma vez (StartApps.ReadAsync, cache de 3 min), mostra Discord, Explorador de Arquivos, Edge, Microsoft Store, Configurações, AMD Adrenalin e NVIDIA App só se instalados (Explorador/Store/Configurações têm fallback por exe/URI). Ícone via ShellThumbnail (shell:AppsFolder\<AppID>), estilo MediaTile das Lojas, nome embaixo. Tile "+" adiciona .exe/.lnk (AppSettings.ManualApps, ManualApp.cs); X remove. Navegação por controle em TryListMove (444 px por coluna). AppsShown ficou sem uso.
+
+## v1.2.0 — atualizações e Aplicativos completos
+- Atualizações: MainWindow.Update.cs usa UpdateChecker (GitHub releases/latest, sem chave). Constante UpdateRepository = "SEU-USUARIO/DeckLauncher" PRECISA ser trocada pelo "dono/repo" real (enquanto for o placeholder, a verificação fica desligada). Aviso (toast) uma vez por versão (AppSettings.NotifiedUpdate); linha em Configurações > Sistema com VERIFICAR/BAIXAR. Nada é baixado/instalado sozinho.
+- Aplicativos: sites (ManualApp.Url, favicon via google.com/s2/favicons, só o domínio é enviado), ordem (AppsOrder, chaves "b:Nome"/"m:caminho-ou-url"), ocultar (HiddenApps) e tile "Mostrar ocultos". X/botão direito abre menu (AppMenuPanel); "+" abre AppAddPanel (programa ou site). Helpers testáveis em Core/Apps/AppList.cs (+ AppListTests.cs).
+
+## v1.2.1
+- Fluxo do sofá (botão Guia, v1.3.0 de teste) REVERTIDO: o Windows abria o Game Bar junto. Base volta a ser a v1.2.0.
+- Amigos: seção "Amigos online" na aba AMIGOS (FriendChatCard) que abre steam://friends/message/<id> no cliente oficial da Steam; link validado por SteamFriends.ChatUrl (só números). Nenhum login/sessão da Steam no launcher.
+- Limpeza: namespaces e pastas renomeados LiteLauncher.Core -> DeckLauncher.Core (e .Tests); mantidos de propósito por compatibilidade: pasta %AppData%\LiteLauncher (importação), Entropy "LiteLauncher.settings.v1" (DPAPI) e Format "LiteLauncher-settings" (backup). AppsShown removido (JSON antigo com essa chave é ignorado). Testes novos: FriendChatAndBackupTests.cs.
+
+## v1.4.0 — Modo Xbox (FSE) por padrão (NÃO TESTADO NO WINDOWS: sem compilador no sandbox)
+- Problema: no Modo Xbox (AnyFSE) Select+B segurado não abria o menu do jogo. Causa provável: sem a capacidade "gamingHome" o Windows não deixa o launcher assumir a frente sobre o jogo. Não foi possível reproduzir aqui; por isso há registro de diagnóstico.
+- Modelo: Playnite-FSE-Launcher (leeson865). Pacote MSIX "DeckLauncherFSE" (fse/AppxManifest.xml com windows.gamingApp + CustomCapability Microsoft.appCategory.gamingHome_8wekyb3d8bbwe + fse/CustomCapability.SCCD) contendo a ponte src/DeckLauncher.Fse (net48, DeckLauncherFSE.exe): mutex por sessão, janela-handshake 1,5 s, abre DeckLauncher.exe --xbox (caminho em HKCU\Software\DeckLauncher\InstallDir, gravado pelo instalador) e fica vivo até ele fechar.
+- Build: fse/Build-Fse.ps1 (release.yml, runner windows) compila a ponte, monta, empacota com makeappx, gera certificado CN=DeckLauncher e assina com signtool; instalador (installer/DeckLauncher.iss) tem a tarefa "xboxmode" (marcada por padrão) que roda installer/fse/Install-FSE.ps1 como administrador (confia no .cer em LocalMachine\TrustedPeople, Add-AppxPackage; se falhar liga AllowDevelopmentWithoutDevLicense temporariamente e restaura). Desinstalar remove o pacote (Remove-FSE.ps1). Log: %TEMP%\DeckLauncher-ModoXbox.log.
+- App: XboxMode.cs (--xbox => tela cheia + xbox-mode.log); OpenInGameMenu agora registra o combo e, se o launcher não ficar ativo em 600 ms, minimiza a janela do jogo (Native.Minimize) e tenta de novo; Gamepad.Activity registra se o controle chega com o launcher em segundo plano.
+- Requer testar: (1) se o pacote instala e aparece em Configurações > Jogos > Experiência de tela cheia; (2) Select+B no Modo Xbox; (3) ler xbox-mode.log. O Guia é exclusivo do Windows no Modo Xbox (toque abre Game Bar, longo = alternador de tarefas) — por isso o botão Guia não serve (v1.3.0 revertida).
+- Backups: backup_v1.2.0 e DeckLauncher_v1.2.1.zip continuam intactos.
+
+## v1.5.0 — Steam: jogos não instalados e Instalar
+- Aba "NÃO INSTALADOS" na Biblioteca (lista separada _notInstalled; NÃO entra em _all, então Início/Todos/Favoritos não mudam). LibraryService.LoadNotInstalledAsync usa SteamOwnedGames (API com chave, senão XML público do perfil), cache de 15 min, capas via CoverDownloader (máx. 40 por execução). Mensagens vazias: noid / fetch / tudo instalado.
+- Página do jogo: botão vira "Instalar" (steam://install/<id> pelo cliente da Steam; progresso na página Downloads já existente) e há "VER NA LOJA" (steam://store/<id>) para jogos Steam. SteamDownloads.StoreUri + teste. Nada de login/sessão da Steam.
+- Base anterior: v1.4.0 (Modo Xbox, ainda sem retorno de teste).

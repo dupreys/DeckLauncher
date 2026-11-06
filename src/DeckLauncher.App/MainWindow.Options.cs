@@ -1,13 +1,13 @@
 using System.Windows;
 using System.Windows.Input;
-using LiteLauncher.Core;
+using DeckLauncher.Core;
 
 namespace DeckLauncher.App;
 
 // Game options on the game page: a name of your own for the game, and hiding it from the lists.
 public partial class MainWindow
 {
-    private bool OptionsOpen => OptionsPanel.Visibility == Visibility.Visible;
+    private bool OptionsOpen => OptionsPanel.Visibility == Visibility.Visible || AppMenuPanel.Visibility == Visibility.Visible || AppAddPanel.Visibility == Visibility.Visible;
 
     private void OnOptionsClick(object sender, RoutedEventArgs e) => OpenOptions();
 
@@ -23,6 +23,8 @@ public partial class MainWindow
 
     private void CloseOptions()
     {
+        if (AppAddPanel.Visibility == Visibility.Visible) { CloseAppAdd(); return; }
+        if (AppMenuPanel.Visibility == Visibility.Visible) { CloseAppMenu(); return; }
         OptionsPanel.Visibility = Visibility.Collapsed;
         VirtualKeyboard.Hide();
         OptionsButton.Focus();

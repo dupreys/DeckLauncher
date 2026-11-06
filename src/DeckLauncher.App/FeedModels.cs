@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
-using LiteLauncher.Core.Steam;
+using DeckLauncher.Core.Steam;
 
 namespace DeckLauncher.App;
 
@@ -182,6 +182,21 @@ internal sealed class ActivityCard : FeedItem
     public string FriendName { get; }
     public string Text { get; }
     public string Detail { get; }
+}
+
+/// <summary>An online friend; clicking opens the chat in the official Steam client (the launcher never chats itself).</summary>
+internal sealed class FriendChatCard : FeedItem
+{
+    public FriendChatCard(SteamFeeds.FriendData friend)
+    {
+        Name = friend.Name;
+        Status = SteamFriends.StatusOf(friend.PersonaState, friend.GameName);
+        Url = SteamFriends.ChatUrl(friend.SteamId);
+        LoadIcon(friend.Avatar, 64);
+    }
+
+    public string Name { get; }
+    public string Status { get; }
 }
 
 /// <summary>A card that only opens an address (the discovery banner).</summary>

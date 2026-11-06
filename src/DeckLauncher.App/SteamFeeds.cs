@@ -4,8 +4,8 @@ using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using LiteLauncher.Core;
-using LiteLauncher.Core.Steam;
+using DeckLauncher.Core;
+using DeckLauncher.Core.Steam;
 
 namespace DeckLauncher.App;
 

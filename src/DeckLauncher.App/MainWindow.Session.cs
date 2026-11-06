@@ -7,7 +7,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using LiteLauncher.Core;
+using DeckLauncher.Core;
 
 namespace DeckLauncher.App;
 
@@ -42,6 +42,10 @@ public partial class MainWindow
     {
         _sessionTimer.Tick += async (_, _) => await SessionTickAsync();
         _gamepad.MenuComboHeld += () => Dispatcher.BeginInvoke(new Action(OpenInGameMenu));
+        _gamepad.Activity += () =>
+        {
+            if (!IsActive) XboxMode.LogOnce("background-input", "O controle respondeu com o launcher em segundo plano (a entrada chega até aqui).");
+        };
         Closed += (_, _) =>
         {
             if (_session is { Muted: true } s) GameAudio.SetMuted(s.Pids, false); // never leave a game silent
@@ -96,7 +100,9 @@ public partial class MainWindow
     private void UpdatePlayButton()
     {
         var same = _session is { } s && _gameItem is { } g && GameSorter.Key(s.Item.Game) == GameSorter.Key(g.Game);
-        PlayButton.Content = same ? "Retomar" : "Jogar";
+        var notInstalled = _gameItem?.Game.NotInstalled == true;
+        PlayButton.Content = same ? "Retomar" : notInstalled ? "Instalar" : "Jogar";
+        StorePageButton.Visibility = _gameItem?.Game.Source == DeckLauncher.Core.Steam.SteamProvider.ProviderName ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private static bool BelongsTo(GameSession session, string path)
@@ -333,16 +339,35 @@ public partial class MainWindow
     /// <summary>Select + B held for two seconds, from anywhere: the launcher comes to the front with its menu open on the game.</summary>
     private void OpenInGameMenu()
     {
+        XboxMode.Log($"Select + B segurado. Jogo em andamento: {_session is not null}. Launcher ativo: {IsActive}.");
         if (_session is not { } session) return;
         if (LaunchOverlayOpen) HideLaunchOverlay();
         if (QuickOpen) CloseQuick();
 
         BringLauncherToFront();
+        _ = EnsureLauncherInFrontAsync(session);
         session.Muted = true; // the launcher is in front: the game goes quiet
         GameAudio.SetMuted(session.Pids, true);
 
         if (!MenuOpen) OpenMenu();
         MenuGameItem.Focus();
+    }
+
+    /// <summary>
+    /// In the Xbox full-screen mode Windows can refuse to move the launcher over a game. A moment later, if the launcher still is
+    /// not the active window, the game's window is minimized so the launcher is what the player sees.
+    /// </summary>
+    private async Task EnsureLauncherInFrontAsync(GameSession session)
+    {
+        await Task.Delay(600);
+        if (IsActive) { XboxMode.Log("O launcher ficou na frente."); return; }
+
+        XboxMode.Log("O launcher não ficou na frente; minimizando a janela do jogo.");
+        Native.Minimize(Native.FindMainWindow(session.Pids));
+        BringLauncherToFront();
+        await Task.Delay(600);
+        XboxMode.Log(IsActive ? "Agora o launcher está na frente." : "O launcher continua sem o foco.");
+        if (IsActive && !MenuOpen) { OpenMenu(); MenuGameItem.Focus(); }
     }
 
     private void BringLauncherToFront()

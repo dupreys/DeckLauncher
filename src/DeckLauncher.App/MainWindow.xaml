@@ -108,6 +108,13 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
+            <ScrollViewer x:Name="AppsScroll" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                <StackPanel Margin="0,28,0,60">
+                    <WrapPanel x:Name="AppsPanel" HorizontalAlignment="Center"/>
+                    <TextBlock Text="X ou botão direito do mouse: opções do aplicativo (mover, ocultar, remover)" FontSize="13"
+                               Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
             <TextBlock x:Name="LibEmpty" Grid.Row="1" Visibility="Collapsed" Text="Nenhum jogo nesta lista." FontSize="17"
                        Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,60,0,0"/>
         </Grid>
@@ -138,6 +145,7 @@
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="PlayButton" Style="{StaticResource PlayButton}" Content="Jogar" Click="OnPlayClick"/>
+                        <Button x:Name="StorePageButton" Style="{StaticResource TabText}" Content="VER NA LOJA" VerticalAlignment="Center" Margin="22,0,0,0" Click="OnStorePageClick"/>
                         <StackPanel Margin="34,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="ÚLTIMA SESSÃO" Style="{StaticResource StatLabel}"/>
                             <TextBlock x:Name="StatLast" Style="{StaticResource StatValue}"/>
@@ -262,6 +270,15 @@
                                     <TextBlock x:Name="CacheSizeText" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/>
                                 </StackPanel>
                                 <Button Style="{StaticResource TabText}" Content="LIMPAR" HorizontalAlignment="Right" Click="OnClearCacheClick"/>
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource SettingsRow}">
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,160,0">
+                                    <TextBlock Text="Atualizações" FontSize="19"/>
+                                    <TextBlock x:Name="UpdateText" Text="Toque em VERIFICAR para procurar uma versão nova." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <Button x:Name="UpdateButton" Style="{StaticResource TabText}" Content="VERIFICAR" HorizontalAlignment="Right" Click="OnUpdateClick"/>
                             </Grid>
                         </Border>
                         <TextBlock Text="Sobre" Style="{StaticResource SectionTitle}"/>
@@ -585,6 +602,44 @@
                 <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Esconder este jogo da lista" Click="OnOptionsHideClick"/>
                 <Border Height="3" Background="{DynamicResource T_0D1117}"/>
                 <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Voltar" Click="OnOptionsBackClick"/>
+            </StackPanel>
+        </Grid>
+        <!-- Apps tab: options of one app -->
+        <Grid x:Name="AppMenuPanel" Visibility="Collapsed">
+            <Rectangle Fill="#E6000000" MouseDown="OnAppMenuDimClick"/>
+            <StackPanel Width="560" VerticalAlignment="Center" KeyboardNavigation.DirectionalNavigation="Contained">
+                <TextBlock Text="APLICATIVO" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Accent}" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="AppMenuName" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,22" TextTrimming="CharacterEllipsis"/>
+                <Button x:Name="AppMenuLeft" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Mover para a esquerda" Click="OnAppMenuMoveLeft"/>
+                <Button x:Name="AppMenuRight" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Mover para a direita" Click="OnAppMenuMoveRight"/>
+                <Border Height="3" Background="{DynamicResource T_0D1117}"/>
+                <Button x:Name="AppMenuRemove" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Remover da lista" Click="OnAppMenuRemove"/>
+                <Border Height="3" Background="{DynamicResource T_0D1117}"/>
+                <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Voltar" Click="OnAppMenuBack"/>
+            </StackPanel>
+        </Grid>
+        <!-- Apps tab: add a program or a website -->
+        <Grid x:Name="AppAddPanel" Visibility="Collapsed">
+            <Rectangle Fill="#E6000000" MouseDown="OnAppAddDimClick"/>
+            <StackPanel Width="560" VerticalAlignment="Center" KeyboardNavigation.DirectionalNavigation="Contained">
+                <TextBlock Text="ADICIONAR À LISTA" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Accent}" HorizontalAlignment="Center" Margin="0,0,0,22"/>
+                <StackPanel x:Name="AppAddChoice">
+                    <Button x:Name="AppAddProgramButton" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Programa (.exe ou atalho)..." Click="OnAppAddProgramClick"/>
+                    <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Site (link)..." Click="OnAppAddSiteClick"/>
+                    <Border Height="3" Background="{DynamicResource T_0D1117}"/>
+                    <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Voltar" Click="OnAppAddBackClick"/>
+                </StackPanel>
+                <StackPanel x:Name="AppAddSite" Visibility="Collapsed">
+                    <TextBlock Text="Endereço do site" FontSize="15" Foreground="{StaticResource TextSoft}" Margin="0,0,0,6"/>
+                    <TextBox x:Name="AppAddUrlBox" FontSize="18" Padding="10,8" MaxLength="300" Background="{DynamicResource Panel}" Foreground="White"
+                             BorderBrush="{DynamicResource Focus}" CaretBrush="White"/>
+                    <TextBlock Text="Nome (opcional)" FontSize="15" Foreground="{StaticResource TextSoft}" Margin="0,14,0,6"/>
+                    <TextBox x:Name="AppAddNameBox" FontSize="18" Padding="10,8" MaxLength="60" Background="{DynamicResource Panel}" Foreground="White"
+                             BorderBrush="{DynamicResource Focus}" CaretBrush="White"/>
+                    <Button x:Name="AppAddSaveButton" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Margin="0,14,0,0" Content="Salvar" Click="OnAppAddSaveClick"/>
+                    <Border Height="3" Background="{DynamicResource T_0D1117}"/>
+                    <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Voltar" Click="OnAppAddBackClick"/>
+                </StackPanel>
             </StackPanel>
         </Grid>
         <!-- Profile: photo and name -->

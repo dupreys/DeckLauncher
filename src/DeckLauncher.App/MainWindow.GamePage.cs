@@ -1,12 +1,14 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
-using LiteLauncher.Core;
-using LiteLauncher.Core.Manual;
-using LiteLauncher.Core.Steam;
+using DeckLauncher.Core;
+using DeckLauncher.Core.Manual;
+using DeckLauncher.Core.Steam;
 
 namespace DeckLauncher.App;
 
@@ -168,6 +170,11 @@ public partial class MainWindow
     private void OnPlayClick(object sender, RoutedEventArgs e)
     {
         if (_gameItem is not { } item) return;
+        if (item.Game.NotInstalled)
+        {
+            InstallSteamGame(item);
+            return;
+        }
         if (_session is { } running)
         {
             if (GameSorter.Key(running.Item.Game) == GameSorter.Key(item.Game)) ResumeGame();
@@ -185,6 +192,36 @@ public partial class MainWindow
         StatLast.Text = "hoje";
         _lastRefresh = DateTime.MinValue; // refresh the lists when the launcher comes back to the front
         BeginSession(item);
+    }
+
+    /// <summary>Asks the Steam client to install the game (it does the download; progress shows on the Downloads page).</summary>
+    private void InstallSteamGame(GameItem item)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(SteamDownloads.InstallUri(item.Game.Id)) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or ArgumentException)
+        {
+            ShowToast("Não foi possível abrir a Steam. Ela está instalada?");
+            return;
+        }
+
+        _lastRefresh = DateTime.MinValue; // the lists refresh when the launcher comes back to the front
+        ShowToast($"Pedi à Steam para instalar {item.Name}. Acompanhe em Downloads (a Steam pode pedir para escolher a pasta).");
+    }
+
+    private void OnStorePageClick(object sender, RoutedEventArgs e)
+    {
+        if (_gameItem is not { } item || item.Game.Source != SteamProvider.ProviderName) return;
+        try
+        {
+            Process.Start(new ProcessStartInfo(SteamDownloads.StoreUri(item.Game.Id)) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or ArgumentException)
+        {
+            ShowToast("Não foi possível abrir a Steam. Ela está instalada?");
+        }
     }
 
     private static void RecordPlayed(Game game)

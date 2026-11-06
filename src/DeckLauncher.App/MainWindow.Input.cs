@@ -233,11 +233,12 @@ public partial class MainWindow
     /// <summary>X on a game tile or on the game page: add to or remove from the favourites.</summary>
     private void ToggleFavoriteOfFocused()
     {
+        if (OpenAppMenuForFocused()) return;
         GameItem? item = Keyboard.FocusedElement is FrameworkElement { DataContext: GameItem focusedItem } ? focusedItem : null;
         if (item is null && _page == "Jogo") item = _gameItem;
         if (item is null) return;
 
-        var key = LiteLauncher.Core.GameSorter.Key(item.Game);
+        var key = DeckLauncher.Core.GameSorter.Key(item.Game);
         if (!App.Settings.Favorites.Remove(key)) App.Settings.Favorites.Add(key);
         SaveSettings();
         if (_page == "Jogo" && ReferenceEquals(item, _gameItem)) UpdateFavoriteIcon(item);

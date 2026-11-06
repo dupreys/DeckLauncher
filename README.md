@@ -43,7 +43,12 @@
 ### Início e biblioteca
 - **Início:** linha de jogos recentes (até 20). Só o último jogo jogado aparece num cartão largo, com o fundo e o logotipo; os outros ficam em capa estreita. O fundo da tela muda conforme o jogo em foco e o papel de parede se move devagar. O jogo em foco ganha um brilho de luz por baixo, e sob ele aparecem o nome e o tempo jogado nas últimas duas semanas (ou **JOGANDO AGORA** enquanto o jogo está aberto).
 - **Novidades, Amigos e Recomendados:** apertando **para baixo** na linha de jogos (ou escolhendo a aba abaixo dos cards). Mostra anúncios dos seus jogos da Steam, jogos atualizados neste PC, quem dos seus amigos está jogando agora, a atividade deles (o que jogaram nas últimas duas semanas) e o calendário de lançamentos. Só lê dados públicos da Steam com a sua chave de API; o launcher não faz login na sua conta nem envia mensagens.
-- **Biblioteca:** abas Todos / Steam / Epic / Adicionados / Favoritos, busca por nome e grade de capas centralizada.
+- **Biblioteca:** abas Todos / Steam / Epic / Adicionados / Favoritos / Aplicativos, busca por nome e grade de capas centralizada.
+- **Não instalados:** a aba lista os jogos da sua conta Steam que ainda não estão instalados; na página do jogo, **Instalar** pede à Steam para baixar (o progresso aparece em Downloads) e **Ver na loja** abre a página dele no cliente da Steam.
+- **Aplicativos:** atalhos com o ícone e o nome de Discord, Explorador de Arquivos, Microsoft Edge, Microsoft Store, Configurações e, se estiverem instalados, AMD Adrenalin e NVIDIA App; você também pode adicionar qualquer programa (.exe ou atalho) pelo botão + e remover com X.
+- **Mais controle nos aplicativos:** adicione também links de sites (YouTube, Netflix, Twitch…) com o favicon do site, mude a ordem dos cartões e oculte os que não usa (X ou botão direito do mouse sobre o cartão).
+- **Amigos online:** na aba AMIGOS da tela inicial, os amigos que estão online aparecem com o status; escolher um deles abre a conversa no cliente oficial da Steam (o launcher não faz login nem envia mensagens).
+- **Atualizações:** ao abrir, o launcher avisa se há uma versão nova no GitHub; em Configurações > Sistema > Atualizações você verifica na hora e abre a página de download.
 - **Página do jogo:** logotipo sobre o banner, botão **Jogar**, última sessão, tempo de jogo, loja, favorito, descrição, informações e quantos jogadores estão na Steam agora.
 - **Renomear e esconder:** botão "..." na página do jogo. Os jogos escondidos voltam em Configurações > Jogos.
 - **Gerenciar arte:** escolha à mão capas, fundos, logotipos e capturas de tela, ou restaure o padrão.
@@ -79,6 +84,10 @@
 2. Abra o arquivo e siga o assistente de instalação (dá para criar um atalho na área de trabalho).
 3. Ao terminar, abra o **DeckLauncher** pelo atalho ou pelo menu Iniciar.
 
+### Modo Xbox (Experiência de Tela Cheia)
+
+No assistente há a opção **Modo Xbox**, marcada por padrão: ela instala uma pequena "ponte" que deixa o DeckLauncher aparecer em **Configurações > Jogos > Experiência de tela cheia** do Windows 11, ao lado do Xbox. Escolha o **DeckLauncher (Modo Xbox)** nessa lista para usá-lo como tela inicial do console. Ao instalar, o Windows pede permissão de administrador (ela confia no certificado do pacote e pode ligar o Modo de desenvolvedor só durante a instalação). Para tirar, desinstale o DeckLauncher ou desmarque a opção. Dentro do Modo Xbox o launcher abre em tela cheia e grava `%AppData%\DeckLauncher\xbox-mode.log` para ajudar a achar problemas de foco com jogos.
+
 Requisitos: Windows 10 ou 11. Steam e/ou Epic Games instalados (opcional: dá para usar só jogos adicionados).
 
 ## Configuração
@@ -113,11 +122,13 @@ Na tela inicial, **para baixo** na linha de jogos abre Novidades, Amigos e Recom
 
 ```
 src/
-  LiteLauncher.Core/     lógica sem interface: Steam, Epic, jogos manuais, arte, configurações
+  DeckLauncher.Core/     lógica sem interface: Steam, Epic, jogos manuais, arte, configurações
   DeckLauncher.App/      aplicativo WPF (telas, tema, controle, animações e sons)
 tests/
-  LiteLauncher.Core.Tests/   testes xunit da lógica
-installer/               script do instalador (Inno Setup)
+  DeckLauncher.Core.Tests/   testes xunit da lógica
+src/DeckLauncher.Fse/    ponte do Modo Xbox (programa .NET Framework 4.8 que abre o DeckLauncher)
+fse/                     pacote do Modo Xbox (manifesto, capacidade, imagens e script que monta e assina o .msix)
+installer/               script do instalador (Inno Setup) e scripts do Modo Xbox
 .github/workflows/       build e release automáticos (GitHub Actions)
 assets/                  ícone (SVG, PNG, .ico) e imagem de pré-visualização
 docs/screenshots/        prints usados neste README

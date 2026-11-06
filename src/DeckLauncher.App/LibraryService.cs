@@ -1,11 +1,11 @@
 using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
-using LiteLauncher.Core;
-using LiteLauncher.Core.Epic;
-using LiteLauncher.Core.Manual;
-using LiteLauncher.Core.Settings;
-using LiteLauncher.Core.Steam;
+using DeckLauncher.Core;
+using DeckLauncher.Core.Epic;
+using DeckLauncher.Core.Manual;
+using DeckLauncher.Core.Settings;
+using DeckLauncher.Core.Steam;
 
 namespace DeckLauncher.App;
 
@@ -65,6 +65,63 @@ internal sealed class LibraryService
         for (var i = 0; i < games.Count; i++)
             games[i] = WithCachedArt(PlayTracker.Apply(GameOverrides.Apply(games[i], App.Settings.GameOverrides), App.Settings.PlayRecords));
         return games;
+    }
+
+    // ---- Steam games that are owned but not installed -----------------------------------------
+
+    private IReadOnlyList<OwnedGame>? _owned;
+    private string? _ownedFor;
+    private DateTime _ownedAt = DateTime.MinValue;
+
+    /// <summary>Why the "not installed" list is empty: null (nothing wrong), "noid" (no Steam account found) or "fetch" (could not read the games).</summary>
+    public string? NotInstalledProblem { get; private set; }
+
+    /// <summary>Forget the owned-games list (the Web API key changed).</summary>
+    public void ResetOwned() => _owned = null;
+
+    /// <summary>The Steam games the account owns that are not installed on this PC. The owned list is kept for 15 minutes.</summary>
+    public async Task<List<Game>> LoadNotInstalledAsync(IReadOnlyList<Game> installed, string? steamId)
+    {
+        NotInstalledProblem = null;
+        if (string.IsNullOrWhiteSpace(steamId))
+        {
+            NotInstalledProblem = "noid";
+            return new List<Game>();
+        }
+
+        if (_owned is null || _ownedFor != steamId || DateTime.UtcNow - _ownedAt > TimeSpan.FromMinutes(15))
+        {
+            var fetched = await SteamOwnedGames.FetchAsync(Http, steamId, App.Settings.SteamWebApiKey);
+            if (fetched is null)
+            {
+                NotInstalledProblem = "fetch";
+                return new List<Game>();
+            }
+            _owned = fetched;
+            _ownedFor = steamId;
+            _ownedAt = DateTime.UtcNow;
+        }
+
+        var ids = installed.Where(g => g.Source == SteamProvider.ProviderName).Select(g => g.Id).ToHashSet();
+        var games = SteamOwnedGames.NotInstalled(_owned, ids, SteamPath).ToList();
+        games.RemoveAll(g => App.Settings.HiddenGames.ContainsKey(GameSorter.Key(g)));
+        for (var i = 0; i < games.Count; i++) games[i] = WithCachedArt(GameOverrides.Apply(games[i], App.Settings.GameOverrides));
+        return games;
+    }
+
+    /// <summary>Downloads Steam's own cover for not-installed games that have none (at most 40 per run). True when something new was saved.</summary>
+    public async Task<bool> DownloadNotInstalledCoversAsync(IReadOnlyList<Game> games)
+    {
+        var fetched = false;
+        var tried = 0;
+        foreach (var game in games.Where(g => g.CoverPath is null))
+        {
+            if (tried >= 40) break;
+            if (!_artTried.Add(GameSorter.Key(game) + "#cover")) continue;
+            tried++;
+            if (await CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Cover) is not null) fetched = true;
+        }
+        return fetched;
     }
 
     /// <summary>Starts the game through its store. Returns false when that failed.</summary>

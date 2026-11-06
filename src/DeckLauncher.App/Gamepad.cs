@@ -33,6 +33,11 @@ public sealed class Gamepad : IDisposable
 
     public event Action<GamepadButton>? ButtonPressed;
 
+    /// <summary>Any controller button went down (used only to tell whether input reaches us while a game is in front).</summary>
+    public event Action? Activity;
+
+    private bool _anyDown;
+
     /// <summary>Select + Start held together for about a second and a half (works even when no window has focus).</summary>
     public event Action? ComboHeld;
 
@@ -60,6 +65,10 @@ public sealed class Gamepad : IDisposable
     private void Poll()
     {
         if (!TryReadXInput(out var pad) && !TryReadJoystick(out pad)) return;
+
+        var any = pad.A || pad.B || pad.X || pad.Y || pad.Start || pad.Select || pad.LeftShoulder || pad.RightShoulder || pad.Up || pad.Down || pad.Left || pad.Right;
+        if (any && !_anyDown) Activity?.Invoke();
+        _anyDown = any;
 
         Update(GamepadButton.Up, pad.Up, repeat: true);
         Update(GamepadButton.Down, pad.Down, repeat: true);

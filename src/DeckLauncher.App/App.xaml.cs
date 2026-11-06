@@ -1,6 +1,6 @@
 using System.IO;
 using System.Windows;
-using LiteLauncher.Core.Settings;
+using DeckLauncher.Core.Settings;
 
 namespace DeckLauncher.App;
 
