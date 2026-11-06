@@ -40,6 +40,19 @@ jobs:
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
           -p:Version=${{ steps.version.outputs.version }} -o out/app
 
+      # Windows PowerShell 5.1 (e não o pwsh 7): os cmdlets de certificado (New-SelfSignedCertificate...) funcionam direto nele.
+      # Se o pacote do Modo Xbox falhar, a release sai sem essa opção (o instalador detecta a ausência) e um aviso aparece na execução.
+      - name: Gerar o pacote do Modo Xbox
+        shell: powershell
+        continue-on-error: true
+        run: .\fse\Build-Fse.ps1 -Version "${{ steps.version.outputs.version }}"
+
+      - name: Conferir o pacote do Modo Xbox
+        shell: pwsh
+        run: |
+          if (Test-Path out\fse\DeckLauncherFSE.msix) { Write-Host "Pacote do Modo Xbox gerado." }
+          else { Write-Host "::warning::O pacote do Modo Xbox NÃO foi gerado: o instalador sairá sem a opção Modo Xbox. Veja o passo anterior."; if (Test-Path out\fse) { Remove-Item out\fse -Recurse -Force } }
+
       - name: Instalar o Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y

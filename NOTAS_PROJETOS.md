@@ -118,3 +118,7 @@
 - Aba "NÃO INSTALADOS" na Biblioteca (lista separada _notInstalled; NÃO entra em _all, então Início/Todos/Favoritos não mudam). LibraryService.LoadNotInstalledAsync usa SteamOwnedGames (API com chave, senão XML público do perfil), cache de 15 min, capas via CoverDownloader (máx. 40 por execução). Mensagens vazias: noid / fetch / tudo instalado.
 - Página do jogo: botão vira "Instalar" (steam://install/<id> pelo cliente da Steam; progresso na página Downloads já existente) e há "VER NA LOJA" (steam://store/<id>) para jogos Steam. SteamDownloads.StoreUri + teste. Nada de login/sessão da Steam.
 - Base anterior: v1.4.0 (Modo Xbox, ainda sem retorno de teste).
+
+## v1.5.1 — correção da release (instalador sem out\fse)
+- Erro no GitHub: "No files found matching ...\out\fse\*" (o passo do pacote do Modo Xbox não gerou arquivos; também é possível que a pasta oculta .github não tenha sido atualizada no envio). O instalador agora só inclui o Modo Xbox se out\fse\DeckLauncherFSE.msix existir (diretiva #ifdef HasFse); o passo do pacote roda em Windows PowerShell 5.1 (certificados) com continue-on-error e emite aviso se falhar.
+- Lembrete: a tag precisa ser a da versão (v1.5.1); a tag v1.0.1 já foi usada antes.

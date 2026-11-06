@@ -24,5 +24,8 @@ jobs:
       - name: Build
         run: dotnet build DeckLauncher.sln -c Release --no-restore
 
+      - name: Build da ponte do Modo Xbox
+        run: dotnet build src/DeckLauncher.Fse/DeckLauncher.Fse.csproj -c Release
+
       - name: Test
         run: dotnet test DeckLauncher.sln -c Release --no-build --verbosity normal

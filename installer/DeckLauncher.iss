@@ -33,13 +33,22 @@ RestartApplications=no
 [Languages]
 Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
+; O Modo Xbox só entra no instalador se o pacote foi gerado antes (fse\Build-Fse.ps1 cria out\fse). Sem ele, o instalador sai normal.
+#if FileExists(AddBackslash(SourcePath) + "..\out\fse\DeckLauncherFSE.msix")
+  #define HasFse
+#endif
+
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+#ifdef HasFse
 Name: "xboxmode"; Description: "Modo Xbox: usar o DeckLauncher como tela inicial da Experiência de Tela Cheia do Xbox (pede permissão de administrador)"; GroupDescription: "Modo Xbox:"
+#endif
 
 [Files]
 Source: "..\out\app\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
+#ifdef HasFse
 Source: "..\out\fse\*"; DestDir: "{app}\fse"; Flags: ignoreversion; Tasks: xboxmode
+#endif
 
 [Registry]
 ; A ponte do Modo Xbox usa isto para achar o DeckLauncher.
@@ -52,6 +61,7 @@ Name: "{autodesktop}\DeckLauncher"; Filename: "{app}\DeckLauncher.exe"; Tasks: d
 [Run]
 Filename: "{app}\DeckLauncher.exe"; Description: "{cm:LaunchProgram,DeckLauncher}"; Flags: nowait postinstall skipifsilent
 
+#ifdef HasFse
 [Code]
 // Instala o pacote do Modo Xbox (precisa de administrador: ele confia no certificado do pacote).
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -81,3 +91,4 @@ begin
     Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\fse\Remove-FSE.ps1') + '"',
          '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
 end;
+#endif

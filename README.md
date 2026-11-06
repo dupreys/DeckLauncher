@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dupreys/DeckLauncher/actions/workflows/build.yml"><img alt="Build" src="https://github.com/dupreys/DeckLauncher/actions/workflows/build.yml/badge.svg"></a>
-  <a href="https://github.com/dupreys/DeckLauncher/releases/latest"><img alt="Última versão" src="https://img.shields.io/github/v/release/dupreys/DeckLauncher?color=1A9FFF"></a>
+  <a href="https://github.com/SEU-USUARIO/DeckLauncher/actions/workflows/build.yml"><img alt="Build" src="https://github.com/SEU-USUARIO/DeckLauncher/actions/workflows/build.yml/badge.svg"></a>
+  <a href="https://github.com/SEU-USUARIO/DeckLauncher/releases/latest"><img alt="Última versão" src="https://img.shields.io/github/v/release/SEU-USUARIO/DeckLauncher?color=1A9FFF"></a>
   <img alt=".NET 8" src="https://img.shields.io/badge/.NET-8.0-512BD4">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6">
   <img alt="WPF" src="https://img.shields.io/badge/UI-WPF-1A9FFF">
