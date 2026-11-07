@@ -68,8 +68,10 @@ public class HomeStyleSettingTests
 {
     [Theory]
     [InlineData("Xbox", "Xbox")]
-    [InlineData("Simple", "Simple")]
-    [InlineData("Cinema", "Cinema")]
+    [InlineData("Panel", "Panel")]
+    [InlineData("Room", "Room")]
+    [InlineData("Simple", "Xbox")]
+    [InlineData("Cinema", "Xbox")]
     [InlineData("nonsense", "Xbox")]
     [InlineData("", "Xbox")]
     public void Home_style_falls_back_to_xbox(string saved, string expected)

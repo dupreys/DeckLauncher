@@ -83,7 +83,7 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Bar" Background="Transparent">
                         <Grid>
-                            <Border x:Name="Marker" Width="3" HorizontalAlignment="Left" Background="{StaticResource Accent}" Visibility="Collapsed"/>
+                            <Border x:Name="Marker" Width="3" HorizontalAlignment="Left" Background="{DynamicResource Accent}" Visibility="Collapsed"/>
                             <ContentPresenter VerticalAlignment="Center" Margin="40,0,16,0"/>
                         </Grid>
                     </Border>
@@ -302,6 +302,7 @@
                     <Grid>
                         <Border x:Name="Frame" BorderThickness="3" BorderBrush="Transparent" Background="{DynamicResource Panel}"
                                 RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform><ScaleTransform x:Name="Zoom"/></Border.RenderTransform>
                             <ContentPresenter/>
                         </Border>
                         <!-- Name and recent play time under the focused cover (sits in the gap below the tile). -->
@@ -316,13 +317,22 @@
                         </StackPanel>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <!-- The white outline is the sliding selector (LibCursor in MainWindow.xaml); the tile only grows a little. -->
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
-                            <Setter TargetName="Frame" Property="RenderTransform">
-                                <Setter.Value><ScaleTransform ScaleX="1.04" ScaleY="1.04"/></Setter.Value>
-                            </Setter>
                             <Setter TargetName="Caption" Property="Visibility" Value="Visible"/>
                             <Setter Property="Panel.ZIndex" Value="5"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" To="1.04" Duration="0:0:0.16"/>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" To="1.04" Duration="0:0:0.16"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.16"/>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.16"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -458,7 +468,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Track" Property="Background" Value="{StaticResource Accent}"/>
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource Accent}"/>
                             <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right"/>
                             <Setter TargetName="Knob" Property="Margin" Value="0,0,3,0"/>
                         </Trigger>
@@ -497,7 +507,7 @@
                             <Setter Property="Foreground" Value="White"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Bar" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            <Setter TargetName="Bar" Property="BorderBrush" Value="{DynamicResource Accent}"/>
                             <Setter Property="Foreground" Value="White"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -742,4 +752,217 @@
             </StackPanel>
         </Button>
     </DataTemplate>
+
+    <!-- ===== Home styles "Painel" and "Sala (OLED)" ===== -->
+    <!-- Rounded tile whose picture is the Background (an ImageBrush set by the data template). Focus: white outline. -->
+    <Style x:Key="PanelTile" TargetType="Button">
+        <Setter Property="Margin" Value="0,0,16,16"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Background" Value="{DynamicResource Panel}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" CornerRadius="16" BorderThickness="3" BorderBrush="Transparent" Background="{TemplateBinding Background}"
+                            RenderTransformOrigin="0.5,0.5" SnapsToDevicePixels="True">
+                        <Border.RenderTransform><ScaleTransform x:Name="Zoom"/></Border.RenderTransform>
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" To="1.03" Duration="0:0:0.15"/>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" To="1.03" Duration="0:0:0.15"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15"/>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Big rounded-square game icon of the "Sala" home: grows when focused. -->
+    <Style x:Key="RoomIcon" TargetType="Button">
+        <Setter Property="Width" Value="150"/>
+        <Setter Property="Height" Value="150"/>
+        <Setter Property="Margin" Value="18,0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Background" Value="#1C1C1E"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" CornerRadius="34" BorderThickness="4" BorderBrush="Transparent" Background="{TemplateBinding Background}"
+                            RenderTransformOrigin="0.5,0.5" SnapsToDevicePixels="True">
+                        <Border.RenderTransform><ScaleTransform x:Name="Zoom"/></Border.RenderTransform>
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" To="1.18" Duration="0:0:0.18"/>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" To="1.18" Duration="0:0:0.18"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15"/>
+                                    <DoubleAnimation Storyboard.TargetName="Zoom" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Info tile at the bottom of the "Painel" home (Biblioteca, Downloads...). -->
+    <Style x:Key="InfoTile" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
+        <Setter Property="Margin" Value="0,0,16,0"/>
+        <Setter Property="Padding" Value="22,14"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Frame" CornerRadius="14" BorderThickness="3" BorderBrush="Transparent" Background="{DynamicResource T_171D26}" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                            <Setter TargetName="Frame" Property="Background" Value="{DynamicResource T_2A3442}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Shortcut chip under the icons of the "Sala" home. -->
+    <Style x:Key="RoomChip" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource TextSoft}"/>
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="7,0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Pill" CornerRadius="26" Background="#1C1C1E" Padding="26,13">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="#FFFFFF"/>
+                            <Setter Property="Foreground" Value="#000000"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Style picker card in Settings > Interface (a toggle used like a radio button: see OnHomeStyleClick). -->
+    <Style x:Key="StyleCard" TargetType="ToggleButton">
+        <Setter Property="Margin" Value="0,0,16,0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Frame" CornerRadius="12" BorderThickness="3" BorderBrush="Transparent" Background="{DynamicResource T_111823}" Padding="10">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Shows the element only while the game has no picture yet (name as fallback). -->
+    <Style x:Key="ShowWhenNoCover" TargetType="FrameworkElement">
+        <Setter Property="Visibility" Value="Collapsed"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Cover}" Value="{x:Null}">
+                <Setter Property="Visibility" Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Colour dot (Settings > Interface > Cor de destaque); used like a radio button. -->
+    <Style x:Key="Swatch" TargetType="ToggleButton">
+        <Setter Property="Width" Value="44"/>
+        <Setter Property="Height" Value="44"/>
+        <Setter Property="Margin" Value="0,0,14,0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Ring" CornerRadius="22" BorderThickness="3" BorderBrush="Transparent" Padding="3">
+                        <Ellipse Fill="{TemplateBinding Background}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Ring" Property="BorderBrush" Value="#FFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Ring" Property="BorderBrush" Value="#99FFFFFF"/>
+                            <Setter TargetName="Ring" Property="Background" Value="#33FFFFFF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Segmented choice (Pequeno / Médio / Grande); used like a radio button. -->
+    <Style x:Key="SegButton" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="{StaticResource TextSoft}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="0,0,10,0"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Pill" CornerRadius="20" Background="{DynamicResource T_111823}" BorderThickness="2" BorderBrush="Transparent" Padding="24,10">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Accent}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Pill" Property="BorderBrush" Value="#FFFFFF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

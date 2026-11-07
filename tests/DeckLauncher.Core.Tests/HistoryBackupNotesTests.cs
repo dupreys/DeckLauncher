@@ -61,13 +61,13 @@ public class HistoryBackupNotesTests
     [Fact]
     public void Backup_never_contains_keys_and_import_never_brings_them_in()
     {
-        var settings = new AppSettings { Accent = "#FF0000", SteamWebApiKey = "SECRET1", SteamGridDbApiKey = "SECRET2", HomeStyle = "Cinema" };
+        var settings = new AppSettings { Accent = "#FF0000", SteamWebApiKey = "SECRET1", SteamGridDbApiKey = "SECRET2", HomeStyle = "Room" };
         settings.ManualGames.Add(new ManualGame { Id = "1", Name = "G", ExePath = "C:\\g.exe" });
         var json = SettingsBackup.Export(settings);
         Assert.DoesNotContain("SECRET", json);
 
         var imported = SettingsBackup.Import(json)!;
-        Assert.Equal("Cinema", imported.HomeStyle);
+        Assert.Equal("Room", imported.HomeStyle);
         Assert.Single(imported.ManualGames);
 
         var target = new AppSettings { SteamWebApiKey = "KEEP" };

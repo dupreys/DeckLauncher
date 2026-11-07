@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using DeckLauncher.Core;
 using DeckLauncher.Core.Epic;
@@ -42,11 +43,17 @@ public partial class MainWindow : Window
         InitInput();
     }
 
-    private void UpdateClock() => Clock.Text = DateTime.Now.ToString("HH:mm");
+    private void UpdateClock()
+    {
+        Clock.Text = DateTime.Now.ToString("HH:mm");
+        UpdateRoomStatus();
+    }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         if (XboxMode.Active) XboxMode.Log("DeckLauncher aberto pelo Modo Xbox.");
+        ApplyHomeStyle();
+        ApplyAppearance();
         ApplyFullscreen(App.Settings.StartFullscreen || XboxMode.Active);
         ApplyMouseMode();
         _ = CheckForUpdateAsync(manual: false);
@@ -149,6 +156,7 @@ public partial class MainWindow : Window
         EmptyText.Text = _library.AnyStoreFound
             ? "Nenhum jogo instalado foi encontrado. Instale um jogo na Steam ou na Epic, ou adicione um manualmente."
             : "Steam e Epic não foram encontradas neste PC. Instale uma delas ou adicione jogos manualmente.";
+        FillHomeStyles(recent, any, EmptyText.Text);
 
         ApplyFilter();
         if (_page == "Início" && !MenuOpen && !IsFocusInside(HomePage)) FocusHome();
@@ -253,19 +261,81 @@ public partial class MainWindow : Window
         FocusLibrary();
     }
 
-    /// <summary>Keeps the whole focus frame (and its zoom) inside the visible area while scrolling.</summary>
+    /// <summary>
+    /// The white selector glides to the focused cover and the list scrolls smoothly so the cover (and the caption under it)
+    /// stay in view.
+    /// </summary>
     private void OnLibTileFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
-        if (sender is FrameworkElement tile)
-            tile.BringIntoView(new Rect(-24, -24, tile.ActualWidth + 48, tile.ActualHeight + 48 + 56)); // + room for the caption
+        if (sender is not FrameworkElement tile || tile.ActualWidth <= 0) return;
+        var pos = tile.TranslatePoint(new Point(0, 0), LibContent);
+        const double zoom = 0.02; // the tile grows 4 %: the selector is a little bigger than the tile
+        var tileWidth = tile.ActualWidth * CardScale;
+        var tileHeight = tile.ActualHeight * CardScale;
+        var x = pos.X - tileWidth * zoom;
+        var y = pos.Y - tileHeight * zoom;
+        var w = tileWidth * (1 + 2 * zoom);
+        var h = tileHeight * (1 + 2 * zoom);
+
+        var span = TimeSpan.FromMilliseconds(170);
+        if (LibCursor.Visibility != Visibility.Visible || !IsLoaded)
+        {
+            LibCursor.Visibility = Visibility.Visible;
+            foreach (var property in new[] { Canvas.LeftProperty, Canvas.TopProperty, WidthProperty, HeightProperty }) LibCursor.BeginAnimation(property, null);
+            Canvas.SetLeft(LibCursor, x);
+            Canvas.SetTop(LibCursor, y);
+            LibCursor.Width = w;
+            LibCursor.Height = h;
+        }
+        else
+        {
+            void Glide(DependencyProperty property, double to) =>
+                LibCursor.BeginAnimation(property, new DoubleAnimation(to, span) { EasingFunction = EaseOut });
+            Glide(Canvas.LeftProperty, x);
+            Glide(Canvas.TopProperty, y);
+            Glide(WidthProperty, w);
+            Glide(HeightProperty, h);
+        }
+
+        ScrollLibraryTo(pos.Y, tileHeight);
+    }
+
+    private void ScrollLibraryTo(double tileTop, double tileHeight)
+    {
+        var current = _libAnimating ? _libTarget : LibScroll.VerticalOffset;
+        var viewport = LibScroll.ViewportHeight;
+        if (viewport <= 0) return;
+        var needTop = tileTop - 28;
+        var needBottom = tileTop + tileHeight + 28 + 56; // + room for the caption under the cover
+        var target = current;
+        if (needTop < current) target = needTop;
+        else if (needBottom > current + viewport) target = needBottom - viewport;
+        else return;
+        if (target < 70) target = 0; // first row: show the whole top margin
+        target = Math.Clamp(target, 0, Math.Max(0, LibScroll.ExtentHeight - viewport));
+        if (Math.Abs(target - current) < 0.5) return;
+
+        _libTarget = target;
+        _libAnimating = true;
+        var animation = new DoubleAnimation(LibScroll.VerticalOffset, target, TimeSpan.FromMilliseconds(220)) { EasingFunction = EaseOut };
+        animation.Completed += (_, _) => { if (Math.Abs(_libTarget - target) < 0.5) _libAnimating = false; };
+        BeginAnimation(LibOffsetProperty, animation);
+    }
+
+    private void OnLibGridLostFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (e.NewFocus is DependencyObject next && IsAncestor(LibGrid, next)) return;
+        LibCursor.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>Whole columns only, so the grid can be centred instead of leaving a wide empty strip on the right.</summary>
-    private void OnLibScrollSizeChanged(object sender, SizeChangedEventArgs e)
+    private void OnLibScrollSizeChanged(object sender, SizeChangedEventArgs e) => UpdateLibGridWidth();
+
+    private void UpdateLibGridWidth()
     {
         const double cell = 244 + 66; // tile + both side margins
-        var columns = Math.Max(1, (int)Math.Floor((e.NewSize.Width - 40) / cell));
-        LibGrid.Width = columns * cell;
+        var columns = Math.Max(1, (int)Math.Floor((LibScroll.ActualWidth - 40) / (cell * CardScale)));
+        LibGrid.Width = columns * cell; // the card size scales the whole grid (LayoutTransform), so this stays in unscaled units
     }
 
     private void OnTileClick(object sender, RoutedEventArgs e)
@@ -303,12 +373,6 @@ public partial class MainWindow : Window
             if (FindFirst<T>(child) is { } deeper) return deeper;
         }
         return null;
-    }
-
-    private void FocusHome(int attempt = 0)
-    {
-        if (RecentRow.Items.Count > 0 && FindFirst<Button>(RecentRow) is { } first) { first.Focus(); return; }
-        if (attempt < 20 && RecentRow.Items.Count > 0) Dispatcher.BeginInvoke(() => FocusHome(attempt + 1), DispatcherPriority.Loaded);
     }
 
     private void FocusLibrary(int attempt = 0)
@@ -383,6 +447,8 @@ public partial class MainWindow : Window
         var home = page == "Início";
         var library = page == "Biblioteca";
         var game = page == "Jogo";
+        if (page == "Biblioteca" && previous is not ("Biblioteca" or "Jogo") && _tabs.TryGetValue("all", out var allTab) && allTab.IsChecked != true)
+            allTab.IsChecked = true; // the Library always opens on "all games"; Aplicativos picks its own tab afterwards
         HomePage.Visibility = home ? Visibility.Visible : Visibility.Collapsed;
         LibraryPage.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
         GamePage.Visibility = game ? Visibility.Visible : Visibility.Collapsed;
@@ -401,8 +467,9 @@ public partial class MainWindow : Window
         StoresPage.Visibility = stores ? Visibility.Visible : Visibility.Collapsed;
         OtherPage.Visibility = home || library || game || downloads || settings || feed || media || stores ? Visibility.Collapsed : Visibility.Visible;
         if (home) StartHeroDrift(); else StopHeroDrift();
+        if (home && previous != page && !IsClassicHome) { UpdateRoomStatus(refreshSlowParts: true); _ = RefreshHomeInfoAsync(force: false); }
         SearchHost.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
-        HeroImage.Visibility = home || game ? Visibility.Visible : Visibility.Collapsed;
+        HeroImage.Visibility = (home && HomeStyleKey != StyleRoomKey) || game ? Visibility.Visible : Visibility.Collapsed;
         HeroImagePrev.Visibility = HeroImage.Visibility;
         if (previous != page) PlayPageTransition(page);
         OtherTitle.Text = page;

@@ -19,6 +19,13 @@ public partial class MainWindow
         "RowOffset", typeof(double), typeof(MainWindow),
         new PropertyMetadata(0.0, (d, e) => ((MainWindow)d).RecentScroll.ScrollToHorizontalOffset((double)e.NewValue)));
 
+    private double _libTarget;
+    private bool _libAnimating;
+
+    private static readonly DependencyProperty LibOffsetProperty = DependencyProperty.Register(
+        "LibOffset", typeof(double), typeof(MainWindow),
+        new PropertyMetadata(0.0, (d, e) => ((MainWindow)d).LibScroll.ScrollToVerticalOffset((double)e.NewValue)));
+
     private static IEasingFunction EaseOut => new CubicEase { EasingMode = EasingMode.EaseOut };
 
     private void InitSounds()
@@ -46,7 +53,7 @@ public partial class MainWindow
             e.Handled = true;
             return;
         }
-        if (e.Key is Key.Left or Key.Right or Key.Down && TryListMove(e.Key == Key.Left ? FocusNavigationDirection.Left : e.Key == Key.Right ? FocusNavigationDirection.Right : FocusNavigationDirection.Down))
+        if (e.Key is Key.Left or Key.Right or Key.Down or Key.Up && TryListMove(e.Key == Key.Left ? FocusNavigationDirection.Left : e.Key == Key.Right ? FocusNavigationDirection.Right : e.Key == Key.Up ? FocusNavigationDirection.Up : FocusNavigationDirection.Down))
         {
             e.Handled = true;
             return;
@@ -73,7 +80,8 @@ public partial class MainWindow
     /// </summary>
     private bool TryListMove(FocusNavigationDirection direction)
     {
-        if (direction is not (FocusNavigationDirection.Left or FocusNavigationDirection.Right or FocusNavigationDirection.Down)) return false;
+        if (_page == "Início" && TryHomeStyleMove(direction)) return true;
+        if (direction is not (FocusNavigationDirection.Left or FocusNavigationDirection.Right or FocusNavigationDirection.Down or FocusNavigationDirection.Up)) return false;
         if (Keyboard.FocusedElement is not UIElement focused) return false;
 
         List<UIElement> items;
@@ -96,7 +104,7 @@ public partial class MainWindow
         else return false;
 
         // Down only matters inside the library grid (the home row hands it to the feed elsewhere).
-        if (direction == FocusNavigationDirection.Down && columns == int.MaxValue) return false;
+        if (direction is FocusNavigationDirection.Down or FocusNavigationDirection.Up && columns == int.MaxValue) return false;
 
         var index = items.IndexOf(focused);
         if (index < 0)
@@ -104,6 +112,15 @@ public partial class MainWindow
             // focus is on something inside a tile: find the tile that contains it
             index = items.FindIndex(i => IsAncestor(i, focused));
             if (index < 0) return false;
+        }
+
+        if (direction == FocusNavigationDirection.Up)
+        {
+            // First row: the normal movement goes up to the tabs. Otherwise exactly one row up, no geometric search.
+            if (index < columns) return false;
+            _navUntil = DateTime.UtcNow.AddMilliseconds(200);
+            items[index - columns].Focus();
+            return true;
         }
 
         if (direction == FocusNavigationDirection.Down)

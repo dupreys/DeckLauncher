@@ -6,6 +6,28 @@ namespace DeckLauncher.App;
 
 internal static class Native
 {
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SystemPowerStatus
+    {
+        public byte ACLineStatus;
+        public byte BatteryFlag;
+        public byte BatteryLifePercent;
+        public byte SystemStatusFlag;
+        public int BatteryLifeTime;
+        public int BatteryFullLifeTime;
+    }
+
+    [DllImport("kernel32.dll")]
+    private static extern bool GetSystemPowerStatus(out SystemPowerStatus status);
+
+    /// <summary>Battery charge in percent and whether it is charging; null on a PC without a battery.</summary>
+    public static (int Percent, bool Charging)? Battery()
+    {
+        if (!GetSystemPowerStatus(out var status)) return null;
+        if ((status.BatteryFlag & 128) != 0 || status.BatteryFlag == 255 || status.BatteryLifePercent > 100) return null; // no battery / unknown
+        return (status.BatteryLifePercent, status.ACLineStatus == 1 && (status.BatteryFlag & 8) != 0);
+    }
+
     /// <summary>Puts the PC to sleep (not hibernate). Returns false when Windows refuses.</summary>
     public static bool Sleep() => SetSuspendState(false, false, false);
 

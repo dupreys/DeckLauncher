@@ -122,3 +122,39 @@
 ## v1.5.1 — correção da release (instalador sem out\fse)
 - Erro no GitHub: "No files found matching ...\out\fse\*" (o passo do pacote do Modo Xbox não gerou arquivos; também é possível que a pasta oculta .github não tenha sido atualizada no envio). O instalador agora só inclui o Modo Xbox se out\fse\DeckLauncherFSE.msix existir (diretiva #ifdef HasFse); o passo do pacote roda em Windows PowerShell 5.1 (certificados) com continue-on-error e emite aviso se falhar.
 - Lembrete: a tag precisa ser a da versão (v1.5.1); a tag v1.0.1 já foi usada antes.
+
+## v1.6.0 — estilos da tela inicial: Painel e Sala (OLED)
+- Configurações > Interface > "Estilo da tela inicial": Clássico (padrão, o de sempre), Painel e Sala (OLED). Salvo em AppSettings.HomeStyle ("Xbox" | "Panel" | "Room"; valores antigos "Simple"/"Cinema" voltam para "Xbox"). Troca na hora, sem reiniciar.
+- Painel: jogo em destaque (último jogado, com logo e "Jogar") + grade 3x2 dos recentes + atalhos Biblioteca (nº de jogos), Downloads (em andamento/%), Aplicativos, Amigos (online/jogando, precisa da chave da API Web) e Capturas. Fundo com a arte do jogo em foco.
+- Sala: fundo preto puro, relógio grande, saudação + amigos online, 6 ícones arredondados dos recentes (o focado cresce), nome e tempo recente do jogo e chips Biblioteca/Lojas/Aplicativos/Downloads/Amigos.
+- Código: MainWindow.HomeStyles.cs (ApplyHomeStyle, FillHomeStyles, FocusHome por estilo, cliques/atalhos, relógio e info); estilos novos no Theme.xaml (PanelTile, RoomIcon, InfoTile, RoomChip, StyleCard); HomePage agora tem ClassicHome/PanelHome/RoomHome. Navegação por controle usa o foco direcional padrão nos dois novos estilos.
+- NÃO TESTADO NO WINDOWS (sem compilador no sandbox).
+- PONTO DE REVERSÃO: backup_v1.5.1 (+ DeckLauncher_v1.5.1.zip) = versão sem os novos estilos. Os dados salvos são compatíveis (a v1.5.1 ignora/normaliza HomeStyle).
+- Não escolhidos por enquanto: Cinema, Carrossel, cores de destaque, tamanho dos cards, "fundo do jogo em foco" e "relógio grande" como opções.
+
+## v1.6.1 — ajustes do Painel/Sala
+- Textos dos atalhos do Painel agora brancos (InfoTile com Foreground).
+- Biblioteca sempre abre na aba "Todos" ao vir de outra tela (exceto ao voltar de um jogo); o atalho Aplicativos continua abrindo a aba de aplicativos (ShowPage em MainWindow.xaml.cs).
+- Navegação explícita (1 aperto = 1 passo) no Painel e na Sala: TryHomeStyleMove em MainWindow.HomeStyles.cs, chamada no início de TryListMove.
+- Reversão: backup_v1.5.1.
+
+## v1.6.2
+- Corrigido erro de build CS0246 (faltava using System.Windows.Input em MainWindow.HomeStyles.cs).
+
+## v1.6.3 — Biblioteca: subir sem atraso + seletor suave
+- Seta para cima na grade da Biblioteca/Aplicativos agora é explícita (uma linha por vez, como o Down) em TryListMove; antes usava a busca geométrica padrão do WPF, que atrasava ao subir.
+- Seletor branco deslizante (LibCursor, Canvas sobre LibGrid em MainWindow.xaml) anima até a capa focada (170 ms) e a lista rola suavemente (LibOffsetProperty, 220 ms) em OnLibTileFocus; a capa cresce com animação (LibTile no Theme.xaml). Sem teste no Windows.
+
+## v1.7.0 — opções extras de Interface (conceito 5)
+- Configurações > Interface: Cor de destaque (Azul padrão, Verde, Roxo, Laranja, Rosa, Vermelho = AppSettings.AccentName; muda o pincel "Accent" em tempo de execução), Tamanho dos cards da biblioteca (Pequeno 0,85 / Médio 1 / Grande 1,15 = CardSize; LayoutTransform em LibGrid, só Biblioteca) e Relógio e saudação grandes (BigClock: relógio da barra superior e da Sala).
+- Código: MainWindow.Appearance.cs; estilos Swatch/SegButton no Theme.xaml; testes em AppearanceSettingsTests.cs. "Fundo do jogo em foco" NÃO foi feito (não pedido).
+- Reversão: backup_v1.5.1 (sem Painel/Sala/extras). Sem teste no Windows.
+
+## v1.7.1
+- Cor de destaque: o pincel "Accent" agora é DynamicResource em todo o XAML e é trocado no Application.Resources (antes alterar a cor não surtia efeito). Afeta chaves ligadas, barras de progresso, marcadores, títulos de painéis e o seletor Pequeno/Médio/Grande.
+
+## v1.7.2 — repositório, Sala com mais informação, limpeza
+- UpdateRepository = "dupreys/DeckLauncher" (verificação de atualização ligada; README com os links do repositório). Se o repositório tiver outro nome, ajustar em MainWindow.Update.cs e no README.
+- Sala (OLED): linha de status no canto (bateria com "carregando" quando houver, e Wi-Fi/Cabo/Sem rede; atualiza a cada 30 s) e chip "▶ Jogando: <jogo>" quando um jogo está aberto (abre a página dele). Native.Battery() (GetSystemPowerStatus).
+- Limpeza em MainWindow.HomeStyles.cs: helpers StepInRow/Directions/Go/SetChoice/OnChoiceClick (os cliques de Interface — estilo, cor, tamanho — usam o mesmo caminho), FocusHome único, UpdateRoomClock virou UpdateRoomStatus, DownloadsSummary separado.
+- Instalador: criar a tag v1.7.2 no GitHub (release.yml). Backup de reversão continua sendo backup_v1.5.1.

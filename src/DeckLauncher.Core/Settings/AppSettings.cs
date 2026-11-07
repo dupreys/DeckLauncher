@@ -26,8 +26,17 @@ public sealed class AppSettings
     /// <summary>How dark the game-art background is, 0 (none) to 0.9.</summary>
     public double BackdropDim { get; set; } = 0.35;
 
-    /// <summary>Layout of the Home screen: "Xbox" (tiles), "Simple" (one row of games, like the Steam home) or "Cinema".</summary>
+    /// <summary>Layout of the Home screen: "Xbox" (Clássico: row of tiles), "Panel" (Painel: featured game, grid and info tiles) or "Room" (Sala: big clock and a row of icons).</summary>
     public string HomeStyle { get; set; } = "Xbox";
+
+    /// <summary>Highlight colour of the interface: "Blue" (default), "Green", "Purple", "Orange", "Pink" or "Red".</summary>
+    public string AccentName { get; set; } = "Blue";
+
+    /// <summary>Size of the game cards in the Library: "Small", "Medium" (default) or "Large".</summary>
+    public string CardSize { get; set; } = "Medium";
+
+    /// <summary>Bigger clock in the top bar and on the "Sala" home.</summary>
+    public bool BigClock { get; set; }
 
     // Sound (system volume itself is not stored; Windows owns it)
     public bool UiSounds { get; set; } = true;
@@ -125,7 +134,9 @@ public sealed class AppSettings
         PlaySessions = PlayHistory.Clean(PlaySessions);
         Wallpaper = (Wallpaper ?? "").Trim();
         if (Wallpaper.Length > 0 && !Wallpaper.StartsWith("preset:", StringComparison.Ordinal) && !Wallpaper.StartsWith("file:", StringComparison.Ordinal)) Wallpaper = "";
-        if (HomeStyle is not ("Xbox" or "Simple" or "Cinema")) HomeStyle = "Xbox";
+        if (HomeStyle is not ("Xbox" or "Panel" or "Room")) HomeStyle = "Xbox"; // older values ("Simple", "Cinema") never had a screen: back to the classic one
+        if (AccentName is not ("Blue" or "Green" or "Purple" or "Orange" or "Pink" or "Red")) AccentName = "Blue";
+        if (CardSize is not ("Small" or "Medium" or "Large")) CardSize = "Medium";
         SteamWebApiKey = string.IsNullOrWhiteSpace(SteamWebApiKey) ? null : SteamWebApiKey.Trim();
         SteamGridDbApiKey = string.IsNullOrWhiteSpace(SteamGridDbApiKey) ? null : SteamGridDbApiKey.Trim();
         if (LibrarySort is not ("Recent" or "Name" or "Size")) LibrarySort = "Recent";

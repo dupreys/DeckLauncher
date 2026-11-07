@@ -22,6 +22,8 @@
 
         <!-- Pages -->
         <Grid x:Name="HomePage" Margin="0,0,0,56">
+        <!-- Style "Clássico" (the original home) -->
+        <Grid x:Name="ClassicHome">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
@@ -78,10 +80,125 @@
             </StackPanel>
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,14">
                 <Button Style="{StaticResource TabText}" Content="NOVIDADES" Tag="news" Click="OnHomeTabClick"/>
-                <Ellipse Width="9" Height="9" Fill="{StaticResource Accent}" Margin="-8,0,10,0"/>
+                <Ellipse Width="9" Height="9" Fill="{DynamicResource Accent}" Margin="-8,0,10,0"/>
                 <Button Style="{StaticResource TabText}" Content="AMIGOS" Tag="friends" Click="OnHomeTabClick"/>
                 <Button Style="{StaticResource TabText}" Content="RECOMENDADOS" Tag="recs" Click="OnHomeTabClick"/>
             </StackPanel>
+        </Grid>
+
+        <!-- Style "Painel": featured game, grid of recent games and info tiles -->
+        <Grid x:Name="PanelHome" Visibility="Collapsed" Margin="64,70,64,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock x:Name="PanelEmpty" Visibility="Collapsed" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" MaxWidth="760"
+                       HorizontalAlignment="Left" VerticalAlignment="Top"/>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.5*"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="PanelFeatured" Style="{StaticResource PanelTile}" Margin="0,0,16,16" Click="OnTileClick" GotKeyboardFocus="OnHomeTileFocus" Loaded="OnTileLoaded">
+                    <Button.Background>
+                        <ImageBrush ImageSource="{Binding Wide}" Stretch="UniformToFill"/>
+                    </Button.Background>
+                    <Grid>
+                        <Border CornerRadius="13" IsHitTestVisible="False">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#00000000" Offset="0.35"/>
+                                    <GradientStop Color="#E6000000" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                        <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="28,0,28,26">
+                            <Image Source="{Binding Logo}" Stretch="Uniform" MaxWidth="340" MaxHeight="110" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+                            <TextBlock Text="{Binding Name}" FontSize="32" FontWeight="Bold" TextTrimming="CharacterEllipsis" Foreground="{StaticResource Text}"/>
+                            <TextBlock Text="{Binding RecentText}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" Margin="0,2,0,14"/>
+                            <Border Background="{StaticResource PlayGreen}" CornerRadius="22" Padding="26,9" HorizontalAlignment="Left">
+                                <TextBlock Text="&#x25B6;  Jogar" FontSize="17" FontWeight="Bold" Foreground="White"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Button>
+                <ItemsControl x:Name="PanelGrid" Grid.Column="1">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><UniformGrid Columns="3" Rows="2"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource PanelTile}" Click="OnTileClick" GotKeyboardFocus="OnHomeTileFocus" Loaded="OnTileLoaded">
+                                <Button.Background>
+                                    <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill"/>
+                                </Button.Background>
+                                <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"
+                                           VerticalAlignment="Center" Margin="12" Style="{StaticResource ShowWhenNoCover}"/>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+            <UniformGrid Grid.Row="1" Rows="1" Columns="5" Margin="0,4,0,0">
+                <Button x:Name="PanelInfoLibrary" Style="{StaticResource InfoTile}" Tag="Biblioteca" Click="OnHomeShortcutClick">
+                    <StackPanel><TextBlock Text="Biblioteca" FontSize="20" FontWeight="Bold"/><TextBlock x:Name="PanelInfoLibraryText" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/></StackPanel>
+                </Button>
+                <Button x:Name="PanelInfoDownloads" Style="{StaticResource InfoTile}" Tag="Downloads" Click="OnHomeShortcutClick">
+                    <StackPanel><TextBlock Text="Downloads" FontSize="20" FontWeight="Bold"/><TextBlock x:Name="PanelInfoDownloadsText" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/></StackPanel>
+                </Button>
+                <Button Style="{StaticResource InfoTile}" Tag="Aplicativos" Click="OnHomeShortcutClick">
+                    <StackPanel><TextBlock Text="Aplicativos" FontSize="20" FontWeight="Bold"/><TextBlock Text="Programas e atalhos" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/></StackPanel>
+                </Button>
+                <Button x:Name="PanelInfoFriends" Style="{StaticResource InfoTile}" Tag="Amigos" Click="OnHomeShortcutClick">
+                    <StackPanel><TextBlock Text="Amigos" FontSize="20" FontWeight="Bold"/><TextBlock x:Name="PanelInfoFriendsText" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/></StackPanel>
+                </Button>
+                <Button Style="{StaticResource InfoTile}" Tag="Mídias" Margin="0" Click="OnHomeShortcutClick">
+                    <StackPanel><TextBlock Text="Capturas" FontSize="20" FontWeight="Bold"/><TextBlock Text="Imagens dos seus jogos" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/></StackPanel>
+                </Button>
+            </UniformGrid>
+        </Grid>
+
+        <!-- Style "Sala (OLED)": pure black, big clock, a row of game icons and shortcut chips -->
+        <Grid x:Name="RoomHome" Visibility="Collapsed" Margin="0,0,0,-56">
+            <Grid.Background>
+                <RadialGradientBrush Center="0.5,0.95" GradientOrigin="0.5,0.95" RadiusX="0.7" RadiusY="0.55">
+                    <GradientStop Color="#33142B55" Offset="0"/>
+                    <GradientStop Color="#FF000000" Offset="1"/>
+                </RadialGradientBrush>
+            </Grid.Background>
+            <TextBlock x:Name="RoomStatus" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,76,64,0" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}"/>
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,40,0,56">
+                <TextBlock x:Name="RoomGreeting" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="RoomClock" FontSize="124" FontWeight="ExtraLight" Foreground="White" HorizontalAlignment="Center" Margin="0,-6,0,22"/>
+                <TextBlock x:Name="RoomEmpty" Visibility="Collapsed" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" MaxWidth="640" TextAlignment="Center" Margin="0,0,0,24"/>
+                <ItemsControl x:Name="RoomRow" HorizontalAlignment="Center" Margin="0,14,0,18">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource RoomIcon}" Click="OnTileClick" GotKeyboardFocus="OnRoomTileFocus" Loaded="OnTileLoaded">
+                                <Button.Background>
+                                    <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill"/>
+                                </Button.Background>
+                                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"
+                                           VerticalAlignment="Center" Margin="12" Style="{StaticResource ShowWhenNoCover}"/>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock x:Name="RoomName" FontSize="40" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="1100" Margin="0,12,0,0"/>
+                <TextBlock x:Name="RoomSub" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,4,0,26"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button x:Name="RoomNowPlaying" Style="{StaticResource RoomChip}" Visibility="Collapsed" Click="OnRoomNowPlayingClick"/>
+                    <Button Style="{StaticResource RoomChip}" Content="Biblioteca" Tag="Biblioteca" Click="OnHomeShortcutClick"/>
+                    <Button Style="{StaticResource RoomChip}" Content="Lojas" Tag="Lojas" Click="OnHomeShortcutClick"/>
+                    <Button Style="{StaticResource RoomChip}" Content="Aplicativos" Tag="Aplicativos" Click="OnHomeShortcutClick"/>
+                    <Button Style="{StaticResource RoomChip}" Content="Downloads" Tag="Downloads" Click="OnHomeShortcutClick"/>
+                    <Button Style="{StaticResource RoomChip}" Content="Amigos" Tag="Amigos" Click="OnHomeShortcutClick"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
         </Grid>
 
         <Grid x:Name="LibraryPage" Margin="0,56,0,56" Visibility="Collapsed">
@@ -91,7 +208,8 @@
             </Grid.RowDefinitions>
             <StackPanel x:Name="TabsPanel" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,26"/>
             <ScrollViewer x:Name="LibScroll" Grid.Row="1" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" Focusable="False" SizeChanged="OnLibScrollSizeChanged">
-                <ItemsControl x:Name="LibGrid" Margin="0,28,0,60" HorizontalAlignment="Center">
+                <Grid x:Name="LibContent">
+                <ItemsControl x:Name="LibGrid" Margin="0,28,0,60" HorizontalAlignment="Center" LostKeyboardFocus="OnLibGridLostFocus">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
@@ -107,6 +225,10 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                <Canvas IsHitTestVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Border x:Name="LibCursor" Visibility="Collapsed" BorderBrush="{StaticResource Text}" BorderThickness="3" IsHitTestVisible="False"/>
+                </Canvas>
+                </Grid>
             </ScrollViewer>
             <ScrollViewer x:Name="AppsScroll" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" Focusable="False">
                 <StackPanel Margin="0,28,0,60">
@@ -288,6 +410,95 @@
                     <StackPanel x:Name="SetInterface" Visibility="Collapsed">
                         <TextBlock Text="Interface" FontSize="32" FontWeight="SemiBold" Margin="0,0,0,18"/>
                         <Border Style="{StaticResource SettingsRow}">
+                            <StackPanel>
+                                <TextBlock Text="Estilo da tela inicial" FontSize="19"/>
+                                <TextBlock Text="Escolha como a tela inicial é mostrada. A mudança é aplicada na hora." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,14"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <ToggleButton x:Name="StyleClassic" Style="{StaticResource StyleCard}" Tag="Xbox" Click="OnHomeStyleClick" AutomationProperties.Name="Clássico">
+                                        <StackPanel Width="190">
+                                            <Border Height="104" CornerRadius="8" Background="{DynamicResource Bg}" ClipToBounds="True">
+                                                <Grid>
+                                                    <Border Width="92" Height="60" Background="#2A3442" CornerRadius="4" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                                    <Border Width="34" Height="52" Background="#232A34" CornerRadius="4" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="112,0,0,0"/>
+                                                    <Border Width="34" Height="52" Background="#232A34" CornerRadius="4" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="150,0,0,0"/>
+                                                </Grid>
+                                            </Border>
+                                            <TextBlock Text="Clássico" FontSize="16" FontWeight="SemiBold" Margin="2,9,0,0"/>
+                                            <TextBlock Text="Fileira de jogos (atual)" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="2,1,0,0"/>
+                                        </StackPanel>
+                                    </ToggleButton>
+                                    <ToggleButton x:Name="StylePanel" Style="{StaticResource StyleCard}" Tag="Panel" Click="OnHomeStyleClick" AutomationProperties.Name="Painel">
+                                        <StackPanel Width="190">
+                                            <Border Height="104" CornerRadius="8" Background="{DynamicResource Bg}" ClipToBounds="True">
+                                                <Grid Margin="10">
+                                                    <Border Width="82" Height="52" Background="#2A3442" CornerRadius="4" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                                                    <UniformGrid Columns="3" Rows="2" Width="80" Height="52" HorizontalAlignment="Right" VerticalAlignment="Top">
+                                                        <Border Background="#232A34" Margin="2" CornerRadius="2"/><Border Background="#232A34" Margin="2" CornerRadius="2"/><Border Background="#232A34" Margin="2" CornerRadius="2"/>
+                                                        <Border Background="#232A34" Margin="2" CornerRadius="2"/><Border Background="#232A34" Margin="2" CornerRadius="2"/><Border Background="#232A34" Margin="2" CornerRadius="2"/>
+                                                    </UniformGrid>
+                                                    <UniformGrid Rows="1" Columns="5" VerticalAlignment="Bottom" Height="20">
+                                                        <Border Background="#1B2330" Margin="2" CornerRadius="3"/><Border Background="#1B2330" Margin="2" CornerRadius="3"/><Border Background="#1B2330" Margin="2" CornerRadius="3"/><Border Background="#1B2330" Margin="2" CornerRadius="3"/><Border Background="#1B2330" Margin="2" CornerRadius="3"/>
+                                                    </UniformGrid>
+                                                </Grid>
+                                            </Border>
+                                            <TextBlock Text="Painel" FontSize="16" FontWeight="SemiBold" Margin="2,9,0,0"/>
+                                            <TextBlock Text="Destaque, grade e atalhos" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="2,1,0,0"/>
+                                        </StackPanel>
+                                    </ToggleButton>
+                                    <ToggleButton x:Name="StyleRoom" Style="{StaticResource StyleCard}" Tag="Room" Click="OnHomeStyleClick" AutomationProperties.Name="Sala (OLED)">
+                                        <StackPanel Width="190">
+                                            <Border Height="104" CornerRadius="8" Background="Black" ClipToBounds="True">
+                                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                    <TextBlock Text="21:40" FontSize="30" FontWeight="ExtraLight" Foreground="White" HorizontalAlignment="Center"/>
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                                                        <Border Width="22" Height="22" Background="#2A3442" CornerRadius="7" Margin="3,0"/>
+                                                        <Border Width="26" Height="26" Background="#4A5260" CornerRadius="8" Margin="3,-2" BorderBrush="White" BorderThickness="1.5"/>
+                                                        <Border Width="22" Height="22" Background="#2A3442" CornerRadius="7" Margin="3,0"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                            <TextBlock Text="Sala (OLED)" FontSize="16" FontWeight="SemiBold" Margin="2,9,0,0"/>
+                                            <TextBlock Text="Relógio grande e ícones" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="2,1,0,0"/>
+                                        </StackPanel>
+                                    </ToggleButton>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingsRow}">
+                            <StackPanel>
+                                <TextBlock Text="Cor de destaque" FontSize="19"/>
+                                <TextBlock Text="Cor dos indicadores, barras de progresso e seleções." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,12"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <ToggleButton x:Name="AccentBlue" Style="{StaticResource Swatch}" Background="#1A9FFF" Tag="Blue" Click="OnAccentClick" AutomationProperties.Name="Azul"/>
+                                    <ToggleButton x:Name="AccentGreen" Style="{StaticResource Swatch}" Background="#3DBE6B" Tag="Green" Click="OnAccentClick" AutomationProperties.Name="Verde"/>
+                                    <ToggleButton x:Name="AccentPurple" Style="{StaticResource Swatch}" Background="#9B6BFF" Tag="Purple" Click="OnAccentClick" AutomationProperties.Name="Roxo"/>
+                                    <ToggleButton x:Name="AccentOrange" Style="{StaticResource Swatch}" Background="#FF8A2B" Tag="Orange" Click="OnAccentClick" AutomationProperties.Name="Laranja"/>
+                                    <ToggleButton x:Name="AccentPink" Style="{StaticResource Swatch}" Background="#FF5FA2" Tag="Pink" Click="OnAccentClick" AutomationProperties.Name="Rosa"/>
+                                    <ToggleButton x:Name="AccentRed" Style="{StaticResource Swatch}" Background="#FF4B4B" Tag="Red" Click="OnAccentClick" AutomationProperties.Name="Vermelho"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingsRow}">
+                            <StackPanel>
+                                <TextBlock Text="Tamanho dos cards da biblioteca" FontSize="19"/>
+                                <TextBlock Text="Quanto maiores, menos jogos cabem na tela." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,12"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <ToggleButton x:Name="SizeSmall" Style="{StaticResource SegButton}" Content="Pequeno" Tag="Small" Click="OnCardSizeClick"/>
+                                    <ToggleButton x:Name="SizeMedium" Style="{StaticResource SegButton}" Content="Médio" Tag="Medium" Click="OnCardSizeClick"/>
+                                    <ToggleButton x:Name="SizeLarge" Style="{StaticResource SegButton}" Content="Grande" Tag="Large" Click="OnCardSizeClick"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingsRow}">
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Relógio e saudação grandes" FontSize="19"/>
+                                    <TextBlock Text="Aumenta o relógio da barra superior e o da tela inicial Sala (OLED)." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <ToggleButton x:Name="BigClockSwitch" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="OnBigClockClick"/>
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource SettingsRow}">
                             <Grid>
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Text="Preto OLED" FontSize="19"/>
@@ -429,7 +640,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <StackPanel Margin="54,20,54,0">
-                <TextBlock Text="GERENCIAR ARTE" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
+                <TextBlock Text="GERENCIAR ARTE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Accent}"/>
                 <TextBlock x:Name="ManageGameName" FontSize="30" FontWeight="SemiBold" Margin="0,4,0,14" TextTrimming="CharacterEllipsis"/>
                 <WrapPanel x:Name="ManageTabs">
                     <RadioButton x:Name="ManageTabCover" Style="{StaticResource LibTab}" GroupName="ManageTabs" Tag="Cover" Content="CAPAS" Checked="OnManageTabChecked"/>
@@ -532,7 +743,7 @@
                         <Button x:Name="VolDownButton" Style="{StaticResource SquareButton}" Width="56" Height="56" Click="OnVolDownClick"><TextBlock Text="&#xE738;" Style="{StaticResource Icon}"/></Button>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0">
                             <TextBlock x:Name="VolText" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                            <ProgressBar x:Name="VolBar" Minimum="0" Maximum="100" Height="8" Foreground="{StaticResource Accent}" Background="{DynamicResource T_2B323C}" BorderThickness="0"/>
+                            <ProgressBar x:Name="VolBar" Minimum="0" Maximum="100" Height="8" Foreground="{DynamicResource Accent}" Background="{DynamicResource T_2B323C}" BorderThickness="0"/>
                         </StackPanel>
                         <Button x:Name="VolUpButton" Grid.Column="2" Style="{StaticResource SquareButton}" Width="56" Height="56" Click="OnVolUpClick"><TextBlock Text="&#xE710;" Style="{StaticResource Icon}"/></Button>
                     </Grid>
@@ -591,7 +802,7 @@
         <Grid x:Name="OptionsPanel" Visibility="Collapsed">
             <Rectangle Fill="#E6000000" MouseDown="OnOptionsDimClick"/>
             <StackPanel Width="560" VerticalAlignment="Center" KeyboardNavigation.DirectionalNavigation="Contained">
-                <TextBlock Text="OPÇÕES DO JOGO" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Accent}" HorizontalAlignment="Center"/>
+                <TextBlock Text="OPÇÕES DO JOGO" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Accent}" HorizontalAlignment="Center"/>
                 <TextBlock x:Name="OptionsGameName" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,22" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Text="Nome no launcher" FontSize="15" Foreground="{StaticResource TextSoft}" Margin="0,0,0,6"/>
                 <TextBox x:Name="OptionsNameBox" FontSize="18" Padding="10,8" MaxLength="80" Background="{DynamicResource Panel}" Foreground="White"
@@ -608,7 +819,7 @@
         <Grid x:Name="AppMenuPanel" Visibility="Collapsed">
             <Rectangle Fill="#E6000000" MouseDown="OnAppMenuDimClick"/>
             <StackPanel Width="560" VerticalAlignment="Center" KeyboardNavigation.DirectionalNavigation="Contained">
-                <TextBlock Text="APLICATIVO" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Accent}" HorizontalAlignment="Center"/>
+                <TextBlock Text="APLICATIVO" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Accent}" HorizontalAlignment="Center"/>
                 <TextBlock x:Name="AppMenuName" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,4,0,22" TextTrimming="CharacterEllipsis"/>
                 <Button x:Name="AppMenuLeft" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Mover para a esquerda" Click="OnAppMenuMoveLeft"/>
                 <Button x:Name="AppMenuRight" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Mover para a direita" Click="OnAppMenuMoveRight"/>
@@ -622,7 +833,7 @@
         <Grid x:Name="AppAddPanel" Visibility="Collapsed">
             <Rectangle Fill="#E6000000" MouseDown="OnAppAddDimClick"/>
             <StackPanel Width="560" VerticalAlignment="Center" KeyboardNavigation.DirectionalNavigation="Contained">
-                <TextBlock Text="ADICIONAR À LISTA" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Accent}" HorizontalAlignment="Center" Margin="0,0,0,22"/>
+                <TextBlock Text="ADICIONAR À LISTA" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Accent}" HorizontalAlignment="Center" Margin="0,0,0,22"/>
                 <StackPanel x:Name="AppAddChoice">
                     <Button x:Name="AppAddProgramButton" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Programa (.exe ou atalho)..." Click="OnAppAddProgramClick"/>
                     <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Site (link)..." Click="OnAppAddSiteClick"/>
@@ -646,7 +857,7 @@
         <Grid x:Name="ProfilePanel" Visibility="Collapsed">
             <Rectangle Fill="#E6000000" MouseDown="OnProfileDimClick"/>
             <StackPanel Width="560" VerticalAlignment="Center" KeyboardNavigation.DirectionalNavigation="Contained">
-                <TextBlock Text="PERFIL" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Accent}" HorizontalAlignment="Center"/>
+                <TextBlock Text="PERFIL" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Accent}" HorizontalAlignment="Center"/>
                 <Border Width="132" Height="132" Margin="0,14,0,10" Background="{DynamicResource PanelRaised}" BorderBrush="{DynamicResource Focus}" BorderThickness="3">
                     <Grid>
                         <TextBlock Text="&#xE77B;" Style="{StaticResource Icon}" FontSize="64" Foreground="{StaticResource TextMuted}"/>
@@ -765,7 +976,7 @@
                         <TextBlock x:Name="ViewerTime" Foreground="White" FontSize="15" MinWidth="52"/>
                         <Grid x:Name="ViewerTrack" Grid.Column="1" Margin="16,0" Height="6" VerticalAlignment="Center">
                             <Border Background="#44FFFFFF" CornerRadius="3"/>
-                            <Border x:Name="ViewerFill" Background="{StaticResource Accent}" CornerRadius="3" HorizontalAlignment="Left" Width="0"/>
+                            <Border x:Name="ViewerFill" Background="{DynamicResource Accent}" CornerRadius="3" HorizontalAlignment="Left" Width="0"/>
                         </Grid>
                         <TextBlock x:Name="ViewerDuration" Grid.Column="2" Foreground="#B8C0CC" FontSize="15" MinWidth="52" TextAlignment="Right"/>
                     </Grid>

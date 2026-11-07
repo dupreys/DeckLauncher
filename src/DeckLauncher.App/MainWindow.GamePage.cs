@@ -51,8 +51,8 @@ public partial class MainWindow
         ShowPage(_returnPage);
         Dispatcher.BeginInvoke(() =>
         {
-            DependencyObject host = _returnPage == "Biblioteca" ? LibGrid : RecentRow;
-            var tile = item is null ? null : FindAll<Button>(host).FirstOrDefault(b => ReferenceEquals(b.DataContext, item));
+            var tiles = _returnPage == "Biblioteca" ? FindAll<Button>(LibGrid) : HomeTiles();
+            var tile = item is null ? null : tiles.FirstOrDefault(b => ReferenceEquals(b.DataContext, item));
             if (tile is not null) { tile.Focus(); tile.BringIntoView(); }
             else FocusPage();
         }, DispatcherPriority.Loaded);

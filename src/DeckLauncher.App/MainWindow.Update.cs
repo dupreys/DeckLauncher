@@ -9,8 +9,8 @@ namespace DeckLauncher.App;
 // when there is one, a notice appears once and Configurações > Sistema > Atualizações opens the download page.
 public partial class MainWindow
 {
-    /// <summary>"owner/name" of the GitHub repository whose releases are checked. Change it to your own repository.</summary>
-    private const string UpdateRepository = "SEU-USUARIO/DeckLauncher";
+    /// <summary>"owner/name" of the GitHub repository whose releases are checked. Releases are published at github.com/dupreys/DeckLauncher.</summary>
+    private const string UpdateRepository = "dupreys/DeckLauncher";
 
     private UpdateInfo? _update;
     private bool _checkingUpdate;

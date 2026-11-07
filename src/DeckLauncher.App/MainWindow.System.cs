@@ -272,6 +272,8 @@ public partial class MainWindow
         SoundSwitch.IsChecked = App.Settings.UiSounds;
         MouseSwitch.IsChecked = App.Settings.MouseEnabled;
         OledSwitch.IsChecked = App.Settings.OledBlack;
+        ShowHomeStyleChecks();
+        ShowAppearanceChecks();
         AutostartSwitch.IsChecked = Autostart.IsEnabled();
         SettingsKeyBox.Text = App.Settings.SteamGridDbApiKey ?? "";
         SteamKeyBox.Text = App.Settings.SteamWebApiKey ?? "";

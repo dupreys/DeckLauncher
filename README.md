@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SEU-USUARIO/DeckLauncher/actions/workflows/build.yml"><img alt="Build" src="https://github.com/SEU-USUARIO/DeckLauncher/actions/workflows/build.yml/badge.svg"></a>
-  <a href="https://github.com/SEU-USUARIO/DeckLauncher/releases/latest"><img alt="Última versão" src="https://img.shields.io/github/v/release/SEU-USUARIO/DeckLauncher?color=1A9FFF"></a>
+  <a href="https://github.com/dupreys/DeckLauncher/actions/workflows/build.yml"><img alt="Build" src="https://github.com/dupreys/DeckLauncher/actions/workflows/build.yml/badge.svg"></a>
+  <a href="https://github.com/dupreys/DeckLauncher/releases/latest"><img alt="Última versão" src="https://img.shields.io/github/v/release/dupreys/DeckLauncher?color=1A9FFF"></a>
   <img alt=".NET 8" src="https://img.shields.io/badge/.NET-8.0-512BD4">
   <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6">
   <img alt="WPF" src="https://img.shields.io/badge/UI-WPF-1A9FFF">
@@ -42,6 +42,8 @@
 
 ### Início e biblioteca
 - **Início:** linha de jogos recentes (até 20). Só o último jogo jogado aparece num cartão largo, com o fundo e o logotipo; os outros ficam em capa estreita. O fundo da tela muda conforme o jogo em foco e o papel de parede se move devagar. O jogo em foco ganha um brilho de luz por baixo, e sob ele aparecem o nome e o tempo jogado nas últimas duas semanas (ou **JOGANDO AGORA** enquanto o jogo está aberto).
+- **Estilos da tela inicial** (Configurações → Interface): **Clássico** (o padrão, descrito acima), **Painel** (jogo em destaque, grade com os recentes e atalhos com informações: biblioteca, downloads, amigos online...) e **Sala (OLED)** (fundo preto, relógio grande, ícones arredondados dos jogos e atalhos). A mudança vale na hora. Nos estilos Painel e Sala, Novidades/Recomendados abrem pelo atalho **Amigos** e pelo menu; a opção de apertar para baixo na linha vale no Clássico.
+- **Personalização** (Configurações → Interface): cor de destaque (6 cores), tamanho dos cards da biblioteca (pequeno, médio, grande) e relógio/saudação grandes.
 - **Novidades, Amigos e Recomendados:** apertando **para baixo** na linha de jogos (ou escolhendo a aba abaixo dos cards). Mostra anúncios dos seus jogos da Steam, jogos atualizados neste PC, quem dos seus amigos está jogando agora, a atividade deles (o que jogaram nas últimas duas semanas) e o calendário de lançamentos. Só lê dados públicos da Steam com a sua chave de API; o launcher não faz login na sua conta nem envia mensagens.
 - **Biblioteca:** abas Todos / Steam / Epic / Adicionados / Favoritos / Aplicativos, busca por nome e grade de capas centralizada.
 - **Não instalados:** a aba lista os jogos da sua conta Steam que ainda não estão instalados; na página do jogo, **Instalar** pede à Steam para baixar (o progresso aparece em Downloads) e **Ver na loja** abre a página dele no cliente da Steam.
@@ -80,7 +82,7 @@
 
 ## Download
 
-1. Baixe o instalador `DeckLauncher-Setup-<versão>.exe` em [**Releases**](https://github.com/SEU-USUARIO/DeckLauncher/releases/latest).
+1. Baixe o instalador `DeckLauncher-Setup-<versão>.exe` em [**Releases**](https://github.com/dupreys/DeckLauncher/releases/latest).
 2. Abra o arquivo e siga o assistente de instalação (dá para criar um atalho na área de trabalho).
 3. Ao terminar, abra o **DeckLauncher** pelo atalho ou pelo menu Iniciar.
 
