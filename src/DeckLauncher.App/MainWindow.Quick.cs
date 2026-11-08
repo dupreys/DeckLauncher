@@ -35,7 +35,7 @@ public partial class MainWindow
 
     private void OpenQuick(Button opener, Border panel, Button firstFocus)
     {
-        if (PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
+        if (PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
         if (QuickOpen && panel.Visibility == Visibility.Visible) { CloseQuick(); return; }
         if (MenuOpen) MenuLayer.Visibility = Visibility.Collapsed;
 

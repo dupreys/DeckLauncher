@@ -9,7 +9,24 @@
             <Image x:Name="HeroImagePrev" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0"/>
             <Image x:Name="HeroImage" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center"/>
         </Grid>
-        <Rectangle>
+        <!-- Under the cards the wallpaper is blurred and dimmed (like the Steam Big Picture) so the texts there stay readable -->
+        <Grid x:Name="HeroBlurLayer" IsHitTestVisible="False" Visibility="Collapsed">
+            <Grid.Effect><BlurEffect Radius="12" KernelType="Gaussian" RenderingBias="Performance"/></Grid.Effect>
+            <Grid.OpacityMask>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#00000000" Offset="0.74"/>
+                    <GradientStop Color="#FF000000" Offset="0.86"/>
+                </LinearGradientBrush>
+            </Grid.OpacityMask>
+            <!-- Same slow zoom and drift as the sharp wallpaper (the transform is shared in StartHeroDrift) -->
+            <Grid x:Name="HeroBlurInner" RenderTransformOrigin="0.5,0.4">
+                <Image x:Name="HeroBlurPrev" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0"/>
+                <Image x:Name="HeroBlurImage" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+            </Grid>
+        </Grid>
+        <!-- A light, even dimming of the whole wallpaper on the home -->
+        <Rectangle x:Name="HeroDim" Fill="Black" Opacity="0" IsHitTestVisible="False"/>
+        <Rectangle x:Name="HeroShade">
             <Rectangle.Fill>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                     <GradientStop Color="#00000000" Offset="0.0"/>
@@ -156,6 +173,121 @@
                     <StackPanel><TextBlock Text="Capturas" FontSize="20" FontWeight="Bold"/><TextBlock Text="Imagens dos seus jogos" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/></StackPanel>
                 </Button>
             </UniformGrid>
+        </Grid>
+
+        <!-- Style "Cinema": the game in big letters with its art behind and the recent games in a strip -->
+        <Grid x:Name="CinemaHome" Visibility="Collapsed" Margin="0,0,0,0">
+            <Rectangle IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#EB060A12" Offset="0"/>
+                        <GradientStop Color="#8C060A12" Offset="0.4"/>
+                        <GradientStop Color="#00060A12" Offset="0.75"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Rectangle IsHitTestVisible="False" VerticalAlignment="Bottom" Height="520">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                        <GradientStop Color="#F2060A12" Offset="0"/>
+                        <GradientStop Color="#00060A12" Offset="1"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <StackPanel Margin="84,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" MaxWidth="900">
+                <TextBlock x:Name="CinemaCaption" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource Accent}" Margin="0,0,0,14"/>
+                <Image x:Name="CinemaLogo" Stretch="Uniform" MaxWidth="560" MaxHeight="170" HorizontalAlignment="Left" Visibility="Collapsed"/>
+                <TextBlock x:Name="CinemaTitle" FontSize="84" FontWeight="Black" TextWrapping="Wrap" LineHeight="84" Foreground="White"/>
+                <TextBlock x:Name="CinemaMeta" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" Margin="0,16,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="0,30,0,0">
+                    <Button x:Name="CinemaPlay" Style="{StaticResource RoomChip}" Margin="0,0,12,0" Content="&#x25B6;  Jogar" Click="OnCinemaPlayClick"/>
+                    <Button Style="{StaticResource RoomChip}" Margin="0,0,12,0" Content="Biblioteca" Tag="Biblioteca" Click="OnHomeShortcutClick"/>
+                    <Button Style="{StaticResource RoomChip}" Margin="0,0,12,0" Content="Aplicativos" Tag="Aplicativos" Click="OnHomeShortcutClick"/>
+                    <Button Style="{StaticResource RoomChip}" Margin="0,0,12,0" Content="Amigos" Tag="Amigos" Click="OnHomeShortcutClick"/>
+                </StackPanel>
+            </StackPanel>
+            <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="84,0,0,30">
+                <TextBlock Text="Jogos recentes" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextSoft}" Margin="0,0,0,14"/>
+                <TextBlock x:Name="CinemaEmpty" Visibility="Collapsed" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" MaxWidth="760"/>
+                <ScrollViewer x:Name="CinemaScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" Focusable="False"
+                              Margin="-16,0,0,0">
+                <!-- The margin is room for the selection frame and its growth: the viewport clips whatever goes past it. -->
+                <ItemsControl x:Name="CinemaRow" Margin="16,12,16,12" RequestBringIntoView="OnCinemaBringIntoView">
+                    <ItemsControl.RenderTransform><TranslateTransform x:Name="CinemaShift"/></ItemsControl.RenderTransform>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource CinemaTile}" Click="OnTileClick" GotKeyboardFocus="OnCinemaTileFocus" Loaded="OnTileLoaded">
+                                <Button.Background>
+                                    <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill"/>
+                                </Button.Background>
+                                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"
+                                           VerticalAlignment="Center" Margin="12" Style="{StaticResource ShowWhenNoCover}"/>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                </ScrollViewer>
+            </StackPanel>
+        </Grid>
+
+        <!-- Style "Carrossel": one big poster in the middle, the others on its sides -->
+        <Grid x:Name="CarouselHome" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Rectangle Grid.RowSpan="3" IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                        <GradientStop Color="#D9060A12" Offset="0"/>
+                        <GradientStop Color="#40060A12" Offset="0.55"/>
+                        <GradientStop Color="#8C060A12" Offset="1"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <StackPanel Margin="84,84,0,0" HorizontalAlignment="Left">
+                <TextBlock x:Name="CarouselClock" FontSize="88" FontWeight="Light" Foreground="White"/>
+                <TextBlock x:Name="CarouselDate" FontSize="22" Foreground="{StaticResource TextSoft}"/>
+            </StackPanel>
+            <TextBlock x:Name="CarouselEmpty" Grid.Row="1" Visibility="Collapsed" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" MaxWidth="760"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Grid x:Name="CarouselView" Grid.Row="1" ClipToBounds="False" Margin="0,40,0,10">
+                <!-- A Canvas gives the row all the width it wants: in a plain Grid cell it was cut at the width of the screen. -->
+                <Canvas ClipToBounds="False">
+                <ItemsControl x:Name="CarouselRow" Canvas.Left="0" Canvas.Bottom="0">
+                    <ItemsControl.RenderTransform><TranslateTransform x:Name="CarouselShift"/></ItemsControl.RenderTransform>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource CarouselTile}" Click="OnTileClick" GotKeyboardFocus="OnCarouselTileFocus" Loaded="OnTileLoaded">
+                                <Button.Background>
+                                    <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill"/>
+                                </Button.Background>
+                                <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"
+                                           VerticalAlignment="Center" Margin="14" Style="{StaticResource ShowWhenNoCover}"/>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                </Canvas>
+            </Grid>
+            <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,6,0,34">
+                <TextBlock x:Name="CarouselName" FontSize="46" FontWeight="ExtraBold" Foreground="White" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="1200"/>
+                <TextBlock x:Name="CarouselSub" FontSize="18" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" Margin="0,6,0,14"/>
+                <StackPanel x:Name="CarouselDots" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,18"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Style="{StaticResource RoomChip}" Content="Biblioteca" Tag="Biblioteca" Click="OnHomeShortcutClick"/>
+                    <Button Style="{StaticResource RoomChip}" Content="Aplicativos" Tag="Aplicativos" Click="OnHomeShortcutClick"/>
+                    <Button Style="{StaticResource RoomChip}" Content="Downloads" Tag="Downloads" Click="OnHomeShortcutClick"/>
+                    <Button Style="{StaticResource RoomChip}" Content="Amigos" Tag="Amigos" Click="OnHomeShortcutClick"/>
+                </StackPanel>
+            </StackPanel>
         </Grid>
 
         <!-- Style "Sala (OLED)": pure black, big clock, a row of game icons and shortcut chips -->
@@ -413,7 +545,7 @@
                             <StackPanel>
                                 <TextBlock Text="Estilo da tela inicial" FontSize="19"/>
                                 <TextBlock Text="Escolha como a tela inicial é mostrada. A mudança é aplicada na hora." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,14"/>
-                                <StackPanel Orientation="Horizontal">
+                                <WrapPanel>
                                     <ToggleButton x:Name="StyleClassic" Style="{StaticResource StyleCard}" Tag="Xbox" Click="OnHomeStyleClick" AutomationProperties.Name="Clássico">
                                         <StackPanel Width="190">
                                             <Border Height="104" CornerRadius="8" Background="{DynamicResource Bg}" ClipToBounds="True">
@@ -461,7 +593,41 @@
                                             <TextBlock Text="Relógio grande e ícones" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="2,1,0,0"/>
                                         </StackPanel>
                                     </ToggleButton>
-                                </StackPanel>
+                                    <ToggleButton x:Name="StyleCinema" Style="{StaticResource StyleCard}" Tag="Cinema" Click="OnHomeStyleClick" AutomationProperties.Name="Cinema">
+                                        <StackPanel Width="190">
+                                            <Border Height="104" CornerRadius="8" Background="#1E2A44" ClipToBounds="True">
+                                                <Grid>
+                                                    <Border Background="#99060A12" Width="110" HorizontalAlignment="Left"/>
+                                                    <StackPanel VerticalAlignment="Top" Margin="12,16,0,0" HorizontalAlignment="Left">
+                                                        <Border Width="70" Height="12" Background="White" CornerRadius="3"/>
+                                                        <Border Width="34" Height="8" Background="#4CA82E" CornerRadius="4" Margin="0,8,0,0" HorizontalAlignment="Left"/>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" Margin="12,0,0,8">
+                                                        <Border Width="22" Height="30" Background="#4A5260" CornerRadius="3" Margin="0,0,5,0" BorderBrush="White" BorderThickness="1"/>
+                                                        <Border Width="20" Height="28" Background="#2A3442" CornerRadius="3" Margin="0,0,5,0"/>
+                                                        <Border Width="20" Height="28" Background="#2A3442" CornerRadius="3" Margin="0,0,5,0"/>
+                                                        <Border Width="20" Height="28" Background="#2A3442" CornerRadius="3"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                            <TextBlock Text="Cinema" FontSize="16" FontWeight="SemiBold" Margin="2,9,0,0"/>
+                                            <TextBlock Text="Título grande e fileira" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="2,1,0,0"/>
+                                        </StackPanel>
+                                    </ToggleButton>
+                                    <ToggleButton x:Name="StyleCarousel" Style="{StaticResource StyleCard}" Tag="Carousel" Click="OnHomeStyleClick" AutomationProperties.Name="Carrossel">
+                                        <StackPanel Width="190">
+                                            <Border Height="104" CornerRadius="8" Background="{DynamicResource Bg}" ClipToBounds="True">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,12">
+                                                    <Border Width="26" Height="38" Background="#2A3442" CornerRadius="4" Margin="0,0,6,0" VerticalAlignment="Bottom"/>
+                                                    <Border Width="46" Height="66" Background="#4A5260" CornerRadius="5" Margin="0,0,6,0" BorderBrush="White" BorderThickness="1.5" VerticalAlignment="Bottom"/>
+                                                    <Border Width="26" Height="38" Background="#2A3442" CornerRadius="4" VerticalAlignment="Bottom"/>
+                                                </StackPanel>
+                                            </Border>
+                                            <TextBlock Text="Carrossel" FontSize="16" FontWeight="SemiBold" Margin="2,9,0,0"/>
+                                            <TextBlock Text="Capa grande no centro" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="2,1,0,0"/>
+                                        </StackPanel>
+                                    </ToggleButton>
+                                </WrapPanel>
                             </StackPanel>
                         </Border>
                         <Border Style="{StaticResource SettingsRow}">
@@ -480,8 +646,8 @@
                         </Border>
                         <Border Style="{StaticResource SettingsRow}">
                             <StackPanel>
-                                <TextBlock Text="Tamanho dos cards da biblioteca" FontSize="19"/>
-                                <TextBlock Text="Quanto maiores, menos jogos cabem na tela." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,12"/>
+                                <TextBlock Text="Tamanho dos cards" FontSize="19"/>
+                                <TextBlock Text="Vale para a biblioteca e para a tela inicial (Clássico, Cinema, Carrossel e Sala). O Painel já ocupa a tela toda. Quanto maiores, menos jogos cabem." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,12"/>
                                 <StackPanel Orientation="Horizontal">
                                     <ToggleButton x:Name="SizeSmall" Style="{StaticResource SegButton}" Content="Pequeno" Tag="Small" Click="OnCardSizeClick"/>
                                     <ToggleButton x:Name="SizeMedium" Style="{StaticResource SegButton}" Content="Médio" Tag="Medium" Click="OnCardSizeClick"/>
@@ -511,6 +677,29 @@
 
                     <StackPanel x:Name="SetIntegrations" Visibility="Collapsed">
                         <TextBlock Text="Integrações" FontSize="32" FontWeight="SemiBold" Margin="0,0,0,18"/>
+                        <Border Style="{StaticResource SettingsRow}">
+                            <StackPanel>
+                                <TextBlock Text="Conta Steam ao abrir" FontSize="19"/>
+                                <TextBlock x:Name="AccountModeInfo" TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,12"
+                                           Text="Com mais de uma conta Steam neste PC, escolha como o launcher decide qual usar. Só os jogos instalados da conta aparecem."/>
+                                <StackPanel Orientation="Horizontal">
+                                    <ToggleButton x:Name="AccountModeAsk" Style="{StaticResource SegButton}" Content="Perguntar sempre" Tag="Ask" Click="OnAccountModeClick"/>
+                                    <ToggleButton x:Name="AccountModeLast" Style="{StaticResource SegButton}" Content="Última conta usada" Tag="Last" Click="OnAccountModeClick"/>
+                                    <ToggleButton x:Name="AccountModeFixed" Style="{StaticResource SegButton}" Content="Sempre a mesma" Tag="Fixed" Click="OnAccountModeClick"/>
+                                    <Button x:Name="FixedAccountButton" Style="{StaticResource TabText}" Click="OnFixedAccountClick" Margin="6,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+<Border Style="{StaticResource SettingsRow}">
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,90,0">
+                                    <TextBlock Text="Trocar também a conta da Steam" FontSize="19"/>
+                                    <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"
+                                               Text="Ao escolher uma conta aqui, a Steam é fechada e aberta de novo já nessa conta (sem pedir senha). A conta precisa estar com a senha lembrada na Steam. Não troca se houver um jogo aberto. O launcher não vê nem guarda sua senha."/>
+                                </StackPanel>
+                                <ToggleButton x:Name="SwitchClientSwitch" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="OnSwitchClientClick"/>
+                            </Grid>
+                        </Border>
                         <Border Style="{StaticResource SettingsRow}">
                             <StackPanel>
                                 <TextBlock Text="Chave da API do SteamGridDB" FontSize="19"/>
@@ -705,8 +894,9 @@
                 <TextBlock Text="MENU" FontWeight="Bold" FontSize="15" Margin="14,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,44,0" VerticalAlignment="Center">
+                <StackPanel x:Name="HintExtras" Orientation="Horizontal"/>
                 <Border x:Name="SelectChip" Style="{StaticResource KeyChip}"><TextBlock x:Name="SelectChipText" Text="Enter" Foreground="Black" FontWeight="Bold" FontSize="14"/></Border>
-                <TextBlock Text="SELECIONAR" FontWeight="Bold" FontSize="15" Margin="14,0,34,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="SelectLabel" Text="SELECIONAR" FontWeight="Bold" FontSize="15" Margin="14,0,34,0" VerticalAlignment="Center"/>
                 <Border x:Name="BackChip" Style="{StaticResource KeyChip}"><TextBlock x:Name="BackChipText" Text="Esc" Foreground="Black" FontWeight="Bold" FontSize="14"/></Border>
                 <TextBlock Text="VOLTAR" FontWeight="Bold" FontSize="15" Margin="14,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
@@ -875,7 +1065,18 @@
                          BorderBrush="{DynamicResource Focus}" CaretBrush="White"/>
                 <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Margin="0,12,0,0" Content="Salvar nome" Click="OnProfileSaveNameClick"/>
                 <Border Height="3" Background="{DynamicResource T_0D1117}"/>
+                <Button x:Name="ProfileSwitchButton" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Trocar de conta Steam..." Click="OnProfileSwitchClick"/>
+                <Border Height="3" Background="{DynamicResource T_0D1117}"/>
                 <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Voltar" Click="OnProfileBackClick"/>
+            </StackPanel>
+        </Grid>
+        <!-- Which Steam account to use: shown when the launcher opens (depending on the setting) and from the profile photo -->
+        <Grid x:Name="AccountPanel" Visibility="Collapsed" Background="{DynamicResource T_FF05080C}">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" KeyboardNavigation.DirectionalNavigation="Contained">
+                <TextBlock Text="QUEM ESTÁ JOGANDO?" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource Accent}" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="AccountSub" Text="Escolha a conta Steam. Só os jogos dela aparecem no launcher." FontSize="17" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,8,0,34"/>
+                <StackPanel x:Name="AccountList" Orientation="Horizontal" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="AccountHint" Text="B: continuar com a conta atual" FontSize="14" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,34,0,0"/>
             </StackPanel>
         </Grid>
         <!-- Entering a game: art, logo, animated controller -->

@@ -237,7 +237,7 @@ public partial class MainWindow
             LaunchOverlay.BeginAnimation(OpacityProperty, null);
             _launchHiding = false;
             StopPadAnimation();
-            if (!MenuOpen && !PowerOpen && !ProfileOpen && !OptionsOpen) FocusPage();
+            if (!MenuOpen && !PowerOpen && !ProfileOpen && !AccountOpen && !OptionsOpen) FocusPage();
         };
         LaunchOverlay.BeginAnimation(OpacityProperty, fade);
     }

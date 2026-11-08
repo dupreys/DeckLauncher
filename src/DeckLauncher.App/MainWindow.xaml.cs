@@ -57,6 +57,7 @@ public partial class MainWindow : Window
         ApplyFullscreen(App.Settings.StartFullscreen || XboxMode.Active);
         ApplyMouseMode();
         _ = CheckForUpdateAsync(manual: false);
+        await ChooseAccountAtStartupAsync();
         await RefreshAsync();
     }
 
@@ -75,10 +76,11 @@ public partial class MainWindow : Window
     private async Task RefreshAsync()
     {
         if (_refreshing) return;
+        if (_accountChoice is not null && !_accountCanCancel) return; // waiting for the start-up account choice
         _refreshing = true;
         try
         {
-            var games = await _library.LoadAsync();
+            var games = await FilterByAccountAsync(await _library.LoadAsync());
             ApplyGames(games);
             _ = DownloadArtAsync(games);
             _ = RefreshNotInstalledAsync(games);
@@ -471,8 +473,10 @@ public partial class MainWindow : Window
         SearchHost.Visibility = library ? Visibility.Visible : Visibility.Collapsed;
         HeroImage.Visibility = (home && HomeStyleKey != StyleRoomKey) || game ? Visibility.Visible : Visibility.Collapsed;
         HeroImagePrev.Visibility = HeroImage.Visibility;
+        UpdateHeroShade(home);
         if (previous != page) PlayPageTransition(page);
         OtherTitle.Text = page;
+        UpdateHints();
     }
 
     private void OnKeyDown(object sender, KeyEventArgs e)

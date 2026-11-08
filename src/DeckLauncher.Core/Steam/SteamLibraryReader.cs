@@ -103,6 +103,7 @@ public static class SteamLibraryReader
                 CoverPath = SteamArtwork.FindCover(steamPath, appId),
                 BackdropPath = SteamArtwork.FindBackdrop(steamPath, appId),
                 InstallPath = InstallDir(manifestPath, state.GetString("installdir")),
+                Owner = state.GetString("LastOwner"),
             };
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

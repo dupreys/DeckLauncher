@@ -158,3 +158,68 @@
 - Sala (OLED): linha de status no canto (bateria com "carregando" quando houver, e Wi-Fi/Cabo/Sem rede; atualiza a cada 30 s) e chip "▶ Jogando: <jogo>" quando um jogo está aberto (abre a página dele). Native.Battery() (GetSystemPowerStatus).
 - Limpeza em MainWindow.HomeStyles.cs: helpers StepInRow/Directions/Go/SetChoice/OnChoiceClick (os cliques de Interface — estilo, cor, tamanho — usam o mesmo caminho), FocusHome único, UpdateRoomClock virou UpdateRoomStatus, DownloadsSummary separado.
 - Instalador: criar a tag v1.7.2 no GitHub (release.yml). Backup de reversão continua sendo backup_v1.5.1.
+
+## v1.8.0 — contas Steam, dicas contextuais e avisos
+- Contas Steam (MainWindow.Accounts.cs, SteamAccount.cs): lê TODAS as contas de config\loginusers.vdf (SteamLoginUsers.ReadAll). Com 2+ contas, ao abrir o launcher pergunta qual usar ("QUEM ESTÁ JOGANDO?", cartões com a foto de config\avatarcache\<id>.png). Configurações > Integrações > "Conta Steam ao abrir": Perguntar sempre (padrão) / Última conta usada / Sempre a mesma (botão CONTA: nome alterna entre as contas). Foto do perfil na barra superior > "Trocar de conta Steam...".
+- Filtro: só jogos Steam instalados da conta — manifest LastOwner (Game.Owner) OU appid em userdata\<id32>\config\localconfig.vdf (SteamAccountFilter.Keep). Jogos Epic/manuais sempre aparecem. Com uma só conta nada é filtrado. A conta ativa também define amigos/perfil/jogos não instalados (SteamIdValue).
+- LIMITE: o launcher NÃO faz login (regra: nunca logar/sessão de cliente Steam). Trocar de conta aqui só muda o filtro/perfil; para jogar com outra conta, o cliente Steam precisa estar logado nela. Nome e foto escolhidos em "Perfil" (CustomName/CustomAvatarPath) continuam únicos para todas as contas.
+- Dicas contextuais (MainWindow.Hints.cs): o rodapé muda a palavra do A (ABRIR, JOGAR, VOLTAR AO JOGO, ALTERNAR, ESCOLHER) e, com controle, mostra X (FAVORITAR/OPÇÕES), Y (BUSCAR) e LB RB (ABAS).
+- Avisos (MainWindow.Alerts.cs): bateria baixa (20/10/5 %, só sem carregar) e "<jogo> terminou de baixar" mesmo fora da página Downloads (checagem a cada 20 s). Aparecem como toast no launcher; não aparecem por cima de um jogo.
+- Testes: SteamAccountTests.cs. Sem teste no Windows (sem compilador no sandbox). Reversão: backup_v1.5.1.
+
+## v1.8.1 — troca a conta do cliente Steam junto
+- SteamClientSwitch.cs: ao escolher a conta no launcher, define HKCU\Software\Valve\Steam\AutoLoginUser (+RememberPassword=1) e, se a Steam estiver aberta, fecha com "steam.exe -shutdown" (espera até 20 s) e abre de novo com "-silent". É o mesmo mecanismo do "lembrar senha" do próprio cliente: o launcher NÃO recebe, digita nem guarda senha e NÃO cria sessão/login (a regra de nunca logar na Steam continua valendo). Só faz isso se a conta tem RememberPassword=1 em loginusers.vdf e se não há jogo aberto; senão avisa por toast.
+- Opção: AppSettings.SwitchSteamClient (padrão ligado), em Configurações > Integrações > "Trocar também a conta da Steam". Pode desligar para voltar a só filtrar.
+
+## v1.8.1 — trocar também a conta do cliente Steam
+- Ao trocar/escolher a conta no launcher, a Steam é reiniciada em segundo plano na conta escolhida (MainWindow.SteamClient.cs): `steam.exe -shutdown` → grava HKCU\Software\Valve\Steam AutoLoginUser/RememberPassword e marca MostRecent no loginusers.vdf (backup .launcher-backup; SteamAccountSwitch.MarkMostRecent, com teste) → `steam.exe -silent`. Só reinicia se a Steam estiver em outra conta; não faz nada com um jogo aberto.
+- NÃO é login: o launcher não lê/guarda senha nem chama a API de login da Steam (continua valendo a regra de nunca reintroduzir login/sessão de cliente). Depende do login que a Steam já guardou ("Lembrar senha"); sem isso a Steam mostra a própria tela de login.
+- Opção em Configurações > Integrações ("Trocar também a conta do cliente Steam", ligada por padrão; AppSettings.SwitchSteamClient). Sem teste no Windows.
+
+## v1.9.0 — estilos Cinema e Carrossel
+- Interface > Estilo da tela inicial agora tem 5 cartões: Clássico, Painel, Sala (OLED), Cinema e Carrossel (HomeStyle: "Xbox"|"Panel"|"Room"|"Cinema"|"Carousel").
+- Cinema (CinemaHome): arte do jogo ao fundo com degradê, logo/título grande do jogo em foco, "JOGANDO AGORA"/"JOGOS RECENTES", tempo recente, botões Jogar (abre a página do jogo)/Biblioteca/Aplicativos/Amigos e fileira de 7 capas embaixo (foco troca título e fundo).
+- Carrossel (CarouselHome): relógio e data no canto, pôsteres em fila (até 9) com o focado maior no centro (a fileira desliza, CenterCarouselOn), nome, tempo recente, pontos indicadores e atalhos Biblioteca/Aplicativos/Downloads/Amigos.
+- Navegação explícita para ambos via TryTwoRows (também usada na Sala). Código novo: MainWindow.HomeCinema.cs; estilos CinemaTile/CarouselTile no Theme.xaml. "Relógio grande" também aumenta o relógio do Carrossel. Sem teste no Windows. Reversão: backup_v1.5.1.
+
+## v1.9.1
+- Corrigido erro de build CS0102 (SwitchSteamClient duplicado em AppSettings). Havia duas implementações da troca da conta do cliente Steam no projeto; ficou só SteamClientSwitch.cs (+SyncSteamClientAsync e a opção "Trocar também a conta da Steam"), que exige "lembrar senha" na conta.
+
+## v1.9.2
+- Carrossel: o pôster em foco aparecia cortado em cima (o aumento era só visual, ScaleTransform, e passava do limite da fileira). Agora a largura/altura do pôster são animadas de verdade (250x340 -> 325x442) e o centro é calculado pelos tamanhos (CenterCarouselOn(index)).
+
+## v1.9.3
+- Carrossel: a fileira era cortada na largura da tela (os últimos jogos não apareciam); agora fica dentro de um Canvas, que não limita a largura.
+- Cinema e Carrossel mostram os mesmos jogos do Clássico (HomeTileCount = 20, antes 7 e 9). Cinema: fileira com rolagem horizontal automática ao mover o foco.
+
+## v1.9.4
+- Cinema: o quadro de seleção das capas era cortado (a rolagem encostava o pôster na borda e o ScrollViewer cortava em cima/embaixo). Agora a fileira tem margem interna e rola suavemente por conta própria (OnCinemaBringIntoView) deixando folga dos dois lados.
+
+## v1.9.5
+- "Tamanho dos cards" (Pequeno/Médio/Grande) agora vale também para a tela inicial (Clássico, Cinema, Carrossel e Sala), além da biblioteca. O Painel já preenche a tela.
+- Rolagem, legenda e brilho da home passaram a medir posições já com a escala aplicada.
+
+## v1.9.6
+- Cinema: a faixa de jogos parava de acompanhar o foco (o título mudava mas a rolagem ficava presa). O controle da animação usava um sinalizador que podia ficar travado; agora é baseado em tempo e se recupera sozinho.
+
+## v1.9.7
+- Cinema: a animação da faixa de jogos engasgava. Em vez de rolar o ScrollViewer (que refaz o layout a cada quadro), a faixa agora desliza com um TranslateTransform animado, que roda na thread de renderização.
+
+## v1.9.8
+- Cinema: o primeiro e o último jogo apareciam cortados/colados na borda porque o ScrollViewer rolava sozinho (o apresentador de conteúdo tratava o pedido de "trazer à vista" antes do nosso código, que estava no ScrollViewer). O tratamento agora fica na própria fileira, dentro do visor; folga lateral aumentada.
+
+## v1.9.9
+- Tela inicial: o papel de parede do jogo agora aparece na tela toda, como na Steam Big Picture. O degradê escuro que cobria a parte de baixo ficou bem mais leve (42 %) na home; nas outras páginas continua igual.
+
+## v1.9.10
+- Home: abaixo dos cards o papel de parede fica desfocado e um pouco mais escuro (como na Steam Big Picture), para as informações ficarem legíveis. O wallpaper segue nítido na parte de cima.
+
+## v1.9.11
+- Home: wallpaper levemente escurecido em toda a tela (28 %), desfoque abaixo dos cards bem mais leve (raio 12, antes 38) e degradê de fundo mais suave.
+
+## v1.9.12
+- Home: a faixa desfocada abaixo dos cards agora acompanha o zoom e o movimento lento do wallpaper (compartilha a mesma transformação), em vez de ficar parada.
+- NOVIDADES / AMIGOS / RECOMENDADOS na home com texto branco (antes cinza).
+
+## v1.9.13
+- Modo Xbox: o botão Y (Buscar) abre a busca e agora garante que o teclado de toque do Windows apareça: libera a abertura automática no registro (HKCU\Software\Microsoft\TabletTip\1.7), abre o TabTip e, se o painel não ficar visível, pede para ele aparecer pela interface COM ITipInvocation.

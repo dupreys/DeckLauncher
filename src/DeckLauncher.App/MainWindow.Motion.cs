@@ -64,6 +64,7 @@ public partial class MainWindow
     private void OnAnyFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
         if (DateTime.UtcNow < _navUntil && e.OldFocus is not null && e.NewFocus is ButtonBase) UiSound.Play("nav");
+        UpdateHints();
     }
 
     private void OnAnyClick(object sender, RoutedEventArgs e)
@@ -162,6 +163,10 @@ public partial class MainWindow
         HeroImagePrev.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, span));
         HeroImage.Source = image;
         HeroImage.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, span));
+        HeroBlurPrev.Source = HeroBlurImage.Source;
+        HeroBlurPrev.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, span));
+        HeroBlurImage.Source = image;
+        HeroBlurImage.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, span));
     }
 
     // ---- Smooth scrolling of the recent games row --------------------------------------------
@@ -174,9 +179,10 @@ public partial class MainWindow
         if (e.TargetObject is not FrameworkElement target) return;
         e.Handled = true; // we scroll ourselves, with an animation
 
-        var left = target.TranslatePoint(new Point(0, 0), RecentHost).X + RecentHostLeft;
+        // Position inside the scrolled content: measured against the scroll viewer so the card size setting (a scale on the row) is included.
+        var left = target.TranslatePoint(new Point(0, 0), RecentScroll).X + RecentScroll.HorizontalOffset;
         var isGame = target is Button { DataContext: GameItem };
-        var finalWidth = target.ActualWidth; // tiles no longer change size when focused
+        var finalWidth = target.ActualWidth * CardScale; // tiles no longer change size when focused
         var viewport = RecentScroll.ViewportWidth;
         if (viewport <= 0) return;
 
@@ -184,7 +190,7 @@ public partial class MainWindow
         // Near either end the row stops, and the selection keeps moving towards the edge instead.
         var offset = left + finalWidth / 2 - viewport / 2;
 
-        var contentWidth = RecentHost.ActualWidth + RecentHostLeft;
+        var contentWidth = RecentScroll.ExtentWidth;
         offset = Math.Clamp(offset, 0, Math.Max(0, contentWidth - viewport));
         MoveCaption(isGame, left - offset, finalWidth);
         if (Math.Abs(offset - _rowTarget) < 0.5 && Math.Abs(RecentScroll.HorizontalOffset - offset) < 0.5) return;
@@ -284,6 +290,7 @@ public partial class MainWindow
             group.Children.Add(_heroShift);
             HeroLayer.RenderTransform = group;
         }
+        HeroBlurInner.RenderTransform = HeroLayer.RenderTransform; // the blurred part under the cards follows the same movement
 
         var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
         // 30 frames a second look the same for a drift this slow and cost half the work.

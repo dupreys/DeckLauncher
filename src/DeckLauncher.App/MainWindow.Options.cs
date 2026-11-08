@@ -13,7 +13,7 @@ public partial class MainWindow
 
     private void OpenOptions()
     {
-        if (_gameItem is not { } item || PowerOpen || ManageOpen || ProfileOpen || LaunchOverlayOpen) return;
+        if (_gameItem is not { } item || PowerOpen || ManageOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
         OptionsGameName.Text = item.Name;
         OptionsNameBox.Text = item.Name;
         OptionsResetNameButton.IsEnabled = App.Settings.GameOverrides.TryGetValue(GameSorter.Key(item.Game), out var o) && !string.IsNullOrWhiteSpace(o.Name);

@@ -32,6 +32,7 @@ public partial class MainWindow
         InitSounds();
         InitPlayMonitor();
         InitProfile();
+        InitAlerts();
         InitSession();
         ApplyOled();
         InitMedia();
@@ -42,10 +43,11 @@ public partial class MainWindow
 
     private void GoBack()
     {
-        if (!MenuOpen && (MediaViewerOpen || PowerOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen || ManageOpen || _page != "Início")) UiSound.Play("back");
+        if (!MenuOpen && (MediaViewerOpen || PowerOpen || QuickOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen || ManageOpen || _page != "Início")) UiSound.Play("back");
         if (MediaViewerOpen) CloseMediaViewer();
         else if (LaunchOverlayOpen) _ = CancelLaunchAsync();
         else if (PowerOpen) PowerBack();
+        else if (AccountOpen) CloseAccountPicker();
         else if (ProfileOpen) CloseProfile();
         else if (OptionsOpen) CloseOptions();
         else if (QuickOpen) CloseQuick();
@@ -59,14 +61,14 @@ public partial class MainWindow
 
     private void ToggleMenu()
     {
-        if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
+        if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
         if (QuickOpen) CloseQuick();
         if (MenuOpen) CloseMenu(); else OpenMenu();
     }
 
     private void OpenSearch(bool keyboard)
     {
-        if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
+        if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
         if (QuickOpen) CloseQuick();
         if (MenuOpen) MenuLayer.Visibility = Visibility.Collapsed;
         ShowPage("Biblioteca");
@@ -99,6 +101,7 @@ public partial class MainWindow
         SetChip(MenuChip, MenuChipText, pad, "F1", "≡", "#3C4350");
         SetChip(SelectChip, SelectChipText, pad, "Enter", "A", "#4CA82E");
         SetChip(BackChip, BackChipText, pad, "Esc", "B", "#C9302C");
+        UpdateHints(force: true);
     }
 
     private static void SetChip(Border chip, TextBlock text, bool pad, string key, string padText, string color)
@@ -209,7 +212,7 @@ public partial class MainWindow
     /// <summary>LB / RB: previous / next tab of the screen in front.</summary>
     private void CycleTabs(int delta)
     {
-        if (MediaViewerOpen || PowerOpen || MenuOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
+        if (MediaViewerOpen || PowerOpen || MenuOpen || QuickOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
 
         if (ManageOpen) { CycleRadios(ManageTabs.Children.OfType<RadioButton>().ToList(), delta); return; }
         switch (_page)

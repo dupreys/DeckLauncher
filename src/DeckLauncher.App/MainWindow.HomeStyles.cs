@@ -12,27 +12,38 @@ namespace DeckLauncher.App;
 // Layout of this file: style switch and data, focus, clicks, Sala status (clock, battery, network, running game), keyboard/controller movement.
 public partial class MainWindow
 {
-    private const string StyleClassicKey = "Xbox", StylePanelKey = "Panel", StyleRoomKey = "Room";
+    private const string StyleClassicKey = "Xbox", StylePanelKey = "Panel", StyleRoomKey = "Room", StyleCinemaKey = "Cinema", StyleCarouselKey = "Carousel";
     private DateTime _homeInfoAt = DateTime.MinValue;
     private bool _homeInfoBusy;
     private int? _friendsOnline;
     private int _statusTick;
 
     private string HomeStyleKey => App.Settings.HomeStyle;
-    private bool IsClassicHome => HomeStyleKey != StylePanelKey && HomeStyleKey != StyleRoomKey;
+    private bool IsClassicHome => HomeStyleKey is not (StylePanelKey or StyleRoomKey or StyleCinemaKey or StyleCarouselKey);
 
     // ---- Style switch and data ---------------------------------------------------------------
 
     /// <summary>Shows the layout that matches the saved style and hides the other two.</summary>
+    /// <summary>On the home the game's wallpaper shows across the whole screen, like the Steam Big Picture: the fade into the page colour is only a light veil at the bottom.</summary>
+    private void UpdateHeroShade(bool home)
+    {
+        HeroShade.Opacity = home ? 0.38 : 1.0;
+        HeroDim.Opacity = home ? 0.28 : 0.0;
+        HeroBlurLayer.Visibility = home && HeroImage.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void ApplyHomeStyle()
     {
         var style = HomeStyleKey;
         ClassicHome.Visibility = IsClassicHome ? Visibility.Visible : Visibility.Collapsed;
         PanelHome.Visibility = style == StylePanelKey ? Visibility.Visible : Visibility.Collapsed;
         RoomHome.Visibility = style == StyleRoomKey ? Visibility.Visible : Visibility.Collapsed;
+        CinemaHome.Visibility = style == StyleCinemaKey ? Visibility.Visible : Visibility.Collapsed;
+        CarouselHome.Visibility = style == StyleCarouselKey ? Visibility.Visible : Visibility.Collapsed;
         // The game-art background belongs to the classic and Painel screens; the Sala is pure black.
         HeroImage.Visibility = (_page == "Início" && style != StyleRoomKey) || _page == "Jogo" ? Visibility.Visible : Visibility.Collapsed;
         HeroImagePrev.Visibility = HeroImage.Visibility;
+        UpdateHeroShade(_page == "Início");
         UpdateRoomStatus(refreshSlowParts: true);
         if (!IsClassicHome) _ = RefreshHomeInfoAsync(force: true);
     }
@@ -46,7 +57,18 @@ public partial class MainWindow
         RoomRow.ItemsSource = recent.Take(6).ToList();
         PanelEmpty.Visibility = RoomEmpty.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
         PanelEmpty.Text = RoomEmpty.Text = emptyText;
-        if (recent.Count == 0) RoomName.Text = RoomSub.Text = "";
+        CinemaRow.ItemsSource = recent.ToList(); // the same games as the classic home
+        CarouselRow.ItemsSource = recent.ToList();
+        CinemaEmpty.Visibility = CarouselEmpty.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
+        CinemaEmpty.Text = CarouselEmpty.Text = emptyText;
+        BuildCarouselDots(recent.Count, 0);
+        if (recent.Count == 0)
+        {
+            RoomName.Text = RoomSub.Text = "";
+            CinemaTitle.Text = CinemaMeta.Text = CinemaCaption.Text = "";
+            CinemaLogo.Visibility = Visibility.Collapsed;
+            CarouselName.Text = CarouselSub.Text = "";
+        }
         PanelInfoLibraryText.Text = _all.Count == 1 ? "1 jogo" : $"{_all.Count} jogos";
         if (!IsClassicHome) _ = RefreshHomeInfoAsync(force: false);
     }
@@ -56,6 +78,8 @@ public partial class MainWindow
     {
         StylePanelKey => FindAll<Button>(PanelHome).Where(b => b.DataContext is GameItem),
         StyleRoomKey => FindAll<Button>(RoomRow),
+        StyleCinemaKey => FindAll<Button>(CinemaRow),
+        StyleCarouselKey => FindAll<Button>(CarouselRow),
         _ => FindAll<Button>(RecentRow),
     };
 
@@ -67,6 +91,8 @@ public partial class MainWindow
         {
             StylePanelKey => PanelFeatured.IsVisible && PanelFeatured.Focus() || PanelInfoLibrary.IsVisible && PanelInfoLibrary.Focus(),
             StyleRoomKey => FindFirst<Button>(RoomRow) is { } icon ? icon.Focus() : RoomChips().FirstOrDefault()?.Focus() == true,
+            StyleCinemaKey => FindFirst<Button>(CinemaRow) is { } strip ? strip.Focus() : CinemaPlay.IsVisible && CinemaPlay.Focus(),
+            StyleCarouselKey => FindFirst<Button>(CarouselRow) is { } poster ? poster.Focus() : ChipsOf(CarouselHome).FirstOrDefault()?.Focus() == true,
             _ => RecentRow.Items.Count > 0 && FindFirst<Button>(RecentRow) is { } first && first.Focus(),
         };
         // The tiles may not exist yet right after the list was filled: try again a few times.
@@ -119,7 +145,8 @@ public partial class MainWindow
         OnChoiceClick(sender, key => App.Settings.HomeStyle = key, ShowHomeStyleChecks, ApplyHomeStyle);
 
     private void ShowHomeStyleChecks() =>
-        SetChoice(HomeStyleKey, (StyleClassic, StyleClassicKey), (StylePanel, StylePanelKey), (StyleRoom, StyleRoomKey));
+        SetChoice(HomeStyleKey, (StyleClassic, StyleClassicKey), (StylePanel, StylePanelKey), (StyleRoom, StyleRoomKey),
+                  (StyleCinema, StyleCinemaKey), (StyleCarousel, StyleCarouselKey));
 
     /// <summary>Marks the option whose key is chosen and clears the others (the toggles of the Interface page behave like radio buttons).</summary>
     private static void SetChoice(string chosen, params (ToggleButton Button, string Key)[] options)
@@ -142,6 +169,7 @@ public partial class MainWindow
     /// <summary>Called every second by the clock; the cheap parts every time, battery and network every 30 s.</summary>
     private void UpdateRoomStatus(bool refreshSlowParts = false)
     {
+        UpdateCarouselClock();
         if (RoomHome.Visibility != Visibility.Visible) return;
         RoomClock.Text = DateTime.Now.ToString("HH:mm");
         var hour = DateTime.Now.Hour;
@@ -210,15 +238,27 @@ public partial class MainWindow
     // ---- Controller / keyboard movement inside the Painel and the Sala ------------------------------
     // Explicit rules (one press = one step) instead of the geometric focus search.
 
-    private List<UIElement> RoomChips() =>
-        FindAll<Button>(RoomHome).Where(b => b.DataContext is not GameItem && b.IsVisible).Cast<UIElement>().ToList();
+    /// <summary>The shortcut buttons of a home (everything that is a button but not a game).</summary>
+    private static List<UIElement> ChipsOf(DependencyObject home) =>
+        FindAll<Button>(home).Where(b => b.DataContext is not GameItem && b.IsVisible).Cast<UIElement>().ToList();
+
+    private List<UIElement> RoomChips() => ChipsOf(RoomHome);
+
+    private List<UIElement> CinemaButtons() => ChipsOf(CinemaHome);
 
     /// <summary>True when the key was handled here.</summary>
     private bool TryHomeStyleMove(FocusNavigationDirection direction)
     {
-        if (IsClassicHome || PowerOpen || MenuOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return false;
+        if (IsClassicHome || PowerOpen || MenuOpen || QuickOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return false;
         if (Keyboard.FocusedElement is not UIElement focused) return false;
-        return HomeStyleKey == StylePanelKey ? TryPanelMove(direction, focused) : TryRoomMove(direction, focused);
+        return HomeStyleKey switch
+        {
+            StylePanelKey => TryPanelMove(direction, focused),
+            StyleRoomKey => TryTwoRows(direction, focused, FindAll<Button>(RoomRow).Cast<UIElement>().ToList(), RoomChips(), othersBelow: true),
+            StyleCinemaKey => TryTwoRows(direction, focused, FindAll<Button>(CinemaRow).Cast<UIElement>().ToList(), CinemaButtons(), othersBelow: false),
+            StyleCarouselKey => TryTwoRows(direction, focused, FindAll<Button>(CarouselRow).Cast<UIElement>().ToList(), ChipsOf(CarouselHome), othersBelow: true),
+            _ => false,
+        };
     }
 
     private void GoTo(UIElement target)
@@ -289,25 +329,29 @@ public partial class MainWindow
         return down && Bump();
     }
 
-    private bool TryRoomMove(FocusNavigationDirection direction, UIElement focused)
+    /// <summary>
+    /// A row of game tiles and a row of buttons (below the tiles, or above them in the Cinema): left and right step through a
+    /// row, up and down jump to the button or tile that is closest in position.
+    /// </summary>
+    private bool TryTwoRows(FocusNavigationDirection direction, UIElement focused, List<UIElement> tiles, List<UIElement> others, bool othersBelow)
     {
-        var icons = FindAll<Button>(RoomRow).Cast<UIElement>().ToList();
-        var chips = RoomChips();
-        var (_, _, up, down) = Directions(direction);
+        var towardOthers = othersBelow ? FocusNavigationDirection.Down : FocusNavigationDirection.Up;
+        var towardTiles = othersBelow ? FocusNavigationDirection.Up : FocusNavigationDirection.Down;
+        static int Closest(int index, int from, int to) => Math.Min(to - 1, index * to / Math.Max(1, from));
 
-        var i = icons.FindIndex(t => ReferenceEquals(t, focused) || IsAncestor(t, focused));
+        var i = tiles.FindIndex(t => ReferenceEquals(t, focused) || IsAncestor(t, focused));
         if (i >= 0)
         {
-            if (StepInRow(icons, i, direction)) return true;
-            if (down && chips.Count > 0) return Go(chips[Math.Min(chips.Count - 1, i * chips.Count / Math.Max(1, icons.Count))]);
-            return down; // up: the top bar
+            if (StepInRow(tiles, i, direction)) return true;
+            if (direction != towardOthers) return false; // the other way: the top bar
+            return others.Count == 0 || Go(others[Closest(i, tiles.Count, others.Count)]);
         }
 
-        var c = chips.IndexOf(focused);
+        var c = others.IndexOf(focused);
         if (c < 0) return false;
-        if (StepInRow(chips, c, direction)) return true;
-        if (up && icons.Count > 0) return Go(icons[Math.Min(icons.Count - 1, c * icons.Count / Math.Max(1, chips.Count))]);
-        return down && Bump();
+        if (StepInRow(others, c, direction)) return true;
+        if (direction == towardTiles) return tiles.Count == 0 || Go(tiles[Closest(c, others.Count, tiles.Count)]);
+        return direction == towardOthers && Bump();
     }
 
     private static (bool Left, bool Right, bool Up, bool Down) Directions(FocusNavigationDirection d) =>

@@ -396,7 +396,7 @@ public partial class MainWindow
 
     private void OpenAppMenu(AppEntry entry)
     {
-        if (OptionsOpen || PowerOpen || ManageOpen || ProfileOpen || LaunchOverlayOpen || MenuOpen) return;
+        if (OptionsOpen || PowerOpen || ManageOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen || MenuOpen) return;
         _appMenuKey = entry.Key;
         AppMenuName.Text = entry.Name;
         AppMenuRemove.Content = entry.Manual is null ? "Ocultar da lista" : "Remover da lista";

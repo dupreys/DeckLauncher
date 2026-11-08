@@ -44,7 +44,7 @@ public partial class MainWindow
 
     private void OpenFeed(string tab)
     {
-        if (PowerOpen || ManageOpen || QuickOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
+        if (PowerOpen || ManageOpen || QuickOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
         if (!_feedWired)
         {
             _feedWired = true;
@@ -122,6 +122,7 @@ public partial class MainWindow
 
     private string? SteamIdValue()
     {
+        if (_activeSteamId is not null && HasSeveralAccounts) return _activeSteamId; // the account chosen at start-up
         if (SteamLoginUsers.IsSteamId64(App.Settings.SteamId)) return App.Settings.SteamId;
         return _library.SteamPath is { } path ? SteamLoginUsers.ReadMostRecent(path)?.SteamId64 : null;
     }

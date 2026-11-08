@@ -231,7 +231,7 @@
 
     <!-- Small text tab ("NOVIDADES", "AMIGOS"...). -->
     <Style x:Key="TabText" TargetType="Button">
-        <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Padding" Value="22,10"/>
@@ -879,7 +879,7 @@
 
     <!-- Style picker card in Settings > Interface (a toggle used like a radio button: see OnHomeStyleClick). -->
     <Style x:Key="StyleCard" TargetType="ToggleButton">
-        <Setter Property="Margin" Value="0,0,16,0"/>
+        <Setter Property="Margin" Value="0,0,16,14"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
@@ -959,6 +959,58 @@
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Pill" Property="BorderBrush" Value="#FFFFFF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Cinema: poster in the strip at the bottom of the screen. -->
+    <Style x:Key="CinemaTile" TargetType="Button" BasedOn="{StaticResource PanelTile}">
+        <Setter Property="Width" Value="170"/>
+        <Setter Property="Height" Value="232"/>
+        <Setter Property="Margin" Value="0,0,18,0"/>
+        <Setter Property="VerticalAlignment" Value="Bottom"/>
+    </Style>
+
+    <!-- Carrossel: poster that grows and lights up when it is the one in the middle. -->
+    <Style x:Key="CarouselTile" TargetType="Button">
+        <Setter Property="Width" Value="250"/>
+        <Setter Property="Height" Value="340"/>
+        <Setter Property="Margin" Value="30,0"/>
+        <Setter Property="Opacity" Value="0.7"/>
+        <Setter Property="VerticalAlignment" Value="Bottom"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Background" Value="{DynamicResource Panel}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <!-- The focused poster really gets bigger (its size is animated), so nothing sticks out of the row and gets cut. -->
+                    <Border x:Name="Frame" CornerRadius="22" BorderThickness="4" BorderBrush="Transparent" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Text}"/>
+                            <Setter TargetName="Frame" Property="Effect">
+                                <Setter.Value><DropShadowEffect Color="#4C9AFF" BlurRadius="60" ShadowDepth="0" Opacity="0.6"/></Setter.Value>
+                            </Setter>
+                            <Setter Property="Opacity" Value="1"/>
+                            <Setter Property="Panel.ZIndex" Value="5"/>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="Width" To="325" Duration="0:0:0.2"/>
+                                    <DoubleAnimation Storyboard.TargetProperty="Height" To="442" Duration="0:0:0.2"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard><Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="Width" To="250" Duration="0:0:0.2"/>
+                                    <DoubleAnimation Storyboard.TargetProperty="Height" To="340" Duration="0:0:0.2"/>
+                                </Storyboard></BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

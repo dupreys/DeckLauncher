@@ -1,3 +1,4 @@
+using DeckLauncher.Core.Steam;
 using DeckLauncher.Core.Manual;
 using DeckLauncher.Core;
 
@@ -26,7 +27,7 @@ public sealed class AppSettings
     /// <summary>How dark the game-art background is, 0 (none) to 0.9.</summary>
     public double BackdropDim { get; set; } = 0.35;
 
-    /// <summary>Layout of the Home screen: "Xbox" (Clássico: row of tiles), "Panel" (Painel: featured game, grid and info tiles) or "Room" (Sala: big clock and a row of icons).</summary>
+    /// <summary>Layout of the Home screen: "Xbox" (Clássico: row of tiles), "Panel" (Painel: featured game, grid and info tiles), "Room" (Sala: big clock and a row of icons), "Cinema" (big title, strip of games) or "Carousel" (Carrossel: big poster in the middle).</summary>
     public string HomeStyle { get; set; } = "Xbox";
 
     /// <summary>Highlight colour of the interface: "Blue" (default), "Green", "Purple", "Orange", "Pink" or "Red".</summary>
@@ -37,6 +38,18 @@ public sealed class AppSettings
 
     /// <summary>Bigger clock in the top bar and on the "Sala" home.</summary>
     public bool BigClock { get; set; }
+
+    /// <summary>Which Steam account the launcher uses when it opens: "Ask" (always ask, default), "Last" (the one used last time) or "Fixed" (<see cref="FixedAccountId"/>).</summary>
+    public string AccountMode { get; set; } = "Ask";
+
+    /// <summary>When the account changes in the launcher, also restart the Steam client on that account (uses the login Steam already saved).</summary>
+    public bool SwitchSteamClient { get; set; } = true;
+
+    /// <summary>SteamID64 chosen for the "Fixed" mode.</summary>
+    public string? FixedAccountId { get; set; }
+
+    /// <summary>SteamID64 used the last time.</summary>
+    public string? LastAccountId { get; set; }
 
     // Sound (system volume itself is not stored; Windows owns it)
     public bool UiSounds { get; set; } = true;
@@ -134,8 +147,11 @@ public sealed class AppSettings
         PlaySessions = PlayHistory.Clean(PlaySessions);
         Wallpaper = (Wallpaper ?? "").Trim();
         if (Wallpaper.Length > 0 && !Wallpaper.StartsWith("preset:", StringComparison.Ordinal) && !Wallpaper.StartsWith("file:", StringComparison.Ordinal)) Wallpaper = "";
-        if (HomeStyle is not ("Xbox" or "Panel" or "Room")) HomeStyle = "Xbox"; // older values ("Simple", "Cinema") never had a screen: back to the classic one
+        if (HomeStyle is not ("Xbox" or "Panel" or "Room" or "Cinema" or "Carousel")) HomeStyle = "Xbox"; // older values ("Simple", "Cinema") never had a screen: back to the classic one
         if (AccentName is not ("Blue" or "Green" or "Purple" or "Orange" or "Pink" or "Red")) AccentName = "Blue";
+        if (AccountMode is not ("Ask" or "Last" or "Fixed")) AccountMode = "Ask";
+        if (!SteamLoginUsers.IsSteamId64(FixedAccountId)) FixedAccountId = null;
+        if (!SteamLoginUsers.IsSteamId64(LastAccountId)) LastAccountId = null;
         if (CardSize is not ("Small" or "Medium" or "Large")) CardSize = "Medium";
         SteamWebApiKey = string.IsNullOrWhiteSpace(SteamWebApiKey) ? null : SteamWebApiKey.Trim();
         SteamGridDbApiKey = string.IsNullOrWhiteSpace(SteamGridDbApiKey) ? null : SteamGridDbApiKey.Trim();

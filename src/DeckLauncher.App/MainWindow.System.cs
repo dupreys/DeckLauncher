@@ -274,6 +274,7 @@ public partial class MainWindow
         OledSwitch.IsChecked = App.Settings.OledBlack;
         ShowHomeStyleChecks();
         ShowAppearanceChecks();
+        ShowAccountChecks();
         AutostartSwitch.IsChecked = Autostart.IsEnabled();
         SettingsKeyBox.Text = App.Settings.SteamGridDbApiKey ?? "";
         SteamKeyBox.Text = App.Settings.SteamWebApiKey ?? "";

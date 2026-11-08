@@ -28,6 +28,9 @@ public sealed record Game(
     /// <summary>Folder the game is installed in (used to find its processes when it must be force-closed).</summary>
     public string? InstallPath { get; init; }
 
+    /// <summary>Steam: SteamID64 of the account that last used the installation (the manifest's LastOwner).</summary>
+    public string? Owner { get; init; }
+
     /// <summary>True for a game the user owns but has not installed (listed under "Not installed"; it can be downloaded).</summary>
     public bool NotInstalled { get; init; }
 

@@ -40,7 +40,13 @@ public partial class MainWindow
     private void ApplyCardSize()
     {
         var scale = CardScale;
-        LibGrid.LayoutTransform = scale == 1.0 ? Transform.Identity : new ScaleTransform(scale, scale);
+        // The same scale for the library and for the rows of the home styles (the Painel fills the screen by itself).
+        Transform Scale() => scale == 1.0 ? Transform.Identity : new ScaleTransform(scale, scale);
+        LibGrid.LayoutTransform = Scale();
+        RecentHost.LayoutTransform = Scale();
+        CinemaRow.LayoutTransform = Scale();
+        CarouselRow.LayoutTransform = Scale();
+        RoomRow.LayoutTransform = Scale();
         UpdateLibGridWidth();
         LibCursor.Visibility = Visibility.Collapsed;
     }
@@ -51,6 +57,8 @@ public partial class MainWindow
         Clock.FontSize = big ? 32 : 22;
         RoomClock.FontSize = big ? 170 : 124;
         RoomGreeting.FontSize = big ? 32 : 24;
+        CarouselClock.FontSize = big ? 124 : 88;
+        CarouselDate.FontSize = big ? 30 : 22;
     }
 
     private void ShowAppearanceChecks()

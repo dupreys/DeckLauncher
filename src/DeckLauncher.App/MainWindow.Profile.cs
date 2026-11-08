@@ -60,6 +60,7 @@ public partial class MainWindow
             _steamAvatar ??= await RemoteImage.LoadAsync(LibraryService.Http, App.Settings.AvatarUrl, 256);
             image = _steamAvatar;
         }
+        if (image is null && _activeSteamId is { } id) image = LoadLocalImage(AvatarCachePath(id)); // the picture Steam keeps on this PC
         AvatarImage.Source = image;
         AvatarGlyph.Visibility = image is null ? Visibility.Visible : Visibility.Collapsed;
         ProfileImage.Source = image;
@@ -115,6 +116,7 @@ public partial class MainWindow
 
     private void UpdateProfilePanel()
     {
+        ProfileSwitchButton.Visibility = HasSeveralAccounts ? Visibility.Visible : Visibility.Collapsed;
         ProfileName.Text = DisplayName;
         ProfileNameBox.Text = App.Settings.CustomName ?? "";
         var hasCustom = !string.IsNullOrWhiteSpace(App.Settings.CustomAvatarPath);
