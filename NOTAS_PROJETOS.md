@@ -223,3 +223,6 @@
 
 ## v1.9.13
 - Modo Xbox: o botão Y (Buscar) abre a busca e agora garante que o teclado de toque do Windows apareça: libera a abertura automática no registro (HKCU\Software\Microsoft\TabletTip\1.7), abre o TabTip e, se o painel não ficar visível, pede para ele aparecer pela interface COM ITipInvocation.
+- Release: o texto "O que mudou" agora vem da seção "## v<versão>" deste arquivo (workflow release.yml). Créditos no README citam a ajuda do Claude.
+- README: os prints foram substituídos por um único GIF de demonstração (docs/demo.gif); a pasta docs/screenshots foi removida.
+- Correção do teste `Marks_only_the_chosen_account_as_most_recent` (CI): em .NET os grupos sem nome são numerados antes dos nomeados, então `Groups[4]` era o corpo e não a chave de fechamento. Agora usa grupos nomeados (head/body/tail).

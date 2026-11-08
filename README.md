@@ -20,22 +20,10 @@
 
 ---
 
-## Prints
+## Demonstração
 
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="Início: jogos recentes com o último jogo em cartão largo" width="430">
-  <img src="docs/screenshots/menu.png" alt="Menu lateral" width="430">
-</p>
-<p align="center">
-  <img src="docs/screenshots/game-page.png" alt="Página do jogo" width="430">
-  <img src="docs/screenshots/library.png" alt="Biblioteca" width="430">
-</p>
-<p align="center">
-  <img src="docs/screenshots/settings-interface.png" alt="Configurações > Interface" width="430">
-  <img src="docs/screenshots/launching.png" alt="Tela de entrada no jogo" width="430">
-</p>
-<p align="center">
-  <img src="docs/screenshots/game-menu.png" alt="Menu do launcher por cima de um jogo aberto" width="430">
+  <img src="docs/demo.gif" alt="DeckLauncher em uso: início, menu, biblioteca e configurações" width="860">
 </p>
 
 ## Funções
@@ -135,7 +123,7 @@ fse/                     pacote do Modo Xbox (manifesto, capacidade, imagens e s
 installer/               script do instalador (Inno Setup) e scripts do Modo Xbox
 .github/workflows/       build e release automáticos (GitHub Actions)
 assets/                  ícone (SVG, PNG, .ico) e imagem de pré-visualização
-docs/screenshots/        prints usados neste README
+docs/demo.gif            vídeo curto (GIF) usado neste README
 ```
 
 ## Limitações conhecidas
@@ -148,6 +136,7 @@ docs/screenshots/        prints usados neste README
 ## Créditos e avisos
 
 - Arte de capas, fundos e logotipos: comunidade do [SteamGridDB](https://www.steamgriddb.com). Papéis de parede: [Wallhaven](https://wallhaven.cc), pertencentes aos seus autores. Cada imagem pertence ao seu criador ou à publicadora do jogo.
+- Desenvolvido com a ajuda do [Claude](https://claude.ai), da Anthropic (programação e revisão do código).
 - Projeto independente: **não é afiliado nem endossado** pela Valve, pela Steam, pela Epic Games, pelo SteamGridDB ou pelo Wallhaven. Steam e Epic Games são marcas dos seus donos.
 - O visual é apenas inspirado no layout do modo Big Picture; nenhuma marca, logotipo ou arte da Valve é usada. O ícone do DeckLauncher é original.
 

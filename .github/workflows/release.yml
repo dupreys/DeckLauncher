@@ -72,9 +72,28 @@ jobs:
           name: DeckLauncher-${{ steps.version.outputs.version }}
           path: dist/*
 
+      # O texto "O que mudou" da release vem da seção "## v<versão>" do NOTAS_PROJETOS.md (se existir).
+      - name: Montar o texto da release
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $lines = Get-Content NOTAS_PROJETOS.md -Encoding UTF8
+          $start = [array]::IndexOf($lines, "## $tag")
+          $body = @()
+          if ($start -ge 0) {
+            for ($i = $start + 1; $i -lt $lines.Count; $i++) {
+              if ($lines[$i] -match '^## ') { break }
+              $body += $lines[$i]
+            }
+          }
+          $text = ($body -join "`n").Trim()
+          if ($text) { "## O que mudou`n`n$text`n" | Set-Content release-notes.md -Encoding UTF8 }
+          else { "## O que mudou`n`nVeja a lista de mudanças abaixo.`n" | Set-Content release-notes.md -Encoding UTF8 }
+
       - name: Criar a release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+          body_path: release-notes.md
           generate_release_notes: true

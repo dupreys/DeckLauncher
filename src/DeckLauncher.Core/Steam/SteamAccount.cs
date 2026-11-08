@@ -187,7 +187,7 @@ public static class SteamAccountSwitch
     {
         return System.Text.RegularExpressions.Regex.Replace(
             vdf,
-            "(\"(?<id>\\d{17})\"\\s*\\{)(?<body>[^{}]*)(\\})",
+            "(?<head>\"(?<id>\\d{17})\"\\s*\\{)(?<body>[^{}]*)(?<tail>\\})",
             m =>
             {
                 var wanted = m.Groups["id"].Value == steamId64 ? "1" : "0";
@@ -195,7 +195,7 @@ public static class SteamAccountSwitch
                 body = System.Text.RegularExpressions.Regex.IsMatch(body, "\"MostRecent\"\\s+\"[01]\"")
                     ? System.Text.RegularExpressions.Regex.Replace(body, "(\"MostRecent\"\\s+)\"[01]\"", "$1\"" + wanted + "\"")
                     : body + "\n\t\t\"MostRecent\"\t\t\"" + wanted + "\"";
-                return m.Groups[1].Value + body + m.Groups[4].Value;
+                return m.Groups["head"].Value + body + m.Groups["tail"].Value; // named groups: in .NET the unnamed ones are numbered before the named ones
             },
             System.Text.RegularExpressions.RegexOptions.Singleline);
     }
