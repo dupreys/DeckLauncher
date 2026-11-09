@@ -92,7 +92,7 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Owned Steam games that are not installed (the "Não instalados" tab). Runs after the installed list is shown.</summary>
+    /// <summary>Owned Steam games that are not installed (listed after the installed ones in the Steam tab, dimmed). Runs after the installed list is shown.</summary>
     private async Task RefreshNotInstalledAsync(List<Game> installed)
     {
         try
@@ -115,16 +115,27 @@ public partial class MainWindow : Window
         _notInstalled = items;
         if (!changed) return;
 
-        // Re-setting the grid takes the focus away, so only redo it when the tab is the one in view.
-        if (_filter == "notinst") ApplyFilter();
-        else if (_tabs.TryGetValue("notinst", out var tab)) tab.Content = BuildTabLabel("NÃO INSTALADOS", items.Count);
+        // Re-setting the grid takes the focus away, so only redo it when the Steam tab is the one in view, keeping the place.
+        if (_filter == "steam") ApplyFilterKeepingPlace();
+    }
+
+    /// <summary>Redraws the list and puts the selector back on the same game, at the same scroll position (the user may be browsing).</summary>
+    private void ApplyFilterKeepingPlace()
+    {
+        GameItem? focusedGame = Keyboard.FocusedElement is FrameworkElement { DataContext: GameItem g } element && IsAncestor(LibGrid, element) ? g : null;
+        var offset = LibScroll.VerticalOffset;
+        ApplyFilter();
+        if (focusedGame is null) return;
+        LibScroll.ScrollToVerticalOffset(offset);
+        if (FindAll<Button>(LibGrid).FirstOrDefault(b => ReferenceEquals(b.DataContext, focusedGame)) is { } tile) tile.Focus();
+        else FocusLibrary();
     }
 
     private string NotInstalledEmptyText() => _library.NotInstalledProblem switch
     {
         "noid" => "Não achei a sua conta da Steam. Abra a Steam neste PC com a sua conta ou entre em Configurações > Integrações.",
         "fetch" => "Não consegui ler os seus jogos da Steam. Veja a internet, a Web API key (Configurações > Integrações) e se os detalhes dos jogos estão públicos no seu perfil.",
-        _ => "Todos os seus jogos da Steam já estão instalados.",
+        _ => "Nenhum jogo da Steam nesta lista.",
     };
 
     private async Task DownloadArtAsync(List<Game> games)
@@ -168,7 +179,7 @@ public partial class MainWindow : Window
 
     private static readonly (string Key, string Title)[] TabDefs =
     {
-        ("all", "TODOS OS JOGOS"), ("steam", "STEAM"), ("epic", "EPIC"), ("manual", "ADICIONADOS"), ("fav", "FAVORITOS"), ("notinst", "NÃO INSTALADOS"), ("apps", "APLICATIVOS"),
+        ("all", "TODOS OS JOGOS"), ("steam", "STEAM"), ("epic", "EPIC"), ("manual", "ADICIONADOS"), ("fav", "FAVORITOS"), ("apps", "APLICATIVOS"),
     };
 
     private void BuildTabs()
@@ -189,7 +200,6 @@ public partial class MainWindow : Window
         "epic" => item.Source == EpicProvider.ProviderName,
         "manual" => item.Source == ManualProvider.ProviderName,
         "fav" => item.IsFavorite,
-        "notinst" => item.Game.NotInstalled,
         _ => true,
     };
 
@@ -197,7 +207,7 @@ public partial class MainWindow : Window
     {
         foreach (var (key, title) in TabDefs)
         {
-            var count = key == "apps" ? AppsCount : key == "notinst" ? _notInstalled.Count : _all.Count(i => InFilter(i, key));
+            var count = key == "apps" ? AppsCount : _all.Count(i => InFilter(i, key));
             _tabs[key].Content = BuildTabLabel(title, count);
         }
 
@@ -212,11 +222,14 @@ public partial class MainWindow : Window
             return;
         }
 
-        var shown = (_filter == "notinst" ? _notInstalled : _all).Where(i => InFilter(i, _filter)
-                                    && (text.Length == 0 || i.Name.Contains(text, StringComparison.CurrentCultureIgnoreCase))).ToList();
+        // Steam tab: the installed games first, then the owned ones that are not installed (shown dimmed).
+        IEnumerable<GameItem> source = _all.Where(i => InFilter(i, _filter));
+        if (_filter == "steam") source = source.Concat(_notInstalled);
+        var shown = source.Where(i => text.Length == 0 || i.Name.Contains(text, StringComparison.CurrentCultureIgnoreCase)).ToList();
         LibGrid.ItemsSource = shown;
+        ResetLibrarySelector();
         LibEmpty.Visibility = shown.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        LibEmpty.Text = _filter == "notinst" ? NotInstalledEmptyText()
+        LibEmpty.Text = _filter == "steam" && _library.NotInstalledProblem is not null && text.Length == 0 ? NotInstalledEmptyText()
             : _all.Count == 0 ? "Sua biblioteca está vazia." : "Nenhum jogo nesta lista.";
     }
 
@@ -322,6 +335,17 @@ public partial class MainWindow : Window
         var animation = new DoubleAnimation(LibScroll.VerticalOffset, target, TimeSpan.FromMilliseconds(220)) { EasingFunction = EaseOut };
         animation.Completed += (_, _) => { if (Math.Abs(_libTarget - target) < 0.5) _libAnimating = false; };
         BeginAnimation(LibOffsetProperty, animation);
+    }
+
+    /// <summary>A new list (tab, search, refresh): the old selector position and scroll belong to tiles that no longer exist.</summary>
+    private void ResetLibrarySelector()
+    {
+        foreach (var property in new[] { Canvas.LeftProperty, Canvas.TopProperty, WidthProperty, HeightProperty }) LibCursor.BeginAnimation(property, null);
+        LibCursor.Visibility = Visibility.Collapsed;
+        BeginAnimation(LibOffsetProperty, null);
+        _libAnimating = false;
+        LibScroll.ScrollToVerticalOffset(0);
+        LibGrid.UpdateLayout(); // the first tile of the new list must have its real position before it takes the focus
     }
 
     private void OnLibGridLostFocus(object sender, KeyboardFocusChangedEventArgs e)

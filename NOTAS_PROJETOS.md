@@ -222,7 +222,31 @@
 - NOVIDADES / AMIGOS / RECOMENDADOS na home com texto branco (antes cinza).
 
 ## v1.9.13
+- **Novos estilos da tela inicial:** Painel, Sala (OLED), Cinema e Carrossel, além do Clássico. Escolha em Configurações → Interface.
+- **Personalização:** cor de destaque que vale para todo o sistema, tamanho dos cards (biblioteca e início) e relógio grande.
+- **Contas da Steam:** escolha a conta ao abrir, veja só os jogos instalados dela e troque pela foto do perfil (a Steam em segundo plano acompanha).
+- **Início mais bonito:** o papel de parede do jogo ocupa a tela toda, com um leve desfoque embaixo dos cards, como na Steam Big Picture.
+- **Avisos e dicas:** alerta de bateria baixa e de download concluído, e dicas de botões que mudam conforme a tela.
+- **Modo Xbox:** o botão Y abre a busca e o teclado de toque do Windows.
+- **Correções:** navegação do controle (setas que exigiam dois toques), animação do Cinema e cortes nos cards.
+
+## Notas técnicas v1.9.13
 - Modo Xbox: o botão Y (Buscar) abre a busca e agora garante que o teclado de toque do Windows apareça: libera a abertura automática no registro (HKCU\Software\Microsoft\TabletTip\1.7), abre o TabTip e, se o painel não ficar visível, pede para ele aparecer pela interface COM ITipInvocation.
 - Release: o texto "O que mudou" agora vem da seção "## v<versão>" deste arquivo (workflow release.yml). Créditos no README citam a ajuda do Claude.
 - README: os prints foram substituídos por um único GIF de demonstração (docs/demo.gif); a pasta docs/screenshots foi removida.
 - Correção do teste `Marks_only_the_chosen_account_as_most_recent` (CI): em .NET os grupos sem nome são numerados antes dos nomeados, então `Groups[4]` era o corpo e não a chave de fechamento. Agora usa grupos nomeados (head/body/tail).
+
+## v1.9.14
+- **Teclado próprio do launcher:** o botão Y (e A em uma caixa de texto) abre um teclado na tela feito pelo DeckLauncher, sem depender do teclado do Windows. A digita, X apaga, Y insere espaço e B fecha. Teclas Shift, Espaço, Limpar e Pronto; o teclado do computador também funciona.
+- **Biblioteca:** ao trocar de aba (LB/RB) o seletor e a rolagem ficavam presos na lista anterior; agora são reiniciados.
+
+## Notas técnicas v1.9.14
+- Novo `MainWindow.Osk.cs` (teclado), estilo `OskKey` no Theme.xaml, painel `OskPanel` no MainWindow.xaml, `ResetLibrarySelector()` em ApplyGames. O teclado do Windows (TabTip) continua no código mas não é mais usado pela busca.
+
+## v1.9.15
+- **Teclado:** botão "abc/ABC" ao lado do espaço e o gatilho direito (RT) alternam maiúsculas fixas; o ⇧ continua valendo só para a próxima letra. A barra de dicas mostra RT MAIÚSCULA.
+- **Biblioteca:** ao trocar de aba com LB/RB o seletor vai direto para o primeiro jogo da nova lista (em abas vazias não há seletor).
+
+## v1.9.16
+- Voltou para a base da v1.9.15 (a tentativa de jogos da Epic não instalados, v1.10.0, foi descartada; fica guardada em /home/claude/deck/discarded_v1.10.0).
+- **Biblioteca:** a aba "Não instalados" foi removida. Os jogos da conta Steam que não estão instalados agora aparecem na aba **Steam**, depois dos instalados, esmaecidos (ficam mais nítidos quando selecionados). Instalar continua pela página do jogo. O número da aba Steam conta só os instalados.

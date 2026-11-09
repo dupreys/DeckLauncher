@@ -347,7 +347,24 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Button Style="{StaticResource LibTile}" Click="OnTileClick" Loaded="OnTileLoaded" GotKeyboardFocus="OnLibTileFocus">
+                            <Button Click="OnTileClick" Loaded="OnTileLoaded" GotKeyboardFocus="OnLibTileFocus">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource LibTile}">
+                                        <Style.Triggers>
+                                            <!-- Games that are owned but not installed: dimmed, a little clearer under the selector -->
+                                            <DataTrigger Binding="{Binding IsNotInstalled}" Value="True">
+                                                <Setter Property="Opacity" Value="0.4"/>
+                                            </DataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsNotInstalled}" Value="True"/>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsKeyboardFocused}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Opacity" Value="0.85"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
                                 <Grid>
                                     <TextBlock Text="{Binding Name}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"
                                                VerticalAlignment="Center" Margin="16"/>
@@ -1079,6 +1096,16 @@
                 <TextBlock x:Name="AccountHint" Text="B: continuar com a conta atual" FontSize="14" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,34,0,0"/>
             </StackPanel>
         </Grid>
+        <!-- The launcher's own on-screen keyboard (Y opens it, B closes it) -->
+        <Border x:Name="OskPanel" Visibility="Collapsed" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,76"
+                Background="{DynamicResource T_171D26}" BorderBrush="{DynamicResource T_3A4556}" BorderThickness="1" CornerRadius="16" Padding="22,16,22,14">
+            <StackPanel KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabNavigation="Contained">
+                <Border Background="{DynamicResource T_0D1117}" CornerRadius="8" Padding="16,10" Margin="4,0,4,10">
+                    <TextBlock x:Name="OskText" FontSize="22" Foreground="{StaticResource Text}" TextTrimming="CharacterEllipsis" MinHeight="30"/>
+                </Border>
+                <StackPanel x:Name="OskRows"/>
+            </StackPanel>
+        </Border>
         <!-- Entering a game: art, logo, animated controller -->
         <Grid x:Name="LaunchOverlay" Visibility="Collapsed" Background="{DynamicResource T_FF05080C}" KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabNavigation="Contained">
             <Image x:Name="LaunchBackdrop" Stretch="UniformToFill" Opacity="0.5" RenderTransformOrigin="0.5,0.5"/>

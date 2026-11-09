@@ -35,6 +35,13 @@ public partial class MainWindow
     private (string Select, List<(string Key, string Color, string Label)> Extras) DescribeFocus()
     {
         var extras = new List<(string, string, string)>();
+        if (OskOpen)
+        {
+            extras.Add(("X", "#2B7DE0", "APAGAR"));
+            extras.Add(("Y", "#E0A800", "ESPAÇO"));
+            extras.Add(("RT", "#9AA3AE", "MAIÚSCULA"));
+            return ("DIGITAR", extras);
+        }
         if (AccountOpen) return ("ESCOLHER", extras);
         if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return ("SELECIONAR", extras);
 

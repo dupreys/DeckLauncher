@@ -23,6 +23,14 @@ public partial class MainWindow
         // Any key goes back to the keyboard hints; the controller switches them to A / B.
         PreviewKeyDown += (_, _) => SetHints(false);
 
+        // A real keyboard still works while the launcher's keyboard is open.
+        PreviewTextInput += (_, e) =>
+        {
+            if (!OskOpen || string.IsNullOrEmpty(e.Text) || char.IsControl(e.Text[0])) return;
+            OskType(e.Text);
+            e.Handled = true;
+        };
+
         SearchBox.KeyDown += (_, e) =>
         {
             if (e.Key is Key.Enter or Key.Down) { ConfirmSearch(); e.Handled = true; }
@@ -43,6 +51,7 @@ public partial class MainWindow
 
     private void GoBack()
     {
+        if (OskOpen) { UiSound.Play("back"); CloseOsk(); return; }
         if (!MenuOpen && (MediaViewerOpen || PowerOpen || QuickOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen || ManageOpen || _page != "Início")) UiSound.Play("back");
         if (MediaViewerOpen) CloseMediaViewer();
         else if (LaunchOverlayOpen) _ = CancelLaunchAsync();
@@ -69,17 +78,19 @@ public partial class MainWindow
     private void OpenSearch(bool keyboard)
     {
         if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
+        if (OskOpen) return;
         if (QuickOpen) CloseQuick();
         if (MenuOpen) MenuLayer.Visibility = Visibility.Collapsed;
         ShowPage("Biblioteca");
         SearchBox.Focus();
         SearchBox.SelectAll();
-        if (keyboard) _ = VirtualKeyboard.ShowAsync();
+        if (keyboard) ShowOsk(SearchBox);
     }
 
     private void ConfirmSearch()
     {
         VirtualKeyboard.Hide();
+        if (OskOpen) OskPanel.Visibility = Visibility.Collapsed;
         FocusLibrary();
     }
 
@@ -143,6 +154,7 @@ public partial class MainWindow
             HandleViewerButton(button);
             return;
         }
+        if (OskOpen && HandleOskButton(button)) return;
 
         switch (button)
         {
@@ -185,8 +197,7 @@ public partial class MainWindow
         if (Keyboard.FocusedElement is TextBox box)
         {
             if (ReferenceEquals(box, SearchBox)) ConfirmSearch();
-            else if (VirtualKeyboard.IsVisible) VirtualKeyboard.Hide();
-            else _ = VirtualKeyboard.ShowAsync();
+            else ShowOsk(box);
             return;
         }
 
@@ -217,7 +228,10 @@ public partial class MainWindow
         if (ManageOpen) { CycleRadios(ManageTabs.Children.OfType<RadioButton>().ToList(), delta); return; }
         switch (_page)
         {
-            case "Biblioteca": CycleRadios(_tabs.Values.ToList(), delta); break;
+            case "Biblioteca":
+                CycleRadios(_tabs.Values.ToList(), delta);
+                FocusLibrary(); // the selector always starts on the first game of the new list (an empty list keeps the tab)
+                break;
             case "Jogo": CycleRadios(new List<RadioButton> { GameTabAbout, GameTabInfo }, delta); break;
             case "Feed": CycleRadios(new List<RadioButton> { FeedTabNews, FeedTabFriends, FeedTabRecs }, delta); break;
             case "Configurações": CycleRadios(FindAll<RadioButton>(SettingsPage).ToList(), delta); break;

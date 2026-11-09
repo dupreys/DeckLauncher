@@ -23,6 +23,9 @@ public sealed class GameItem : INotifyPropertyChanged
 
     public string Source => Game.Source;
 
+    /// <summary>An owned game that is not installed: its tile is shown dimmed.</summary>
+    public bool IsNotInstalled => Game.NotInstalled;
+
     public bool IsFavorite => App.Settings.Favorites.Contains(GameSorter.Key(Game));
 
     /// <summary>Portrait cover (library grid and narrow home tiles).</summary>
