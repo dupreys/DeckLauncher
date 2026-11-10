@@ -32,7 +32,7 @@
 - **Início:** linha de jogos recentes (até 20). Só o último jogo jogado aparece num cartão largo, com o fundo e o logotipo; os outros ficam em capa estreita. O fundo da tela muda conforme o jogo em foco e o papel de parede se move devagar. O jogo em foco ganha um brilho de luz por baixo, e sob ele aparecem o nome e o tempo jogado nas últimas duas semanas (ou **JOGANDO AGORA** enquanto o jogo está aberto).
 - **Estilos da tela inicial** (Configurações → Interface): **Clássico** (o padrão, descrito acima), **Painel** (jogo em destaque, grade com os recentes e atalhos com informações: biblioteca, downloads, amigos online...), **Sala (OLED)**, **Cinema** (título grande do jogo em foco com a arte ao fundo) e **Carrossel** (capa grande no centro) (fundo preto, relógio grande, ícones arredondados dos jogos e atalhos). A mudança vale na hora. Nos estilos Painel e Sala, Novidades/Recomendados abrem pelo atalho **Amigos** e pelo menu; a opção de apertar para baixo na linha vale no Clássico.
 - **Personalização** (Configurações → Interface): cor de destaque (6 cores), tamanho dos cards da biblioteca (pequeno, médio, grande) e relógio/saudação grandes.
-- **Contas Steam:** com mais de uma conta Steam no PC, o launcher pergunta qual usar ao abrir (ou entra direto na última/numa fixa, em Configurações → Integrações) e mostra só os jogos instalados dessa conta. Clique na sua foto no topo para trocar de conta. O launcher não faz login na Steam: para jogar com outra conta, a Steam precisa estar logada nela.
+- **Contas Steam:** com mais de uma conta Steam no PC, o launcher pergunta qual usar ao abrir (ou entra direto na última/numa fixa, em Configurações → Integrações) e mostra todos os jogos instalados no PC, de qualquer conta (cada perfil da Steam mantém os seus próprios saves). Clique na sua foto no topo para trocar de conta. O launcher não faz login na Steam: para jogar com outra conta, a Steam precisa estar logada nela.
 - **Dicas e avisos:** o rodapé mostra o que cada botão faz no item em foco; avisos rápidos de bateria baixa e de download concluído.
 - **Novidades, Amigos e Recomendados:** apertando **para baixo** na linha de jogos (ou escolhendo a aba abaixo dos cards). Mostra anúncios dos seus jogos da Steam, jogos atualizados neste PC, quem dos seus amigos está jogando agora, a atividade deles (o que jogaram nas últimas duas semanas) e o calendário de lançamentos. Só lê dados públicos da Steam com a sua chave de API; o launcher não faz login na sua conta nem envia mensagens.
 - **Biblioteca:** abas Todos / Steam / Epic / Adicionados / Favoritos / Aplicativos, busca por nome e grade de capas centralizada.
@@ -48,6 +48,8 @@
 
 ### Lojas e jogos
 - **Steam, Epic e jogos adicionados:** os jogos instalados aparecem sozinhos; jogos de fora das lojas entram pelo arquivo `.exe`.
+- **Conta da Epic:** em Configurações → Integrações, entre pela página oficial de login da Epic (numa janela do launcher, como no Playnite). O launcher lê a sua biblioteca, usa as imagens oficiais da Epic (capa, wallpaper e logotipo), avisa no sino quando uma instalação termina ou há atualização, e mostra, na aba **Epic**, os jogos que você tem e ainda não instalou (esmaecidos); **Instalar** abre o Epic Games Launcher na sua biblioteca. A senha nunca passa pelo launcher; a sessão fica criptografada neste PC. Jogos da EA e da Ubisoft não aparecem.
+- **Conquistas:** na página do jogo, a aba **Conquistas** mostra o seu progresso na Steam (pelo perfil público, com "Detalhes do jogo" público) e, de forma experimental, na Epic.
 - **Lojas:** abre a página inicial da loja da Steam ou o Epic Games Launcher.
 - **Downloads:** acompanha os downloads da Steam em tempo real (progresso, velocidade e tempo restante).
 - **Tempo de jogo:** o launcher percebe quando um jogo está aberto, mesmo iniciado por fora, e conta a sessão minuto a minuto. Epic e jogos adicionados também ganham tempo total na página do jogo.
@@ -61,7 +63,7 @@
 - **Configurações:** Sistema (tela cheia, efeitos sonoros, usar o mouse, iniciar com o Windows, atualizar a biblioteca, limpar o cache), Interface, Integrações e Jogos.
 - **Interface:** **Preto OLED** (toda a interface em preto, em vez do azul escuro).
 - **Perfil:** a foto no canto superior direito abre um painel para trocar a foto (qualquer imagem do PC ou a da Steam) e o nome mostrado no launcher; a conta da Steam não é alterada.
-- **Rede e som:** painéis na barra superior com as conexões ativas (Wi-Fi/Ethernet) e o volume do Windows.
+- **Rede e som:** painéis na barra superior com as conexões ativas (Wi-Fi/Ethernet) e o volume do Windows. No painel de som: liga/desliga o Bluetooth e guarda fones sem fio numa lista, conectando ao clicar ou automaticamente.
 - **Ligar/Desligar:** suspender, desligar, reiniciar, finalizar sessão, minimizar e sair.
 - **Iniciar com o Windows:** opção em Configurações > Sistema.
 

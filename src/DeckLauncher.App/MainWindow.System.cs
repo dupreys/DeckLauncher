@@ -448,6 +448,7 @@ public partial class MainWindow
         SetInterface.Visibility = tag == "Interface" ? Visibility.Visible : Visibility.Collapsed;
         SetIntegrations.Visibility = tag == "Integrations" ? Visibility.Visible : Visibility.Collapsed;
         SetGames.Visibility = tag == "Games" ? Visibility.Visible : Visibility.Collapsed;
+        if (tag == "Integrations") UpdateEpicAccountUi();
     }
 
     private void ApplyFullscreen(bool fullscreen)

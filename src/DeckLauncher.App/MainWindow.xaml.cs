@@ -56,6 +56,9 @@ public partial class MainWindow : Window
         ApplyAppearance();
         ApplyFullscreen(App.Settings.StartFullscreen || XboxMode.Active);
         ApplyMouseMode();
+        UpdateEpicAccountUi();
+        InitNotifications();
+        InitBluetooth();
         _ = CheckForUpdateAsync(manual: false);
         await ChooseAccountAtStartupAsync();
         await RefreshAsync();
@@ -97,10 +100,26 @@ public partial class MainWindow : Window
     {
         try
         {
+            // The Steam list and the Epic list already saved show first; Epic's own answers (they can be slow) only refresh them afterwards.
             var games = await _library.LoadNotInstalledAsync(installed, SteamIdValue());
             ApplyNotInstalled(games);
-            if (games.Count > 0 && await _library.DownloadNotInstalledCoversAsync(games))
-                ApplyNotInstalled(await _library.LoadNotInstalledAsync(installed, SteamIdValue()));
+
+            var epicChanged = false;
+            try { epicChanged = await _library.SyncEpicAsync(force: false); }
+            catch (Exception ex) when (ex is InvalidOperationException or FormatException) { /* Epic answered something unexpected: the saved list stays */ }
+            try { NotifyEpicUpdates(await _library.CheckEpicUpdatesAsync(installed)); }
+            catch (Exception ex) when (ex is InvalidOperationException or FormatException) { /* an unexpected answer: no update notice */ }
+            if (epicChanged)
+            {
+                games = await _library.LoadNotInstalledAsync(installed, SteamIdValue());
+                ApplyNotInstalled(games);
+            }
+            if (games.Count > 0)
+            {
+                var covers = await _library.DownloadNotInstalledCoversAsync(games);
+                var art = await _library.DownloadEpicNotInstalledArtAsync(games);
+                if (covers || art) ApplyNotInstalled(await _library.LoadNotInstalledAsync(installed, SteamIdValue()));
+            }
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
         {
@@ -116,7 +135,7 @@ public partial class MainWindow : Window
         if (!changed) return;
 
         // Re-setting the grid takes the focus away, so only redo it when the Steam tab is the one in view, keeping the place.
-        if (_filter == "steam") ApplyFilterKeepingPlace();
+        if (_filter is "steam" or "epic") ApplyFilterKeepingPlace();
     }
 
     /// <summary>Redraws the list and puts the selector back on the same game, at the same scroll position (the user may be browsing).</summary>
@@ -124,7 +143,7 @@ public partial class MainWindow : Window
     {
         GameItem? focusedGame = Keyboard.FocusedElement is FrameworkElement { DataContext: GameItem g } element && IsAncestor(LibGrid, element) ? g : null;
         var offset = LibScroll.VerticalOffset;
-        ApplyFilter();
+        ApplyFilter(all: focusedGame is not null); // the place being kept may be far down the list
         if (focusedGame is null) return;
         LibScroll.ScrollToVerticalOffset(offset);
         if (FindAll<Button>(LibGrid).FirstOrDefault(b => ReferenceEquals(b.DataContext, focusedGame)) is { } tile) tile.Focus();
@@ -203,7 +222,34 @@ public partial class MainWindow : Window
         _ => true,
     };
 
-    private void ApplyFilter()
+    private int _fillGeneration;
+    private const int FirstTiles = 24, TileBatch = 24;
+
+    /// <summary>Shows the first tiles at once and adds the rest in small batches, so switching tabs does not wait for hundreds of tiles.</summary>
+    private void SetLibraryItems(List<GameItem> shown, bool all)
+    {
+        var generation = ++_fillGeneration;
+        if (all || shown.Count <= FirstTiles)
+        {
+            LibGrid.ItemsSource = shown;
+            return;
+        }
+        var target = new System.Collections.ObjectModel.ObservableCollection<GameItem>(shown.Take(FirstTiles));
+        LibGrid.ItemsSource = target;
+        _ = FillRestAsync(target, shown, generation);
+    }
+
+    private async Task FillRestAsync(System.Collections.ObjectModel.ObservableCollection<GameItem> target, List<GameItem> shown, int generation)
+    {
+        for (var i = FirstTiles; i < shown.Count; i += TileBatch)
+        {
+            await Dispatcher.InvokeAsync(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+            if (generation != _fillGeneration) return; // another list took over
+            foreach (var item in shown.Skip(i).Take(TileBatch)) target.Add(item);
+        }
+    }
+
+    private void ApplyFilter(bool all = false)
     {
         foreach (var (key, title) in TabDefs)
         {
@@ -224,12 +270,13 @@ public partial class MainWindow : Window
 
         // Steam tab: the installed games first, then the owned ones that are not installed (shown dimmed).
         IEnumerable<GameItem> source = _all.Where(i => InFilter(i, _filter));
-        if (_filter == "steam") source = source.Concat(_notInstalled);
+        if (_filter is "steam" or "epic") source = source.Concat(_notInstalled.Where(i => InFilter(i, _filter)));
         var shown = source.Where(i => text.Length == 0 || i.Name.Contains(text, StringComparison.CurrentCultureIgnoreCase)).ToList();
-        LibGrid.ItemsSource = shown;
+        SetLibraryItems(shown, all);
         ResetLibrarySelector();
         LibEmpty.Visibility = shown.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         LibEmpty.Text = _filter == "steam" && _library.NotInstalledProblem is not null && text.Length == 0 ? NotInstalledEmptyText()
+            : _filter == "epic" && shown.Count == 0 && text.Length == 0 && !LibraryService.EpicConnected ? "Entre na sua conta da Epic em Configurações > Integrações para ver também os jogos que você tem e não instalou."
             : _all.Count == 0 ? "Sua biblioteca está vazia." : "Nenhum jogo nesta lista.";
     }
 

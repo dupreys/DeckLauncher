@@ -53,6 +53,14 @@ public static class LogoDownloader
         return await SaveAsync(http, $"{Cdn}/{game.Id}/logo.png", CachePath(cacheDir, game), ct);
     }
 
+    /// <summary>The logo Epic's catalog has for the game (a picture on Epic's own servers); no key needed.</summary>
+    public static async Task<string?> DownloadFromEpicAsync(HttpClient http, string cacheDir, Game game, CancellationToken ct = default)
+    {
+        if (game.Source != "Epic" || !CoverDownloader.IsEpicImageUrl(game.LogoUrl)) return null;
+        if (Cached(cacheDir, game) is { } existing) return existing;
+        return await SaveAsync(http, game.LogoUrl!, CachePath(cacheDir, game), ct);
+    }
+
     /// <summary>Picks a PNG logo (WPF cannot read WebP), preferring the widest one. Throws <see cref="UnauthorizedAccessException"/> for a wrong key.</summary>
     public static async Task<string?> DownloadFromGridAsync(HttpClient http, string apiKey, string cacheDir, Game game,
                                                             int? knownGameId = null, CancellationToken ct = default)

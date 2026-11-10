@@ -250,3 +250,93 @@
 ## v1.9.16
 - Voltou para a base da v1.9.15 (a tentativa de jogos da Epic não instalados, v1.10.0, foi descartada; fica guardada em /home/claude/deck/discarded_v1.10.0).
 - **Biblioteca:** a aba "Não instalados" foi removida. Os jogos da conta Steam que não estão instalados agora aparecem na aba **Steam**, depois dos instalados, esmaecidos (ficam mais nítidos quando selecionados). Instalar continua pela página do jogo. O número da aba Steam conta só os instalados.
+
+## v1.10.0
+- **Conta da Epic (como o Playnite):** em Configurações > Integrações, **Entrar na Epic** abre a página oficial de login da Epic no navegador. Depois de entrar, copie o texto que a Epic mostra (Ctrl+A, Ctrl+C); o launcher percebe sozinho o código (ou use **Colar código**) e lê a sua biblioteca. O launcher nunca vê nem guarda a senha, só a sessão, criptografada neste PC.
+- **Jogos da Epic não instalados:** aparecem na aba **Epic** da biblioteca, depois dos instalados, esmaecidos e com capa da Epic. **Instalar** abre o Epic Games Launcher na sua biblioteca, onde você clica em Instalar.
+- A biblioteca é atualizada ao abrir (no máximo a cada 6 horas) ou por **Atualizar biblioteca**. **Sair da conta** apaga a sessão e a lista. Jogos da EA e da Ubisoft ficam de fora, como no Playnite.
+
+## Notas técnicas v1.10.0
+- Novo `Core/Epic/EpicAccount.cs` (cliente OAuth do launcher da Epic, o mesmo do Playnite, leitura da biblioteca e do catálogo), `MainWindow.EpicAccount.cs` (login, sincronização e saída), `EpicAccountTests.cs`. `AppSettings` ganhou EpicTokens (DPAPI, fora do backup), EpicLibrary, EpicSkipped, EpicSyncedAt, EpicAccountName. `Game.CoverUrl` e `CoverDownloader` baixam a capa da Epic só de hosts da Epic.
+- As chamadas à API da Epic não puderam ser testadas no ambiente de desenvolvimento.
+
+## v1.10.1
+- **Login da Epic sem copiar código:** **Entrar na Epic** agora abre a página oficial de login da Epic numa janela do próprio launcher (como o Playnite). Ao terminar o login a janela fecha sozinha e a biblioteca é lida. Se o Windows não tiver o WebView2 (já vem no Windows 10/11), abre no navegador e o método de copiar o código continua valendo.
+
+## Notas técnicas v1.10.1
+- Novo `EpicLoginWindow.cs` (WebView2, pasta de dados em %LocalAppData%\DeckLauncher\epic-login, cookies apagados antes e depois). Pacote Microsoft.Web.WebView2 1.0.2592.51 no csproj.
+
+## v1.10.2
+- **Epic, Instalar:** agora abre o Epic Games Launcher já no jogo, pedindo a instalação (link `com.epicgames.launcher://apps/...?action=install`), em vez de só abrir a biblioteca.
+- **Epic, arte:** os jogos não instalados também ganham logotipo e papel de parede (além da capa), como os instalados. Baixam aos poucos, 25 jogos por vez; o logotipo pelo SteamGridDB precisa da sua chave.
+
+## v1.10.3
+- **Epic, Instalar:** se o Epic Games Launcher estiver fechado, o DeckLauncher abre ele primeiro, espera uns segundos e só então pede a instalação (antes o pedido se perdia).
+- **Biblioteca mais rápida:** ao trocar de aba, os primeiros jogos aparecem na hora e o resto vai entrando em seguida, em vez de esperar a lista inteira (Steam e Epic com muitos jogos).
+
+## v1.10.4
+- Corrigido erro de build da v1.10.3 (Path sem namespace em MainWindow.GamePage.cs).
+
+## v1.11.0
+- **Sino de notificações:** novo ícone de sino ao lado da lupa. Enquanto capas, logos e wallpapers estão sendo baixados, o contador mostra quantos faltam (um só contador para tudo). Ao clicar, o painel mostra a barra de progresso e o total (capas, logos, wallpapers). Quando termina, aparece um aviso na tela e a notificação "Arte baixada: ..." fica no painel (contador = não lidas) até abrir ou limpar.
+
+## Notas técnicas v1.11.0
+- Novo `ArtProgress.cs` (`LibraryService.Art`, `ArtJob`) alimentado por DownloadMissingArtAsync e DownloadNotInstalledCoversAsync; `MainWindow.Notifications.cs`, `NotifPanel` no QuickLayer.
+
+## v1.11.1
+- Corrigido erro de build da v1.11.0 (método de arte da Epic removido por engano).
+
+## v1.11.2
+- **Um só sino:** o sino que já existia (antes "Downloads") agora é o das notificações, com o contador. Clicar abre o painel; **Mais detalhes (Downloads)** abre a janela de Downloads.
+- **Jogos baixando:** downloads da Steam em andamento aparecem no painel (nome, barra e porcentagem) e entram no contador; ao começar um download aparece um aviso, e quando termina fica a notificação "terminou de baixar".
+
+## v1.11.3
+- **Downloads:** o progresso do download de capas, logos e wallpapers também aparece na página Downloads (cartão "Baixando artes" com porcentagem e contagem), igual ao do sino.
+
+## v1.11.4
+- **Artes:** o sino e a página Downloads agora mostram o andamento de cada tipo ("Capas 3/10 · Logos 5/17 · Wallpapers 7/17"), em vez de quantas foram salvas (que ficava em 0 quando nada era encontrado). O resumo final continua dizendo quantas foram baixadas.
+
+## v1.12.0
+- **Epic, arte oficial:** capa, imagem larga (wallpaper) e logotipo agora vêm do catálogo da própria Epic, para os jogos instalados e não instalados, sem precisar de chave. SteamGridDB e Wallhaven ficam só como reserva. Na primeira sincronização depois de atualizar, a lista da Epic é lida de novo uma vez para pegar essas imagens.
+- **Epic, instalação no sino:** ao pedir Instalar, o jogo aparece no sino como "Instalando pela Epic" (barra sem porcentagem, a Epic não informa o andamento) e entra no contador. Quando o jogo aparece como instalado, há aviso e notificação "terminou de instalar".
+- **Atualizações no sino:** Epic: avisa quando um jogo instalado tem build mais novo (checa no máximo a cada 3 horas, cada build é avisada uma vez). Steam: avisa quando uma atualização começa.
+- **Revisão geral:** conferência estática do código (usings, eventos do XAML, chaves de recursos, métodos duplicados) e testes novos (imagens do catálogo, builds da Epic, versão instalada, hosts permitidos).
+
+## Notas técnicas v1.12.0
+- Core: `EpicLibraryGame` ganhou WideUrl, LogoUrl e ArtChecked; `Game` ganhou WideUrl, LogoUrl e Version; `EpicAccountClient.GetLatestBuildsAsync/ParseBuilds`; `LogoDownloader.DownloadFromEpicAsync`; `CoverDownloader` usa a URL por tipo (HasStoreArt(game, kind)).
+- App: `LibraryService.CheckEpicUpdatesAsync`; `MainWindow.Notifications.cs` com instalações da Epic pendentes e avisos de atualização.
+- A comparação de build da Epic usa AppVersionString do manifesto contra buildVersion da API de assets (como o Legendary); não pôde ser testada aqui.
+
+## v1.13.0
+- **Conquistas:** nova aba **CONQUISTAS** na página do jogo, entre SOBRE e INFORMAÇÕES DO JOGO (LB/RB passam por ela). Mostra quantas você desbloqueou (barra e porcentagem), cada conquista com ícone, nome, descrição e a data de desbloqueio; as desbloqueadas vêm primeiro.
+- **Steam:** lê as conquistas pelo seu perfil público da Steam (sem chave e sem login). Se aparecer "As conquistas estão ocultas", no perfil da Steam deixe **Detalhes do jogo** como **Público**.
+- **Epic (experimental):** usa a conta da Epic conectada em Configurações > Integrações. A Epic não documenta esse serviço; se ele não responder, a aba explica o motivo (ou mostra só a lista, sem o seu progresso).
+- Conquistas ocultas aparecem como "Conquista oculta" até serem desbloqueadas. Os resultados ficam guardados por 30 minutos.
+
+## Notas técnicas v1.13.0
+- Core: `GameAchievements/GameAchievements.cs` (`Achievement`, `AchievementSet`, `SteamAchievements` reaproveita o leitor `Achievements` que já existia (página pública da comunidade e, se houver chave salva, a Web API), `EpicAchievementsClient` com GraphQL `store.epicgames.com/graphql`, Bearer do login da Epic, sandboxId = CatalogNamespace). Ícones só de hosts da Steam e da Epic. App: `MainWindow.Achievements.cs`, `LibraryService.FreshEpicTokensAsync`. Testes em `GameAchievementsTests.cs`.
+- As consultas GraphQL da Epic seguem os nomes de campos publicados por terceiros e não puderam ser testadas aqui.
+
+## v1.13.1
+- Corrigido o erro de build da v1.13.0 (nome "Achievements" já existia no Core). A aba Conquistas agora reaproveita o leitor da Steam que já existia, que também usa a chave da Web API da Steam quando ela estiver salva.
+
+## v1.13.2
+- **Cinema:** dos botões Jogar/Biblioteca/Aplicativos/Amigos, apertar para cima agora vai para as opções do topo (notificações, rede, som e perfil). Antes ficava preso.
+
+## v1.13.3
+- **Troca de conta:** os nomes das contas agora aparecem em branco, legíveis.
+- **Todos os jogos nas duas contas:** o launcher mostra todos os jogos Steam instalados no PC, seja qual for a conta que instalou. Antes cada conta via só os seus. Para jogar um jogo que não está na biblioteca da conta em uso, a Steam precisa permitir (compartilhamento em família ou licença da própria conta).
+
+## v1.0.4
+- **Biblioteca da Epic:** entre na sua conta da Epic em Configurações > Integrações (login oficial numa janela do launcher) e veja na aba Epic os jogos que você tem e ainda não instalou; Instalar abre o Epic Games Launcher já no jogo. Capas, wallpapers e logotipos vêm da própria Epic.
+- **Sino de notificações:** um só contador para as artes sendo baixadas, jogos baixando na Steam, instalações da Epic e atualizações, com botão "Mais detalhes" que abre a janela de Downloads.
+- **Conquistas:** nova aba na página do jogo (Steam pelo perfil público; Epic de forma experimental).
+- **Contas Steam:** os jogos instalados no PC aparecem em todas as contas; os nomes na tela de troca de conta ficaram legíveis.
+- **Mais rápido:** troca de abas, carregamento da biblioteca e das imagens mais leves; capas, logos e wallpapers que não existem deixam de ser procurados a cada abertura (a próxima tentativa é só depois de 3 dias).
+- **Cinema:** dos botões Jogar/Biblioteca/Aplicativos/Amigos dá para subir às opções do topo.
+- **Bluetooth no painel de Som:** liga/desliga o Bluetooth, adiciona fones sem fio já pareados no Windows (ou abre o pareamento do Windows para um novo), guarda numa lista e conecta ao clicar ou automaticamente quando o fone estiver ligado por perto.
+
+## Notas técnicas v1.0.4
+- Bluetooth: `BluetoothNative` (App) usa a API Win32 `bthprops.cpl` para listar pareados, conectar (serviços A2DP/Hands-free/Headset) e desconectar; o rádio liga/desliga via WinRT dentro de um PowerShell oculto (sem mudar o framework do projeto). Lista salva em `AppSettings.BluetoothDevices` (`SavedBluetoothDevice`, endereço de 12 hex) e `BluetoothAutoConnect`; tentativa automática ao abrir e a cada 45 s com a janela ativa; quem foi desconectado à mão não reconecta até reiniciar.
+- Versão do aplicativo ajustada para 1.0.4 (mostrada em Configurações > Sobre).
+- `ArtTriedStore` (art_tried.json na pasta de capas): memória em disco das artes já tentadas, validade de 3 dias; limpar o cache de arte também a limpa. Downloads de arte com 4 em paralelo; decodificação de imagens limitada a 2-4 ao mesmo tempo; leitura das artes em disco fora da thread da interface; a lista de não instalados aparece antes da sincronização da Epic.

@@ -98,9 +98,7 @@ public partial class MainWindow
 
     private void OnTopDownloadsClick(object sender, RoutedEventArgs e)
     {
-        if (PowerOpen || ManageOpen) return;
-        ShowPage("Downloads");
-        FocusPage();
+        OnTopBellClick(sender, e); // the bell: art and game downloads, with "Mais detalhes" for the Downloads page
     }
 
     // ---- Button hints -----------------------------------------------------------------------
@@ -232,7 +230,7 @@ public partial class MainWindow
                 CycleRadios(_tabs.Values.ToList(), delta);
                 FocusLibrary(); // the selector always starts on the first game of the new list (an empty list keeps the tab)
                 break;
-            case "Jogo": CycleRadios(new List<RadioButton> { GameTabAbout, GameTabInfo }, delta); break;
+            case "Jogo": CycleRadios(new List<RadioButton> { GameTabAbout, GameTabAchievements, GameTabInfo }, delta); break;
             case "Feed": CycleRadios(new List<RadioButton> { FeedTabNews, FeedTabFriends, FeedTabRecs }, delta); break;
             case "Configurações": CycleRadios(FindAll<RadioButton>(SettingsPage).ToList(), delta); break;
         }

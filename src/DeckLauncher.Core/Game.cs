@@ -34,6 +34,16 @@ public sealed record Game(
     /// <summary>True for a game the user owns but has not installed (listed under "Not installed"; it can be downloaded).</summary>
     public bool NotInstalled { get; init; }
 
+    /// <summary>Epic games not installed: the address of the cover in Epic's catalog (an https link on Epic's own servers).</summary>
+    public string? CoverUrl { get; init; }
+
+    /// <summary>Epic: the wide picture and the logo in Epic's catalog (https links on Epic's own servers).</summary>
+    public string? WideUrl { get; init; }
+    public string? LogoUrl { get; init; }
+
+    /// <summary>Epic: the installed build (AppVersionString of the manifest), to tell when an update exists.</summary>
+    public string? Version { get; init; }
+
     // Epic catalog ids (needed for launch and store links)
     public string? CatalogNamespace { get; init; }
     public string? CatalogItemId { get; init; }

@@ -83,6 +83,7 @@ public sealed class EpicProvider : IGameProvider
             {
                 CatalogNamespace = Str("CatalogNamespace"),
                 CatalogItemId = Str("CatalogItemId"),
+                Version = Str("AppVersionString"),
                 InstallPath = location,
                 ExecutablePath = location is not null && exe is not null ? Path.Combine(location, exe) : null,
             };
@@ -116,6 +117,8 @@ public sealed class EpicProvider : IGameProvider
 
         Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true })?.Dispose();
     }
+
+    public static bool IsLauncherRunning() => IsRunning("EpicGamesLauncher");
 
     /// <summary>The Epic Games Launcher program, in its usual install folders; null when not found.</summary>
     public static string? FindLauncherExe()

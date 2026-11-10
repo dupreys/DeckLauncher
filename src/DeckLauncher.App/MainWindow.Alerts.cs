@@ -66,7 +66,12 @@ public partial class MainWindow
 
         var installed = await Task.Run(() => SteamLibraryReader.ReadInstalledGames(steamPath).Select(g => g.Id).ToHashSet());
         foreach (var (id, name) in vanished)
-            if (installed.Contains(id)) ShowToast($"{name} terminou de baixar");
+            if (installed.Contains(id))
+            {
+                ShowToast($"{name} terminou de baixar");
+                AddNotification($"{name} terminou de baixar.");
+                UpdateBell();
+            }
         _ = RefreshAsync();
     }
 }

@@ -80,7 +80,7 @@ public partial class MainWindow
 
         var content = new StackPanel { Width = 200, Margin = new Thickness(8) };
         content.Children.Add(avatar);
-        content.Children.Add(new TextBlock { Text = account.PersonaName, FontSize = 22, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 14, 0, 0) });
+        content.Children.Add(new TextBlock { Text = account.PersonaName, FontSize = 22, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 14, 0, 0), Foreground = Brushes.White });
         content.Children.Add(new TextBlock { Text = account.AccountName, FontSize = 13, Foreground = (Brush)FindResource("TextMuted"), TextAlignment = TextAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
 
         var card = new Button { Style = (Style)FindResource("PanelTile"), Content = content, Tag = account.SteamId64, Margin = new Thickness(14, 0, 14, 0), Padding = new Thickness(10) };
@@ -162,13 +162,8 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>Keeps only the installed Steam games of the account in use (all of them when there is a single account).</summary>
-    private async Task<List<Game>> FilterByAccountAsync(List<Game> games)
-    {
-        if (_activeSteamId is not { } id || !HasSeveralAccounts || _library.SteamPath is not { } path) return games;
-        var owned = await Task.Run(() => SteamAccountFilter.OwnedAppIds(path, id));
-        return games.Where(g => SteamAccountFilter.Keep(g, id, owned)).ToList();
-    }
+    /// <summary>Every game installed on this PC shows for every account: Steam installs for the whole PC, and the Steam profile in use keeps its own saves.</summary>
+    private Task<List<Game>> FilterByAccountAsync(List<Game> games) => Task.FromResult(games);
 
     // ---- Settings > Integrações ----------------------------------------------------------------
 

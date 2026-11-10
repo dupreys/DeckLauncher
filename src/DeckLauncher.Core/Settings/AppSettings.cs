@@ -132,6 +132,26 @@ public sealed class AppSettings
     /// <summary>Games the user added by hand (an .exe outside Steam and Epic).</summary>
     public List<ManualGame> ManualGames { get; set; } = new();
 
+    /// <summary>The Epic sign-in (access and refresh tokens as JSON), stored encrypted like the API keys. Never the password.</summary>
+    public string? EpicTokens { get; set; }
+
+    /// <summary>The Epic account's display name, to show who is connected.</summary>
+    public string? EpicAccountName { get; set; }
+
+    /// <summary>The games of the Epic library, read from the account on the last sync (kept so the list shows at once and offline).</summary>
+    public List<DeckLauncher.Core.Epic.EpicLibraryGame> EpicLibrary { get; set; } = new();
+
+    public DateTimeOffset? EpicSyncedAt { get; set; }
+
+    /// <summary>Epic library items that the catalog said are not games (add-ons, tools): not asked about again.</summary>
+    public List<string> EpicSkipped { get; set; } = new();
+
+    /// <summary>Wireless headsets the user saved in the sound panel (Windows must already have them paired).</summary>
+    public List<SavedBluetoothDevice> BluetoothDevices { get; set; } = new();
+
+    /// <summary>Connects the saved headsets by itself when they are on and in range.</summary>
+    public bool BluetoothAutoConnect { get; set; } = true;
+
     /// <summary>Clamps values that may have been hand-edited into something unusable.</summary>
     public void Normalize()
     {
@@ -159,6 +179,13 @@ public sealed class AppSettings
         GameOverrides ??= new();
         PlayRecords ??= new();
         HiddenGames = (HiddenGames ?? new()).Where(p => !string.IsNullOrWhiteSpace(p.Key)).ToDictionary(p => p.Key, p => p.Value ?? p.Key, StringComparer.Ordinal);
+        BluetoothDevices = SavedBluetoothDevice.Clean(BluetoothDevices);
+        EpicTokens = string.IsNullOrWhiteSpace(EpicTokens) ? null : EpicTokens;
+        EpicSkipped = (EpicSkipped ?? new()).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        EpicLibrary = (EpicLibrary ?? new())
+            .Where(g => g is not null && !string.IsNullOrWhiteSpace(g.AppName) && !string.IsNullOrWhiteSpace(g.Title)
+                        && !string.IsNullOrWhiteSpace(g.CatalogNamespace) && !string.IsNullOrWhiteSpace(g.CatalogItemId))
+            .GroupBy(g => g.AppName, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
         ManualGames = (ManualGames ?? new())
             .Where(g => g is not null && !string.IsNullOrWhiteSpace(g.Id) && !string.IsNullOrWhiteSpace(g.ExePath))
             .GroupBy(g => g.Id, StringComparer.Ordinal).Select(g => g.First()).ToList();

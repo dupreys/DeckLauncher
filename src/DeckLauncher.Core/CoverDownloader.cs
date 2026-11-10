@@ -13,16 +13,21 @@ public static class CoverDownloader
     private const string Cdn = "https://cdn.cloudflare.steamstatic.com/steam/apps";
 
     public static string CachePath(string cacheDir, Game game, StoreArtKind kind) =>
-        Path.Combine(cacheDir, $"steam_{game.Id}_{(kind == StoreArtKind.Cover ? "cover" : "hero")}.jpg");
+        Path.Combine(cacheDir, $"{(game.Source == "Epic" ? "epic_" + SafeName(game.Id) : "steam_" + game.Id)}_{(kind == StoreArtKind.Cover ? "cover" : "hero")}.jpg");
 
-    public static IReadOnlyList<string> Urls(Game game, StoreArtKind kind) => kind == StoreArtKind.Cover
+    private static string SafeName(string id) => new(id.Select(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray());
+
+    public static IReadOnlyList<string> Urls(Game game, StoreArtKind kind) =>
+        game.Source == "Epic"
+            ? (EpicUrl(game, kind) is { } epic ? new[] { epic } : Array.Empty<string>())
+            : kind == StoreArtKind.Cover
         ? new[] { $"{Cdn}/{game.Id}/library_600x900.jpg", $"{Cdn}/{game.Id}/header.jpg" }
         : new[] { $"{Cdn}/{game.Id}/library_hero.jpg", $"{Cdn}/{game.Id}/page_bg_generated_v6b.jpg" };
 
     /// <summary>The cached file when it exists already; null otherwise. Never touches the network.</summary>
     public static string? Cached(string cacheDir, Game game, StoreArtKind kind)
     {
-        if (!IsSteamAppId(game)) return null;
+        if (!HasStoreArt(game, kind)) return null;
         var path = CachePath(cacheDir, game, kind);
         return File.Exists(path) && new FileInfo(path).Length > 0 ? path : null;
     }
@@ -30,7 +35,7 @@ public static class CoverDownloader
     /// <summary>Downloads the artwork (first URL that works) into the cache and returns its path; null when none was available.</summary>
     public static async Task<string?> DownloadAsync(HttpClient http, string cacheDir, Game game, StoreArtKind kind, CancellationToken ct = default)
     {
-        if (!IsSteamAppId(game)) return null;
+        if (!HasStoreArt(game, kind)) return null;
         if (Cached(cacheDir, game, kind) is { } existing) return existing;
 
         foreach (var url in Urls(game, kind))
@@ -58,6 +63,22 @@ public static class CoverDownloader
         }
         return null;
     }
+
+    /// <summary>Only pictures served by Epic itself over https are downloaded.</summary>
+    public static bool IsEpicImageUrl(string? url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps
+        && (uri.Host.EndsWith("epicgames.com", StringComparison.OrdinalIgnoreCase)
+            || uri.Host.EndsWith("unrealengine.com", StringComparison.OrdinalIgnoreCase)
+            || uri.Host.EndsWith("epicgamescdn.com", StringComparison.OrdinalIgnoreCase));
+
+    private static string? EpicUrl(Game game, StoreArtKind kind)
+    {
+        var url = kind == StoreArtKind.Cover ? game.CoverUrl : game.WideUrl;
+        return IsEpicImageUrl(url) ? url : null;
+    }
+
+    private static bool HasStoreArt(Game game, StoreArtKind kind) =>
+        IsSteamAppId(game) || (game.Source == "Epic" && EpicUrl(game, kind) is not null);
 
     private static bool IsSteamAppId(Game game) =>
         game.Source == "Steam" && game.Id.Length > 0 && game.Id.All(char.IsAsciiDigit);

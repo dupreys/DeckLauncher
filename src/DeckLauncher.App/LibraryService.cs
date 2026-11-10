@@ -22,7 +22,10 @@ internal sealed class LibraryService
     private readonly IReadOnlyList<IGameProvider> _providers;
 
     public string? SteamPath { get; }
-    private readonly HashSet<string> _artTried = new();
+    private readonly ArtTriedStore _artTried = new(Path.Combine(ArtCacheDir, "art_tried.json"));
+
+    /// <summary>Running total of the artwork downloads (the notification bell reads it).</summary>
+    public ArtProgress Art { get; } = new();
 
     public LibraryService()
     {
@@ -62,9 +65,13 @@ internal sealed class LibraryService
         }
 
         games.RemoveAll(g => App.Settings.HiddenGames.ContainsKey(GameSorter.Key(g)));
-        for (var i = 0; i < games.Count; i++)
-            games[i] = WithCachedArt(PlayTracker.Apply(GameOverrides.Apply(games[i], App.Settings.GameOverrides), App.Settings.PlayRecords));
-        return games;
+        // Looking up each game's pictures on disk is many small file checks: keep them off the interface thread.
+        return await Task.Run(() =>
+        {
+            for (var i = 0; i < games.Count; i++)
+                games[i] = WithCachedArt(PlayTracker.Apply(GameOverrides.Apply(games[i], App.Settings.GameOverrides), App.Settings.PlayRecords));
+            return games;
+        });
     }
 
     // ---- Steam games that are owned but not installed -----------------------------------------
@@ -81,6 +88,145 @@ internal sealed class LibraryService
 
     /// <summary>The Steam games the account owns that are not installed on this PC. The owned list is kept for 15 minutes.</summary>
     public async Task<List<Game>> LoadNotInstalledAsync(IReadOnlyList<Game> installed, string? steamId)
+    {
+        var games = await LoadSteamNotInstalledAsync(installed, steamId);
+        games.AddRange(await Task.Run(() => EpicNotInstalled(installed)));
+        return games.OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+    }
+
+    // ---- Epic: the account's library (web sign-in, like Playnite) -------------------------------
+
+    /// <summary>Why the Epic list could not be updated: null, "signin" (the session ended: sign in again) or "fetch" (no connection or Epic did not answer).</summary>
+    public string? EpicProblem { get; private set; }
+
+    public static bool EpicConnected => EpicTokens.FromJson(App.Settings.EpicTokens) is not null;
+
+    /// <summary>Reads the Epic library when the account is connected and the last read is older than six hours (or <paramref name="force"/>). True when the list changed.</summary>
+    public async Task<bool> SyncEpicAsync(bool force)
+    {
+        var tokens = EpicTokens.FromJson(App.Settings.EpicTokens);
+        if (tokens is null) return false;
+        var settings = App.Settings;
+        if (!force && settings.EpicSyncedAt is { } last && DateTimeOffset.Now - last < TimeSpan.FromHours(6) && settings.EpicLibrary.Count > 0) return false;
+
+        var client = new EpicAccountClient(Http);
+        try
+        {
+            var fresh = await client.EnsureFreshAsync(tokens);
+            if (!ReferenceEquals(fresh, tokens))
+            {
+                settings.EpicTokens = fresh.ToJson();
+                SaveEpicSettings(); // Epic's refresh tokens are replaced at each use: keep the new one at once
+            }
+            var skipped = new HashSet<string>(settings.EpicSkipped, StringComparer.OrdinalIgnoreCase);
+            var games = await client.ReadLibraryAsync(fresh, settings.EpicLibrary, skipped);
+            var changed = games.Count != settings.EpicLibrary.Count || games.Zip(settings.EpicLibrary).Any(p => p.First.AppName != p.Second.AppName);
+            settings.EpicLibrary = games;
+            settings.EpicSkipped = skipped.ToList();
+            settings.EpicSyncedAt = DateTimeOffset.Now;
+            EpicProblem = null;
+            SaveEpicSettings();
+            return changed;
+        }
+        catch (EpicSignInException)
+        {
+            settings.EpicTokens = null; // the session ended: the list stays, the user signs in again
+            EpicProblem = "signin";
+            SaveEpicSettings();
+            return false;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+        {
+            EpicProblem = "fetch";
+            return false;
+        }
+    }
+
+    /// <summary>The Epic session ready to use (refreshed when needed); null when the account is not connected or the session ended. Network errors pass through.</summary>
+    public async Task<EpicTokens?> FreshEpicTokensAsync()
+    {
+        var tokens = EpicTokens.FromJson(App.Settings.EpicTokens);
+        if (tokens is null) return null;
+        try
+        {
+            var fresh = await new EpicAccountClient(Http).EnsureFreshAsync(tokens);
+            if (!ReferenceEquals(fresh, tokens))
+            {
+                App.Settings.EpicTokens = fresh.ToJson();
+                SaveEpicSettings();
+            }
+            return fresh;
+        }
+        catch (EpicSignInException)
+        {
+            App.Settings.EpicTokens = null;
+            EpicProblem = "signin";
+            SaveEpicSettings();
+            return null;
+        }
+    }
+
+    private readonly HashSet<string> _epicUpdateSeen = new(StringComparer.OrdinalIgnoreCase);
+    private DateTime _epicUpdatesAt = DateTime.MinValue;
+
+    /// <summary>Installed Epic games with a newer build on Epic (each game and build is reported once; Epic is asked at most every 3 hours).</summary>
+    public async Task<List<Game>> CheckEpicUpdatesAsync(IReadOnlyList<Game> installed)
+    {
+        var none = new List<Game>();
+        var tokens = EpicTokens.FromJson(App.Settings.EpicTokens);
+        var epic = installed.Where(g => g.Source == EpicProvider.ProviderName && !string.IsNullOrEmpty(g.Version)).ToList();
+        if (tokens is null || epic.Count == 0 || DateTime.UtcNow - _epicUpdatesAt < TimeSpan.FromHours(3)) return none;
+
+        var client = new EpicAccountClient(Http);
+        try
+        {
+            var fresh = await client.EnsureFreshAsync(tokens);
+            if (!ReferenceEquals(fresh, tokens))
+            {
+                App.Settings.EpicTokens = fresh.ToJson();
+                SaveEpicSettings();
+            }
+            var builds = await client.GetLatestBuildsAsync(fresh);
+            _epicUpdatesAt = DateTime.UtcNow;
+            return epic.Where(g => builds.TryGetValue(g.Id, out var build) && build != g.Version && _epicUpdateSeen.Add(g.Id + "@" + build)).ToList();
+        }
+        catch (Exception ex) when (ex is EpicSignInException or HttpRequestException or TaskCanceledException)
+        {
+            return none; // no connection or the session ended: the library sync reports that
+        }
+    }
+
+    public static void SaveEpicSettings()
+    {
+        try { App.Store.Save(App.Settings); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* the next change saves it again */ }
+    }
+
+    /// <summary>The Epic games of the account that are not installed on this PC.</summary>
+    private List<Game> EpicNotInstalled(IReadOnlyList<Game> installed)
+    {
+        var apps = installed.Where(g => g.Source == EpicProvider.ProviderName).Select(g => g.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var items = installed.Where(g => g.Source == EpicProvider.ProviderName && g.CatalogItemId is not null).Select(g => g.CatalogItemId!).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var games = new List<Game>();
+        foreach (var owned in App.Settings.EpicLibrary)
+        {
+            if (apps.Contains(owned.AppName) || items.Contains(owned.CatalogItemId)) continue;
+            var game = new Game(EpicProvider.ProviderName, owned.AppName, owned.Title)
+            {
+                NotInstalled = true,
+                CatalogNamespace = owned.CatalogNamespace,
+                CatalogItemId = owned.CatalogItemId,
+                CoverUrl = owned.CoverUrl,
+                WideUrl = owned.WideUrl,
+                LogoUrl = owned.LogoUrl,
+            };
+            if (App.Settings.HiddenGames.ContainsKey(GameSorter.Key(game))) continue;
+            games.Add(WithCachedArt(GameOverrides.Apply(game, App.Settings.GameOverrides)));
+        }
+        return games;
+    }
+
+    private async Task<List<Game>> LoadSteamNotInstalledAsync(IReadOnlyList<Game> installed, string? steamId)
     {
         NotInstalledProblem = null;
         if (string.IsNullOrWhiteSpace(steamId))
@@ -105,23 +251,46 @@ internal sealed class LibraryService
         var ids = installed.Where(g => g.Source == SteamProvider.ProviderName).Select(g => g.Id).ToHashSet();
         var games = SteamOwnedGames.NotInstalled(_owned, ids, SteamPath).ToList();
         games.RemoveAll(g => App.Settings.HiddenGames.ContainsKey(GameSorter.Key(g)));
-        for (var i = 0; i < games.Count; i++) games[i] = WithCachedArt(GameOverrides.Apply(games[i], App.Settings.GameOverrides));
+        await Task.Run(() => { for (var i = 0; i < games.Count; i++) games[i] = WithCachedArt(GameOverrides.Apply(games[i], App.Settings.GameOverrides)); });
         return games;
     }
 
-    /// <summary>Downloads Steam's own cover for not-installed games that have none (at most 40 per run). True when something new was saved.</summary>
+    /// <summary>Downloads Steam's own cover for not-installed games that have none (at most 150 per run, four at a time). True when something new was saved.</summary>
     public async Task<bool> DownloadNotInstalledCoversAsync(IReadOnlyList<Game> games)
     {
+        var todo = games.Where(g => g.CoverPath is null && !_artTried.Contains(GameSorter.Key(g) + "#cover")).Take(150).ToList();
+        var job = Art.Begin(todo.Count, 0, 0);
         var fetched = false;
-        var tried = 0;
-        foreach (var game in games.Where(g => g.CoverPath is null))
+        using var gate = new SemaphoreSlim(4);
+        try
         {
-            if (tried >= 40) break;
-            if (!_artTried.Add(GameSorter.Key(game) + "#cover")) continue;
-            tried++;
-            if (await CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Cover) is not null) fetched = true;
+            await Task.WhenAll(todo.Select(async game =>
+            {
+                if (!_artTried.Add(GameSorter.Key(game) + "#cover")) return;
+                await gate.WaitAsync();
+                try
+                {
+                    if (await job.RunAsync(ArtItem.Cover, () => CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Cover))) fetched = true;
+                }
+                finally { gate.Release(); }
+            }));
+        }
+        finally
+        {
+            job.End();
+            _artTried.Save();
         }
         return fetched;
+    }
+
+    /// <summary>Logos and wallpapers for the Epic games that are not installed (a few per run; games already tried are not tried again).</summary>
+    public async Task<bool> DownloadEpicNotInstalledArtAsync(IReadOnlyList<Game> games)
+    {
+        var pending = games.Where(g => g.Source == "Epic"
+            && ((g.LogoPath is null && !_artTried.Contains(GameSorter.Key(g) + "#logo"))
+                || (g.BackdropPath is null && !_artTried.Contains(GameSorter.Key(g) + "#epicwall"))))
+            .Take(100).ToList();
+        return pending.Count > 0 && await DownloadMissingArtAsync(pending);
     }
 
     /// <summary>Starts the game through its store. Returns false when that failed.</summary>
@@ -143,9 +312,14 @@ internal sealed class LibraryService
     /// <summary>Uses artwork downloaded earlier when the store's own cache has none.</summary>
     private Game WithCachedArt(Game game)
     {
+        if (game.Source == EpicProvider.ProviderName && game.CoverUrl is null && game.WideUrl is null && game.LogoUrl is null
+            && App.Settings.EpicLibrary.FirstOrDefault(e => string.Equals(e.AppName, game.Id, StringComparison.OrdinalIgnoreCase)) is { } owned)
+            game = game with { CoverUrl = owned.CoverUrl, WideUrl = owned.WideUrl, LogoUrl = owned.LogoUrl }; // installed Epic game: Epic's own pictures
         var cover = game.CoverPath ?? CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Cover)
                     ?? SteamGridDbArt.Cached(ArtCacheDir, game, StoreArtKind.Cover);
-        var hero = game.BackdropPath ?? SteamGridDbArt.CachedWideHero(ArtCacheDir, game) ?? CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Backdrop);
+        var hero = game.Source == EpicProvider.ProviderName
+            ? game.BackdropPath ?? CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Backdrop) ?? SteamGridDbArt.CachedWideHero(ArtCacheDir, game) // Epic's own picture first
+            : game.BackdropPath ?? SteamGridDbArt.CachedWideHero(ArtCacheDir, game) ?? CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Backdrop);
         var logo = game.LogoPath ?? LogoDownloader.Cached(ArtCacheDir, game) ?? LogoDownloader.FindSteamLocal(SteamPath, game);
         return cover == game.CoverPath && hero == game.BackdropPath && logo == game.LogoPath
             ? game
@@ -162,54 +336,126 @@ internal sealed class LibraryService
         var fetched = false;
         var gridKey = App.Settings.SteamGridDbApiKey;
         var gridRejected = false;
+        var (coverCount, logoCount, wallCount) = CountArtWork(games, gridKey is not null);
+        var job = Art.Begin(coverCount, logoCount, wallCount);
 
-        foreach (var game in games)
+        using var gate = new SemaphoreSlim(4);
+        async Task ProcessAsync(Game game)
         {
-            // Logo for the game page: Steam's own copy or CDN first, then SteamGridDB with the user's key.
-            if (game.LogoPath is null && _artTried.Add(GameSorter.Key(game) + "#logo"))
-            {
-                var logoPath = await LogoDownloader.DownloadFromSteamAsync(Http, ArtCacheDir, game);
-                if (logoPath is null && gridKey is not null && !gridRejected)
+                // Logo for the game page: Steam's own copy or CDN first, then SteamGridDB with the user's key.
+                if (game.LogoPath is null && _artTried.Add(GameSorter.Key(game) + "#logo"))
                 {
-                    try { logoPath = await LogoDownloader.DownloadFromGridAsync(Http, gridKey, ArtCacheDir, game); }
-                    catch (UnauthorizedAccessException) { gridRejected = true; }
+                    var rejected = false;
+                    if (await job.RunAsync(ArtItem.Logo, async () =>
+                        {
+                            var logoPath = await LogoDownloader.DownloadFromSteamAsync(Http, ArtCacheDir, game)
+                                           ?? await LogoDownloader.DownloadFromEpicAsync(Http, ArtCacheDir, game);
+                            if (logoPath is null && gridKey is not null && !gridRejected)
+                            {
+                                try { logoPath = await LogoDownloader.DownloadFromGridAsync(Http, gridKey, ArtCacheDir, game); }
+                                catch (UnauthorizedAccessException) { rejected = true; }
+                            }
+                            return logoPath;
+                        })) fetched = true;
+                    if (rejected) gridRejected = true;
                 }
-                if (logoPath is not null) fetched = true;
-            }
 
-            if (SteamGridDbArt.Applies(game))
-            {
-                if (SteamGridDbArt.CachedSteamShot(ArtCacheDir, game) is null && _artTried.Add(GameSorter.Key(game) + "#shot")
-                    && await SteamGridDbArt.DownloadSteamShotAsync(Http, ArtCacheDir, game) is not null)
-                    fetched = true;
-
-                if (SteamGridDbArt.CachedWideHero(ArtCacheDir, game) is null && _artTried.Add(GameSorter.Key(game) + "#wall")
-                    && await SteamGridDbArt.DownloadWallhavenAsync(Http, ArtCacheDir, game) is not null)
-                    fetched = true;
-
-                if (gridKey is not null && !gridRejected && game.CoverPath is null && _artTried.Add(GameSorter.Key(game) + "#sgdb"))
+                if (SteamGridDbArt.Applies(game))
                 {
-                    try
+                    if (game.Source == EpicProvider.ProviderName)
                     {
-                        int? gridId = await SteamGridDb.FindGameIdAsync(Http, gridKey, game);
-                        if (gridId is not null
-                            && await SteamGridDbArt.DownloadAsync(Http, gridKey, ArtCacheDir, game, StoreArtKind.Cover, gridId) is not null)
+                        // Epic's own cover and wide picture first (from the catalog, no key needed).
+                        if (game.CoverPath is null && CoverDownloader.Urls(game, StoreArtKind.Cover).Count > 0 && _artTried.Add(GameSorter.Key(game) + "#epiccover")
+                            && await job.RunAsync(ArtItem.Cover, () => CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Cover)))
+                            fetched = true;
+                        if (game.BackdropPath is null && _artTried.Add(GameSorter.Key(game) + "#epicwall")
+                            && CoverDownloader.Urls(game, StoreArtKind.Backdrop).Count > 0
+                            && await job.RunAsync(ArtItem.Wallpaper, () => CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Backdrop)))
                             fetched = true;
                     }
-                    catch (UnauthorizedAccessException)
+                    var hasOfficialWide = CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Backdrop) is not null;
+
+                    if (!hasOfficialWide && SteamGridDbArt.CachedSteamShot(ArtCacheDir, game) is null && _artTried.Add(GameSorter.Key(game) + "#shot")
+                        && await job.RunAsync(ArtItem.Wallpaper, () => SteamGridDbArt.DownloadSteamShotAsync(Http, ArtCacheDir, game)))
+                        fetched = true;
+
+                    if (!hasOfficialWide && SteamGridDbArt.CachedWideHero(ArtCacheDir, game) is null && _artTried.Add(GameSorter.Key(game) + "#wall")
+                        && await job.RunAsync(ArtItem.Wallpaper, () => SteamGridDbArt.DownloadWallhavenAsync(Http, ArtCacheDir, game)))
+                        fetched = true;
+
+                    if (gridKey is not null && !gridRejected && game.CoverPath is null && CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Cover) is null
+                        && _artTried.Add(GameSorter.Key(game) + "#sgdb"))
                     {
-                        gridRejected = true; // wrong key: no point asking again this time
+                        var rejected = false;
+                        if (await job.RunAsync(ArtItem.Cover, async () =>
+                            {
+                                try
+                                {
+                                    int? gridId = await SteamGridDb.FindGameIdAsync(Http, gridKey, game);
+                                    return gridId is not null
+                                        ? await SteamGridDbArt.DownloadAsync(Http, gridKey, ArtCacheDir, game, StoreArtKind.Cover, gridId)
+                                        : null;
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                    rejected = true; // wrong key: no point asking again this time
+                                    return null;
+                                }
+                            })) fetched = true;
+                        if (rejected) gridRejected = true;
                     }
+                    return;
                 }
-                continue;
-            }
 
-            if (game.Source != SteamProvider.ProviderName || (game.CoverPath is not null && game.BackdropPath is not null)) continue;
-            if (!_artTried.Add(GameSorter.Key(game))) continue; // once per run; failures are retried next start
+                if (game.Source != SteamProvider.ProviderName || (game.CoverPath is not null && game.BackdropPath is not null)) return;
+                if (!_artTried.Add(GameSorter.Key(game))) return; // once per run; failures are retried next start
 
-            if (game.CoverPath is null && await CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Cover) is not null) fetched = true;
-            if (game.BackdropPath is null && await CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Backdrop) is not null) fetched = true;
+                if (game.CoverPath is null && await job.RunAsync(ArtItem.Cover, () => CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Cover))) fetched = true;
+                if (game.BackdropPath is null && await job.RunAsync(ArtItem.Wallpaper, () => CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Backdrop))) fetched = true;
+        }
+
+        try
+        {
+            await Task.WhenAll(games.Select(async game =>
+            {
+                await gate.WaitAsync();
+                try { await ProcessAsync(game); }
+                finally { gate.Release(); }
+            }));
+        }
+        finally
+        {
+            job.End();
+            _artTried.Save();
         }
         return fetched;
+    }
+
+    /// <summary>How many downloads <see cref="DownloadMissingArtAsync"/> is about to try (for the progress total; a close estimate).</summary>
+    private (int Covers, int Logos, int Wallpapers) CountArtWork(IReadOnlyList<Game> games, bool hasGridKey)
+    {
+        int covers = 0, logos = 0, walls = 0;
+        foreach (var game in games)
+        {
+            var key = GameSorter.Key(game);
+            if (game.LogoPath is null && !_artTried.Contains(key + "#logo")) logos++;
+            if (SteamGridDbArt.Applies(game))
+            {
+                if (game.Source == EpicProvider.ProviderName)
+                {
+                    if (game.CoverPath is null && CoverDownloader.Urls(game, StoreArtKind.Cover).Count > 0 && !_artTried.Contains(key + "#epiccover")) covers++;
+                    if (game.BackdropPath is null && CoverDownloader.Urls(game, StoreArtKind.Backdrop).Count > 0 && !_artTried.Contains(key + "#epicwall")) walls++;
+                }
+                if (SteamGridDbArt.CachedSteamShot(ArtCacheDir, game) is null && !_artTried.Contains(key + "#shot")) walls++;
+                if (SteamGridDbArt.CachedWideHero(ArtCacheDir, game) is null && !_artTried.Contains(key + "#wall")) walls++;
+                if (hasGridKey && game.CoverPath is null && !_artTried.Contains(key + "#sgdb")) covers++;
+            }
+            else if (game.Source == SteamProvider.ProviderName && !_artTried.Contains(key))
+            {
+                if (game.CoverPath is null) covers++;
+                if (game.BackdropPath is null) walls++;
+            }
+        }
+        return (covers, logos, walls);
     }
 }

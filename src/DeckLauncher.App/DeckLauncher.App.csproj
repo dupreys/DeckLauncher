@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>DeckLauncher.App</RootNamespace>
     <AssemblyName>DeckLauncher</AssemblyName>
-    <Version>1.9.16</Version>
+    <Version>1.0.4</Version>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -21,6 +21,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DeckLauncher.Core\DeckLauncher.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Epic sign-in page inside the launcher (the Edge WebView2 runtime ships with Windows 10/11). -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2592.51" />
   </ItemGroup>
 
 </Project>

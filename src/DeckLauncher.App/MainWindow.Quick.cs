@@ -41,6 +41,7 @@ public partial class MainWindow
 
         NetPanel.Visibility = Visibility.Collapsed;
         VolPanel.Visibility = Visibility.Collapsed;
+        NotifPanel.Visibility = Visibility.Collapsed;
         panel.Visibility = Visibility.Visible;
         QuickLayer.Visibility = Visibility.Visible;
         _quickOpener = opener;
@@ -52,6 +53,7 @@ public partial class MainWindow
         QuickLayer.Visibility = Visibility.Collapsed;
         NetPanel.Visibility = Visibility.Collapsed;
         VolPanel.Visibility = Visibility.Collapsed;
+        NotifPanel.Visibility = Visibility.Collapsed;
         _quickOpener?.Focus();
     }
 
@@ -176,6 +178,7 @@ public partial class MainWindow
     {
         OpenQuick(VolButton, VolPanel, MuteButton);
         UpdateVolumeUi();
+        if (VolPanel.Visibility == Visibility.Visible) _ = RefreshBluetoothAsync();
     }
 
     private void OnMuteClick(object sender, RoutedEventArgs e)

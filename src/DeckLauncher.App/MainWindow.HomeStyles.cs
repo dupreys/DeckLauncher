@@ -351,7 +351,8 @@ public partial class MainWindow
         if (c < 0) return false;
         if (StepInRow(others, c, direction)) return true;
         if (direction == towardTiles) return tiles.Count == 0 || Go(tiles[Closest(c, others.Count, tiles.Count)]);
-        return direction == towardOthers && Bump();
+        // The far end of the other row: a bump when nothing lies beyond it, but when the buttons sit above the tiles (Cinema) the top bar does.
+        return direction == towardOthers && othersBelow && Bump();
     }
 
     private static (bool Left, bool Right, bool Up, bool Down) Directions(FocusNavigationDirection d) =>

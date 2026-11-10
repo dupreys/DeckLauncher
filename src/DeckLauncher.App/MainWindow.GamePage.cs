@@ -35,6 +35,7 @@ public partial class MainWindow
         GameAbout.Text = "";
         GamePlayers.Text = "";
         BuildInfoRows(item, null);
+        ResetAchievements();
         GameTabAbout.IsChecked = true;
 
         ShowPage("Jogo");
@@ -48,6 +49,7 @@ public partial class MainWindow
     {
         var item = _gameItem;
         _detailsCts?.Cancel();
+        _achCts?.Cancel();
         ShowPage(_returnPage);
         Dispatcher.BeginInvoke(() =>
         {
@@ -163,8 +165,12 @@ public partial class MainWindow
     {
         if (GameAboutPanel is null) return; // fires while the window is still being built
         var about = GameTabAbout.IsChecked == true;
+        var achievements = GameTabAchievements.IsChecked == true;
         GameAboutPanel.Visibility = about ? Visibility.Visible : Visibility.Collapsed;
-        GameInfoPanel.Visibility = about ? Visibility.Collapsed : Visibility.Visible;
+        GameAchScroll.Visibility = achievements ? Visibility.Visible : Visibility.Collapsed;
+        GameInfoPanel.Visibility = !about && !achievements ? Visibility.Visible : Visibility.Collapsed;
+        GameTabsBody.Height = achievements ? 340 : 220; // the list of achievements needs more room
+        if (achievements && _gameItem is { } item) _ = ShowAchievementsAsync(item);
     }
 
     private void OnPlayClick(object sender, RoutedEventArgs e)
@@ -197,6 +203,11 @@ public partial class MainWindow
     /// <summary>Asks the Steam client to install the game (it does the download; progress shows on the Downloads page).</summary>
     private void InstallSteamGame(GameItem item)
     {
+        if (item.Game.Source == DeckLauncher.Core.Epic.EpicProvider.ProviderName)
+        {
+            InstallEpicGame(item);
+            return;
+        }
         try
         {
             Process.Start(new ProcessStartInfo(SteamDownloads.InstallUri(item.Game.Id)) { UseShellExecute = true })?.Dispose();
@@ -209,6 +220,38 @@ public partial class MainWindow
 
         _lastRefresh = DateTime.MinValue; // the lists refresh when the launcher comes back to the front
         ShowToast($"Pedi à Steam para instalar {item.Name}. Acompanhe em Downloads (a Steam pode pedir para escolher a pasta).");
+    }
+
+    /// <summary>
+    /// Opens the Epic Games Launcher on the library page, where the game's Install button is (the Epic launcher does the download).
+    /// Like Playnite: the direct install link only opens an old, half-working install window.
+    /// </summary>
+    private async void InstallEpicGame(GameItem item)
+    {
+        var game = item.Game;
+        var uri = !string.IsNullOrEmpty(game.CatalogNamespace) && !string.IsNullOrEmpty(game.CatalogItemId)
+            ? DeckLauncher.Core.Epic.EpicAccountClient.InstallUri(game.CatalogNamespace, game.CatalogItemId, game.Id)
+            : DeckLauncher.Core.Epic.EpicAccountClient.LibraryPageUri;
+        try
+        {
+            // A request sent while the Epic launcher is closed is dropped: start it first and give it time to get ready.
+            if (!DeckLauncher.Core.Epic.EpicProvider.IsLauncherRunning() && DeckLauncher.Core.Epic.EpicProvider.FindLauncherExe() is { } exe)
+            {
+                ShowToast("Abrindo o Epic Games Launcher… o pedido de instalação vai em seguida.");
+                Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = System.IO.Path.GetDirectoryName(exe)! })?.Dispose();
+                await Task.Delay(TimeSpan.FromSeconds(12));
+            }
+            Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+            ShowToast("Não foi possível abrir o Epic Games Launcher. Ele está instalado?");
+            return;
+        }
+
+        _lastRefresh = DateTime.MinValue; // the lists refresh when the launcher comes back to the front
+        TrackEpicInstall(game);
+        ShowToast($"Pedi ao Epic Games Launcher para instalar {item.Name}. Confirme a pasta lá; o aviso de término aparece no sino.");
     }
 
     private void OnStorePageClick(object sender, RoutedEventArgs e)

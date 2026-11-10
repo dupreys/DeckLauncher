@@ -111,8 +111,18 @@ public sealed class GameItem : INotifyPropertyChanged
 
 internal static class ImageLoader
 {
+    // A big library asks for hundreds of pictures at once: decode a few at a time so the interface and the pool threads stay free.
+    private static readonly SemaphoreSlim Gate = new(Math.Clamp(Environment.ProcessorCount / 2, 2, 4));
+
     /// <summary>Decodes an image on a pool thread at a reduced size and freezes it for cross-thread use.</summary>
-    public static Task<ImageSource?> LoadAsync(string path, int decodeWidth) => Task.Run<ImageSource?>(() =>
+    public static async Task<ImageSource?> LoadAsync(string path, int decodeWidth)
+    {
+        await Gate.WaitAsync();
+        try { return await Task.Run(() => Decode(path, decodeWidth)); }
+        finally { Gate.Release(); }
+    }
+
+    private static ImageSource? Decode(string path, int decodeWidth)
     {
         try
         {
@@ -132,5 +142,5 @@ internal static class ImageLoader
         {
             return null; // corrupt or half-written image: the tile shows the game's name instead
         }
-    });
+    }
 }
