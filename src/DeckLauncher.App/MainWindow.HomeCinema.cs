@@ -1,4 +1,5 @@
 using System.Globalization;
+using DeckLauncher.Core;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -132,7 +133,7 @@ public partial class MainWindow
         if (CarouselHome.Visibility != Visibility.Visible) return;
         var now = DateTime.Now;
         CarouselClock.Text = now.ToString("HH:mm");
-        var date = now.ToString("dddd, d 'de' MMMM", new CultureInfo("pt-BR"));
+        var date = now.ToString(Loc.Language == "en" ? "dddd, MMMM d" : "dddd, d 'de' MMMM", UiText.Culture);
         CarouselDate.Text = char.ToUpper(date[0], CultureInfo.InvariantCulture) + date[1..];
     }
 }

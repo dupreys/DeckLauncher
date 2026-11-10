@@ -105,7 +105,7 @@ public partial class MainWindow
 
     private void AddNotification(string text)
     {
-        _notifications.Insert(0, (DateTime.Now, text));
+        _notifications.Insert(0, (DateTime.Now, UiText.T(text)));
         if (_notifications.Count > 20) _notifications.RemoveAt(_notifications.Count - 1);
         if (NotifPanel.Visibility != Visibility.Visible) _unreadNotifications++;
     }
@@ -157,7 +157,7 @@ public partial class MainWindow
         {
             var row = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
             var state = d.Status switch { DownloadStatus.Downloading => "Baixando", DownloadStatus.Paused => "Pausado", _ => "Na fila" };
-            row.Children.Add(new TextBlock { Text = $"{state}: {d.Name}", FontSize = 17, TextWrapping = TextWrapping.Wrap });
+            row.Children.Add(new TextBlock { Text = $"{UiText.T(state)}: {d.Name}", FontSize = 17, TextWrapping = TextWrapping.Wrap });
             row.Children.Add(new ProgressBar { Height = 6, Margin = new Thickness(0, 8, 0, 6), Minimum = 0, Maximum = 1, Value = d.Fraction, BorderThickness = new Thickness(0),
                 Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 255, 255, 255)), Foreground = (System.Windows.Media.Brush)FindResource("Accent") });
             row.Children.Add(new TextBlock { Text = $"{(int)Math.Round(d.Fraction * 100)}%", FontSize = 13, Foreground = (System.Windows.Media.Brush)FindResource("TextMuted") });

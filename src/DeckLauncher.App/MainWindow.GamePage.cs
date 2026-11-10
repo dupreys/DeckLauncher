@@ -15,7 +15,7 @@ namespace DeckLauncher.App;
 // The game page: banner with the logo, Play button, last session / play time, favourite and the details tabs.
 public partial class MainWindow
 {
-    private static readonly CultureInfo Portuguese = new("pt-BR");
+    private static CultureInfo Portuguese => UiText.Culture;
 
     private GameItem? _gameItem;
     private string _returnPage = "Início";

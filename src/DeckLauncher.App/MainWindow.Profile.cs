@@ -135,8 +135,8 @@ public partial class MainWindow
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Escolha a sua foto",
-            Filter = "Imagens (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif",
+            Title = UiText.T("Escolha a sua foto"),
+            Filter = UiText.T("Imagens (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif"),
         };
         if (dialog.ShowDialog(this) != true) return;
 

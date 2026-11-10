@@ -14,6 +14,7 @@ public partial class App : Application
     {
         ImportLiteLauncherSettings();
         Settings = Store.Load();
+        DeckLauncher.Core.Loc.Set(Settings.Language ?? DeckLauncher.Core.Loc.Detect(System.Globalization.CultureInfo.CurrentUICulture));
 
         // An unexpected error in one handler shouldn't close the whole launcher: write it down and carry on.
         DispatcherUnhandledException += (_, args) =>

@@ -63,6 +63,8 @@
 - **Configurações:** Sistema (tela cheia, efeitos sonoros, usar o mouse, iniciar com o Windows, atualizar a biblioteca, limpar o cache), Interface, Integrações e Jogos.
 - **Interface:** **Preto OLED** (toda a interface em preto, em vez do azul escuro).
 - **Perfil:** a foto no canto superior direito abre um painel para trocar a foto (qualquer imagem do PC ou a da Steam) e o nome mostrado no launcher; a conta da Steam não é alterada.
+- **Desinstalar:** pela página do jogo, o launcher da Steam ou da Epic pergunta se quer remover; ao remover, o jogo some das listas e volta à aba da loja para instalar depois.
+- **Idiomas:** português, inglês e espanhol (Configurações > Interface), com o idioma do Windows como padrão.
 - **Rede e som:** painéis na barra superior com as conexões ativas (Wi-Fi/Ethernet) e o volume do Windows. No painel de som: liga/desliga o Bluetooth e guarda fones sem fio numa lista, conectando ao clicar ou automaticamente.
 - **Ligar/Desligar:** suspender, desligar, reiniciar, finalizar sessão, minimizar e sair.
 - **Iniciar com o Windows:** opção em Configurações > Sistema.

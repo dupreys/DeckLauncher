@@ -81,6 +81,24 @@ public partial class MainWindow
         var (steamPicture, epicPicture) = await Task.Run(() => (StoreIcon("steam", "store-steam.png"), StoreIcon("com.epicgames.launcher", "store-epic.png")));
         ShowStoreLogo(steam, SteamIcon, SteamLabel, steamPicture);
         ShowStoreLogo(epic, EpicIcon, EpicLabel, epicPicture);
+        UpdateStoreTiles();
+    }
+
+    /// <summary>The Lojas page shows only the stores whose program is installed on this PC.</summary>
+    private void UpdateStoreTiles()
+    {
+        var steamInstalled = ProtocolCommand("steam") is not null;
+        var epicInstalled = ProtocolCommand("com.epicgames.launcher") is not null;
+        StoreSteamButton.Visibility = steamInstalled ? Visibility.Visible : Visibility.Collapsed;
+        StoreEpicButton.Visibility = epicInstalled ? Visibility.Visible : Visibility.Collapsed;
+        StoresEmpty.Visibility = steamInstalled || epicInstalled ? Visibility.Collapsed : Visibility.Visible;
+        if (_page == "Lojas" && !StoreSteamButton.IsKeyboardFocusWithin && !StoreEpicButton.IsKeyboardFocusWithin) FocusStores();
+    }
+
+    private void FocusStores()
+    {
+        if (StoreSteamButton.Visibility == Visibility.Visible) StoreSteamButton.Focus();
+        else if (StoreEpicButton.Visibility == Visibility.Visible) StoreEpicButton.Focus();
     }
 
     private static BitmapSource? StoreIcon(string scheme, string file)

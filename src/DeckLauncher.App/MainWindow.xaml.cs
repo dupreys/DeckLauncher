@@ -52,6 +52,7 @@ public partial class MainWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         if (XboxMode.Active) XboxMode.Log("DeckLauncher aberto pelo Modo Xbox.");
+        InitLanguage();
         ApplyHomeStyle();
         ApplyAppearance();
         ApplyFullscreen(App.Settings.StartFullscreen || XboxMode.Active);
@@ -419,7 +420,7 @@ public partial class MainWindow : Window
 
     private void ShowToast(string text)
     {
-        ToastText.Text = text;
+        ToastText.Text = UiText.T(text);
         Toast.Visibility = Visibility.Visible;
         _toastTimer.Stop();
         _toastTimer.Start();
@@ -489,7 +490,7 @@ public partial class MainWindow : Window
         else if (_page == "Jogo") PlayButton.Focus();
         else if (_page == "Feed") FocusFeed();
         else if (_page == "Mídias") FocusMedia(_mediaIndex);
-        else if (_page == "Lojas") StoreSteamButton.Focus();
+        else if (_page == "Lojas") FocusStores();
         else if (_page == "Downloads") OpenSteamDownloadsButton.Focus();
         else if (_page == "Configurações")
         {
@@ -538,6 +539,7 @@ public partial class MainWindow : Window
         if (media) LoadMedia(); else _mediaLoadGen++;
         var stores = page == "Lojas";
         StoresPage.Visibility = stores ? Visibility.Visible : Visibility.Collapsed;
+        if (stores) UpdateStoreTiles();
         OtherPage.Visibility = home || library || game || downloads || settings || feed || media || stores ? Visibility.Collapsed : Visibility.Visible;
         if (home) StartHeroDrift(); else StopHeroDrift();
         if (home && previous != page && !IsClassicHome) { UpdateRoomStatus(refreshSlowParts: true); _ = RefreshHomeInfoAsync(force: false); }

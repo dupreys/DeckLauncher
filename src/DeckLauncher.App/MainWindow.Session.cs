@@ -103,6 +103,9 @@ public partial class MainWindow
         var notInstalled = _gameItem?.Game.NotInstalled == true;
         PlayButton.Content = same ? "Retomar" : notInstalled ? "Instalar" : "Jogar";
         StorePageButton.Visibility = _gameItem?.Game.Source == DeckLauncher.Core.Steam.SteamProvider.ProviderName ? Visibility.Visible : Visibility.Collapsed;
+        var source = _gameItem?.Game.Source;
+        var fromStore = source == DeckLauncher.Core.Steam.SteamProvider.ProviderName || source == DeckLauncher.Core.Epic.EpicProvider.ProviderName;
+        UninstallButton.Visibility = !notInstalled && fromStore ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private static bool BelongsTo(GameSession session, string path)

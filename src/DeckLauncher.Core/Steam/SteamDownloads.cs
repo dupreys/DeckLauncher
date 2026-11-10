@@ -29,6 +29,14 @@ public static class SteamDownloads
         return $"steam://install/{appId}";
     }
 
+    /// <summary>The link that makes the Steam client ask whether to uninstall the game (Steam shows its own confirmation).</summary>
+    public static string UninstallUri(string appId)
+    {
+        if (string.IsNullOrEmpty(appId) || !appId.All(char.IsAsciiDigit))
+            throw new ArgumentException("Not a Steam app id.", nameof(appId));
+        return $"steam://uninstall/{appId}";
+    }
+
     /// <summary>The link that opens the game's page in the Steam client's store.</summary>
     public static string StoreUri(string appId)
     {

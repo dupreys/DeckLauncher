@@ -333,8 +333,8 @@ public partial class MainWindow
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Escolha o programa",
-            Filter = "Programas e atalhos (*.exe;*.lnk)|*.exe;*.lnk",
+            Title = UiText.T("Escolha o programa"),
+            Filter = UiText.T("Programas e atalhos (*.exe;*.lnk)|*.exe;*.lnk"),
         };
         if (dialog.ShowDialog(this) != true) return;
 

@@ -909,6 +909,7 @@
 
     <!-- Style picker card in Settings > Interface (a toggle used like a radio button: see OnHomeStyleClick). -->
     <Style x:Key="StyleCard" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="{StaticResource Text}"/>
         <Setter Property="Margin" Value="0,0,16,14"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Cursor" Value="Hand"/>

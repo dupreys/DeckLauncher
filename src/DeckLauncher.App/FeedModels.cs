@@ -59,7 +59,7 @@ internal abstract class FeedItem : INotifyPropertyChanged
 
     // ---- Shared Portuguese texts --------------------------------------------------------------
 
-    private static readonly CultureInfo Portuguese = new("pt-BR");
+    private static CultureInfo Portuguese => UiText.Culture;
 
     /// <summary>"hoje", "ontem", "há 3 dias" or the date.</summary>
     public static string DayLabel(DateTimeOffset date)
@@ -68,7 +68,7 @@ internal abstract class FeedItem : INotifyPropertyChanged
         return days <= 0 ? "hoje"
             : days == 1 ? "ontem"
             : days < 7 ? $"há {days} dias"
-            : date.ToLocalTime().ToString("d 'de' MMMM", Portuguese);
+            : date.ToLocalTime().ToString(UiText.DateFormat("d 'de' MMMM"), Portuguese);
     }
 
     public static string AgoLabel(DateTimeOffset date)
@@ -79,7 +79,7 @@ internal abstract class FeedItem : INotifyPropertyChanged
             : days < 7 ? $"há {days} dias"
             : days < 14 ? "há 1 semana"
             : days < 31 ? $"há {days / 7} semanas"
-            : date.ToLocalTime().ToString("d 'de' MMM", Portuguese);
+            : date.ToLocalTime().ToString(UiText.DateFormat("d 'de' MMM"), Portuguese);
     }
 }
 

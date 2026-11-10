@@ -48,7 +48,7 @@ public sealed class GameItem : INotifyPropertyChanged
             if (minutes <= 0) return IsRunning ? prefix : "NÃO JOGADO NAS ÚLTIMAS DUAS SEMANAS";
             var text = minutes < 60
                 ? $"ÚLTIMAS DUAS SEMANAS: {minutes} MIN"
-                : $"ÚLTIMAS DUAS SEMANAS: {(minutes / 60.0).ToString("0.0", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"))} H";
+                : $"ÚLTIMAS DUAS SEMANAS: {(minutes / 60.0).ToString("0.0", UiText.Culture)} H";
             return IsRunning ? $"{prefix}  ·  {text}" : text;
         }
     }

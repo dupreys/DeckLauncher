@@ -19,7 +19,7 @@ internal sealed class EpicLoginWindow : Window
 
     public EpicLoginWindow()
     {
-        Title = "Entrar na Epic Games";
+        Title = UiText.T("Entrar na Epic Games");
         Width = 520;
         Height = 760;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;

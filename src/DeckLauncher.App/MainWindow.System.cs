@@ -628,7 +628,7 @@ public partial class MainWindow
 
     private void OnAddGameClick(object sender, RoutedEventArgs e)
     {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Escolha o .exe do jogo", Filter = "Programas (*.exe)|*.exe" };
+        var dialog = new Microsoft.Win32.OpenFileDialog { Title = UiText.T("Escolha o .exe do jogo"), Filter = UiText.T("Programas (*.exe)|*.exe") };
         if (dialog.ShowDialog(this) != true) return;
 
         var added = ManualProvider.Add(App.Settings.ManualGames, dialog.FileName, ManualProvider.SuggestName(dialog.FileName));
@@ -662,7 +662,7 @@ public partial class MainWindow
 
     private PowerAction _pendingPower;
 
-    private bool PowerOpen => PowerPanel.Visibility == Visibility.Visible;
+    private bool PowerOpen => PowerPanel.Visibility == Visibility.Visible || LanguagePanel.Visibility == Visibility.Visible;
 
     private void OpenPower()
     {
@@ -687,6 +687,7 @@ public partial class MainWindow
     /// <summary>Esc: one step back inside the confirmation, otherwise closes the menu.</summary>
     private void PowerBack()
     {
+        if (LanguagePanel.Visibility == Visibility.Visible) { CloseLanguagePicker(); return; }
         if (PowerConfirm.Visibility == Visibility.Visible)
         {
             ShowPowerMain();

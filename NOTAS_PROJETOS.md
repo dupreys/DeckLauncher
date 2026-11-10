@@ -337,6 +337,19 @@
 - **Bluetooth no painel de Som:** liga/desliga o Bluetooth, adiciona fones sem fio já pareados no Windows (ou abre o pareamento do Windows para um novo), guarda numa lista e conecta ao clicar ou automaticamente quando o fone estiver ligado por perto.
 
 ## Notas técnicas v1.0.4
-- Bluetooth: `BluetoothNative` (App) usa a API Win32 `bthprops.cpl` para listar pareados, conectar (serviços A2DP/Hands-free/Headset) e desconectar; o rádio liga/desliga via WinRT dentro de um PowerShell oculto (sem mudar o framework do projeto). Lista salva em `AppSettings.BluetoothDevices` (`SavedBluetoothDevice`, endereço de 12 hex) e `BluetoothAutoConnect`; tentativa automática ao abrir e a cada 45 s com a janela ativa; quem foi desconectado à mão não reconecta até reiniciar.
 - Versão do aplicativo ajustada para 1.0.4 (mostrada em Configurações > Sobre).
+- Bluetooth: `BluetoothNative` (App) usa a API Win32 `bthprops.cpl` para listar pareados, conectar (serviços A2DP/Hands-free/Headset) e desconectar; o rádio liga/desliga via WinRT dentro de um PowerShell oculto (sem mudar o framework do projeto). Lista salva em `AppSettings.BluetoothDevices` (`SavedBluetoothDevice`, endereço de 12 hex) e `BluetoothAutoConnect`; tentativa automática ao abrir e a cada 45 s com a janela ativa; quem foi desconectado à mão não reconecta até reiniciar.
 - `ArtTriedStore` (art_tried.json na pasta de capas): memória em disco das artes já tentadas, validade de 3 dias; limpar o cache de arte também a limpa. Downloads de arte com 4 em paralelo; decodificação de imagens limitada a 2-4 ao mesmo tempo; leitura das artes em disco fora da thread da interface; a lista de não instalados aparece antes da sincronização da Epic.
+
+## v1.0.5
+- **Idiomas:** português, inglês e espanhol. Em Configurações > Interface > Idioma abre uma janela pequena para escolher Automático (segue o Windows), English, Português ou Español; textos das telas, avisos e notificações são traduzidos na hora.
+- **Desinstalar:** botão DESINSTALAR na página do jogo (ao lado de VER NA LOJA) para jogos instalados da Steam e da Epic. Abre a Steam já perguntando se quer remover; na Epic abre a Biblioteca do Epic Games Launcher (a Epic não tem link direto de desinstalação), onde o menu (⋯) do jogo tem Desinstalar. Quando o jogo some do disco, o launcher o tira de todas as listas, avisa no sino e volta para a aba da loja, onde ele aparece esmaecido para instalar de novo.
+- **Lojas:** a página mostra só a Steam e/ou o Epic Games Launcher que estiverem instalados no PC; sem nenhum, aparece um aviso.
+- **Temas legíveis:** os nomes dos estilos de tela inicial (Configurações > Interface) ficavam pretos e sumiam no tema Preto OLED; agora são brancos.
+- **Idioma:** o botão abre uma janelinha para escolher Automático, English, Português ou Español.
+
+## Notas técnicas v1.0.5
+- Idiomas: `Loc` (Core) já existia com tabelas de chave em inglês usadas pelo Core; as telas do App são escritas em português, então `AppTexts` (Core, `AppTexts.Data.cs` com ~520 linhas português→inglês/espanhol; `{0}` marca valores, `*` libera qualquer texto) traduz textos exatos e padrões. `UiText` (App) percorre a árvore visual (TextBlock, Content de botões, ToolTip) lembrando o texto original de cada elemento, então dá para trocar de idioma várias vezes; roda a cada mudança de layout (com 80 ms de espera) fora do português. Padrões com poucas letras fixas só aceitam números/tamanhos, para nunca alterar títulos de jogos. `AppSettings.Language` (null = Automático). Textos novos: acrescentar uma linha em `AppTexts.Data.cs`.
+- Versão do aplicativo ajustada para 1.0.5 (mostrada em Configurações > Sobre).
+- `StyleCard` (Theme.xaml) agora define `Foreground` branco: os textos dos cartões herdavam a cor padrão do botão.
+- `MainWindow.Uninstall.cs`: `steam://uninstall/<id>` para Steam; Epic abre `com.epicgames.launcher://store/library`; `WatchUninstall` confere o disco por até 15 minutos e atualiza as listas.

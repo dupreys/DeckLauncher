@@ -417,6 +417,7 @@
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="PlayButton" Style="{StaticResource PlayButton}" Content="Jogar" Click="OnPlayClick"/>
                         <Button x:Name="StorePageButton" Style="{StaticResource TabText}" Content="VER NA LOJA" VerticalAlignment="Center" Margin="22,0,0,0" Click="OnStorePageClick"/>
+                        <Button x:Name="UninstallButton" Style="{StaticResource TabText}" Content="DESINSTALAR" VerticalAlignment="Center" Margin="14,0,0,0" Click="OnUninstallClick"/>
                         <StackPanel Margin="34,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="ÚLTIMA SESSÃO" Style="{StaticResource StatLabel}"/>
                             <TextBlock x:Name="StatLast" Style="{StaticResource StatValue}"/>
@@ -582,6 +583,15 @@
 
                     <StackPanel x:Name="SetInterface" Visibility="Collapsed">
                         <TextBlock Text="Interface" FontSize="32" FontWeight="SemiBold" Margin="0,0,0,18"/>
+                        <Border Style="{StaticResource SettingsRow}">
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,200,0">
+                                    <TextBlock Text="Idioma" FontSize="19"/>
+                                    <TextBlock Text="Idioma da interface. Com Automático, segue o idioma do Windows." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <Button x:Name="LanguageButton" Style="{StaticResource TabText}" HorizontalAlignment="Right" Click="OnLanguageClick"/>
+                            </Grid>
+                        </Border>
                         <Border Style="{StaticResource SettingsRow}">
                             <StackPanel>
                                 <TextBlock Text="Estilo da tela inicial" FontSize="19"/>
@@ -858,6 +868,8 @@
                         </Grid>
                     </Button>
                 </StackPanel>
+                <TextBlock x:Name="StoresEmpty" Visibility="Collapsed" Margin="2,30,0,0" FontSize="18" TextWrapping="Wrap"
+                           Foreground="{StaticResource TextMuted}" Text="Nenhuma loja encontrada. Instale a Steam ou o Epic Games Launcher e elas aparecem aqui."/>
             </StackPanel>
         </Grid>
 
@@ -1287,6 +1299,20 @@
                     <TextBlock x:Name="ViewerHelp" FontSize="14" Foreground="#B8C0CC" Margin="0,14,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
+        </Grid>
+
+        <!-- Language picker (small window opened by Settings > Interface > Language) -->
+        <Grid x:Name="LanguagePanel" Visibility="Collapsed">
+            <Rectangle Fill="#E6000000" MouseDown="OnLanguageDimClick"/>
+            <StackPanel Width="398" VerticalAlignment="Center" KeyboardNavigation.DirectionalNavigation="Contained">
+                <TextBlock Text="Idioma" FontSize="26" HorizontalAlignment="Center" Margin="0,0,0,26"/>
+                <Button x:Name="LangAutoButton" Style="{StaticResource PowerItem}" Tag="auto" Click="OnLanguageChoiceClick"/>
+                <Button x:Name="LangEnButton" Style="{StaticResource PowerItem}" Tag="en" Click="OnLanguageChoiceClick"/>
+                <Button x:Name="LangPtButton" Style="{StaticResource PowerItem}" Tag="pt-BR" Click="OnLanguageChoiceClick"/>
+                <Button x:Name="LangEsButton" Style="{StaticResource PowerItem}" Tag="es" Click="OnLanguageChoiceClick"/>
+                <Border Height="3" Background="{DynamicResource T_0D1117}"/>
+                <Button Style="{StaticResource PowerItem}" Content="Cancelar" Click="OnLanguageCancelClick"/>
+            </StackPanel>
         </Grid>
 
         <!-- Power menu -->

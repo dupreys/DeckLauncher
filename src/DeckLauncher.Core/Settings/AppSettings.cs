@@ -179,6 +179,7 @@ public sealed class AppSettings
         GameOverrides ??= new();
         PlayRecords ??= new();
         HiddenGames = (HiddenGames ?? new()).Where(p => !string.IsNullOrWhiteSpace(p.Key)).ToDictionary(p => p.Key, p => p.Value ?? p.Key, StringComparer.Ordinal);
+        Language = Language is "en" or "pt-BR" or "es" ? Language : null;
         BluetoothDevices = SavedBluetoothDevice.Clean(BluetoothDevices);
         EpicTokens = string.IsNullOrWhiteSpace(EpicTokens) ? null : EpicTokens;
         EpicSkipped = (EpicSkipped ?? new()).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();

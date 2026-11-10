@@ -95,6 +95,8 @@ public class SteamStoreLinkTests
     [Fact]
     public void Store_link_opens_the_game_page_in_the_steam_client()
     {
+        Assert.Equal("steam://uninstall/570", DeckLauncher.Core.Steam.SteamDownloads.UninstallUri("570"));
+        Assert.Throws<ArgumentException>(() => DeckLauncher.Core.Steam.SteamDownloads.UninstallUri("570 -applaunch calc"));
         Assert.Equal("steam://store/570", DeckLauncher.Core.Steam.SteamDownloads.StoreUri("570"));
         Assert.Throws<ArgumentException>(() => DeckLauncher.Core.Steam.SteamDownloads.StoreUri("570 -applaunch calc"));
         Assert.Throws<ArgumentException>(() => DeckLauncher.Core.Steam.SteamDownloads.StoreUri(""));
