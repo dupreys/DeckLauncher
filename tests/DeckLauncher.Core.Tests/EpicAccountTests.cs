@@ -49,7 +49,8 @@ public class EpicAccountTests
           {"type":"Thumbnail","url":"https://cdn1.epicgames.com/t.jpg"},
           {"type":"DieselGameBoxTall","url":"https://cdn1.epicgames.com/tall.jpg"},
           {"type":"DieselGameBox","url":"https://cdn1.epicgames.com/wide.jpg"},
-          {"type":"DieselGameBoxLogo","url":"https://cdn1.epicgames.com/logo.png"}]}}
+          {"type":"DieselGameBoxLogo","url":"https://cdn1.epicgames.com/logo.png"}]}
+        }
         """;
 
     private static readonly EpicAccountClient.Asset Asset = new("Sugar", "ns1", "id1", "PUBLIC");

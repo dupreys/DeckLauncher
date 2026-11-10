@@ -144,7 +144,7 @@ public partial class MainWindow
             BtPickList.Children.Add(button);
         }
         BtPickPanel.Visibility = Visibility.Visible;
-        Dispatcher.BeginInvoke(() => { (BtPickList.Children.OfType<Button>().FirstOrDefault() ?? BtPairButton).Focus(); }, DispatcherPriority.Input);
+        _ = Dispatcher.BeginInvoke(() => { (BtPickList.Children.OfType<Button>().FirstOrDefault() ?? BtPairButton).Focus(); }, DispatcherPriority.Input);
     }
 
     private async void AddBluetoothDevice(BluetoothNative.Device device)
