@@ -24,6 +24,7 @@ public static class GameInfo
         SteamProvider.ProviderName => $"steam://store/{game.Id}",
         EpicProvider.ProviderName => "https://store.epicgames.com/browse?q=" +
                                      Uri.EscapeDataString(game.OriginalName ?? game.Name) + "&sortBy=relevancy",
+        "GOG" => "https://www.gog.com/en/games?query=" + Uri.EscapeDataString(game.OriginalName ?? game.Name),
         _ => "https://www.google.com/search?q=" + Uri.EscapeDataString(game.OriginalName ?? game.Name),
     };
 

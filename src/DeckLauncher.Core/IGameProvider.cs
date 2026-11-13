@@ -1,7 +1,7 @@
 namespace DeckLauncher.Core;
 
 /// <summary>
-/// A source of games (Steam today; Epic, Xbox/Game Pass, GOG... later).
+/// A source of games (Steam, Epic, GOG and games added by hand; Xbox/Game Pass... later).
 /// Adding a store means implementing this interface and registering it in the app.
 /// </summary>
 public interface IGameProvider

@@ -491,6 +491,23 @@
                             <ProgressBar x:Name="ArtCardBar" Height="6" Margin="0,14,0,0" Minimum="0" Maximum="1" Foreground="{StaticResource Accent}" Background="#33FFFFFF" BorderThickness="0"/>
                         </StackPanel>
                     </Border>
+                    <Border x:Name="GogCard" Style="{StaticResource SettingsRow}" Padding="28,22,28,24" Visibility="Collapsed">
+                        <StackPanel>
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock x:Name="GogCardState" Text="BAIXANDO (GOG)" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
+                                    <TextBlock x:Name="GogCardTitle" FontSize="22" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="GogCardDetail" FontSize="14" Foreground="{StaticResource TextMuted}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <TextBlock x:Name="GogCardPercent" FontSize="30" FontWeight="Light" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
+                            <ProgressBar x:Name="GogCardBar" Height="6" Margin="0,14,0,0" Minimum="0" Maximum="1" Foreground="{StaticResource Accent}" Background="#33FFFFFF" BorderThickness="0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                <Button x:Name="GogCardPause" Style="{StaticResource TabText}" Content="PAUSAR" Click="OnGogPauseClick"/>
+                                <Button x:Name="GogCardCancel" Style="{StaticResource TabText}" Content="CANCELAR" Click="OnGogCancelClick"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                     <StackPanel x:Name="DownloadsList"/>
                 </StackPanel>
             </ScrollViewer>
@@ -566,6 +583,15 @@
                                     <TextBlock x:Name="CacheSizeText" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0"/>
                                 </StackPanel>
                                 <Button Style="{StaticResource TabText}" Content="LIMPAR" HorizontalAlignment="Right" Click="OnClearCacheClick"/>
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource SettingsRow}">
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Atualizar sozinho" FontSize="19"/>
+                                    <TextBlock Text="Baixa a versão nova em segundo plano e pergunta se pode instalar. Desligado, o launcher só avisa." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleButton x:Name="AutoUpdateSwitch" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="OnAutoUpdateSwitchClick"/>
                             </Grid>
                         </Border>
                         <Border Style="{StaticResource SettingsRow}">
@@ -756,6 +782,20 @@
                             </StackPanel>
                         </Border>
 <Border Style="{StaticResource SettingsRow}">
+                            <StackPanel>
+                                <TextBlock Text="Conta da GOG" FontSize="19"/>
+                                <TextBlock x:Name="GogStatusText" TextWrapping="Wrap" FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,10"/>
+                                <TextBlock x:Name="GogHelpText" TextWrapping="Wrap" FontSize="14" Foreground="{StaticResource TextSoft}" Margin="0,0,0,10" Visibility="Collapsed"
+                                           Text="1. Entre na GOG na página que abriu no navegador.   2. Quando a página terminar, copie o endereço dela (Ctrl+L, Ctrl+C) — ele contém o código.   3. Volte aqui: o launcher percebe sozinho (ou use COLAR ENDEREÇO). O código vale poucos minutos."/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="GogSignInButton" Style="{StaticResource TabText}" Content="ENTRAR NA GOG" Click="OnGogSignInClick"/>
+                                    <Button x:Name="GogPasteButton" Style="{StaticResource TabText}" Content="COLAR ENDEREÇO" Click="OnGogPasteClick" Visibility="Collapsed"/>
+                                    <Button x:Name="GogSyncButton" Style="{StaticResource TabText}" Content="ATUALIZAR BIBLIOTECA" Click="OnGogSyncClick"/>
+                                    <Button x:Name="GogSignOutButton" Style="{StaticResource TabText}" Content="SAIR DA CONTA" Click="OnGogSignOutClick"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+<Border Style="{StaticResource SettingsRow}">
                             <Grid>
                                 <StackPanel VerticalAlignment="Center" Margin="0,0,90,0">
                                     <TextBlock Text="Trocar também a conta da Steam" FontSize="19"/>
@@ -867,9 +907,23 @@
                             <TextBlock x:Name="EpicLabel" Text="Epic Games" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12"/>
                         </Grid>
                     </Button>
+                    <Button x:Name="StoreGalaxyButton" Style="{StaticResource MediaTile}" Tag="gog" Click="OnStoreClick" Margin="0,0,24,0" AutomationProperties.Name="GOG Galaxy">
+                        <Grid>
+                            <!-- Own drawing: a ring with a dot. Drop Assets\store-gog.png next to the program to use a logo instead. -->
+                            <Viewbox x:Name="GalaxyIcon" Width="120" Height="120" Stretch="Uniform">
+                                <Canvas Width="120" Height="120">
+                                    <Rectangle Width="120" Height="120" RadiusX="22" RadiusY="22" Fill="White"/>
+                                    <Ellipse Canvas.Left="22" Canvas.Top="22" Width="76" Height="76" Stroke="{DynamicResource T_171D26}" StrokeThickness="10"/>
+                                    <Ellipse Canvas.Left="48" Canvas.Top="48" Width="24" Height="24" Fill="{DynamicResource T_171D26}"/>
+                                </Canvas>
+                            </Viewbox>
+                            <Image x:Name="GalaxyLogo" Visibility="Collapsed" Margin="44" Stretch="Uniform"/>
+                            <TextBlock x:Name="GalaxyLabel" Text="GOG Galaxy" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12"/>
+                        </Grid>
+                    </Button>
                 </StackPanel>
                 <TextBlock x:Name="StoresEmpty" Visibility="Collapsed" Margin="2,30,0,0" FontSize="18" TextWrapping="Wrap"
-                           Foreground="{StaticResource TextMuted}" Text="Nenhuma loja encontrada. Instale a Steam ou o Epic Games Launcher e elas aparecem aqui."/>
+                           Foreground="{StaticResource TextMuted}" Text="Nenhuma loja encontrada. Instale a Steam, o Epic Games Launcher ou o GOG Galaxy e elas aparecem aqui."/>
             </StackPanel>
         </Grid>
 
@@ -977,9 +1031,26 @@
             </StackPanel>
         </Grid>
 
-        <Border x:Name="Toast" Visibility="Collapsed" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,84"
-                Background="{DynamicResource T_EE232A34}" Padding="26,14" CornerRadius="6">
-            <TextBlock x:Name="ToastText" FontSize="16"/>
+        <Border x:Name="Toast" Visibility="Collapsed" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,92"
+                MaxWidth="820" MinWidth="420" IsHitTestVisible="False" Opacity="0"
+                Background="{DynamicResource T_F2171D26}" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" ClipToBounds="True"
+                RenderTransformOrigin="0.5,0.5">
+            <Border.RenderTransform><TranslateTransform x:Name="ToastShift" Y="24"/></Border.RenderTransform>
+            <Border.Effect><DropShadowEffect BlurRadius="36" ShadowDepth="8" Direction="270" Opacity="0.6" Color="Black"/></Border.Effect>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="6"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Rectangle x:Name="ToastStripe" Fill="{DynamicResource Accent}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="20,16,28,16">
+                    <Border x:Name="ToastBadge" Width="44" Height="44" CornerRadius="22" Background="#331A9FFF" VerticalAlignment="Center">
+                        <TextBlock x:Name="ToastGlyph" Text="&#xE946;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="{DynamicResource Accent}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock x:Name="ToastText" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap" MaxWidth="680" Margin="18,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- Quick panels under the top bar: connections and sound -->
@@ -1002,6 +1073,15 @@
                         <TextBlock x:Name="NotifTitle" FontSize="17" TextWrapping="Wrap"/>
                         <ProgressBar x:Name="NotifBar" Height="6" Margin="0,10,0,8" Minimum="0" Maximum="1" Foreground="{DynamicResource Accent}" Background="#33FFFFFF" BorderThickness="0"/>
                         <TextBlock x:Name="NotifDetail" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel x:Name="NotifGog" Visibility="Collapsed" Margin="0,0,0,14">
+                        <TextBlock x:Name="NotifGogTitle" FontSize="17" TextWrapping="Wrap"/>
+                        <ProgressBar x:Name="NotifGogBar" Height="6" Margin="0,10,0,8" Minimum="0" Maximum="1" Foreground="{DynamicResource Accent}" Background="#33FFFFFF" BorderThickness="0"/>
+                        <TextBlock x:Name="NotifGogDetail" FontSize="14" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button x:Name="NotifGogPause" Style="{StaticResource TabText}" Content="PAUSAR" Click="OnGogPauseClick"/>
+                            <Button x:Name="NotifGogCancel" Style="{StaticResource TabText}" Content="CANCELAR" Click="OnGogCancelClick"/>
+                        </StackPanel>
                     </StackPanel>
                     <StackPanel x:Name="NotifGames" Visibility="Collapsed" Margin="0,0,0,14"/>
                     <StackPanel x:Name="NotifList"/>
@@ -1043,6 +1123,21 @@
                     <Button x:Name="BtAutoButton" Style="{StaticResource PowerItem}" Height="52" FontSize="16" Margin="4,10,4,4" Click="OnBtAutoClick"/>
                 </StackPanel>
                 </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Confirmation inside the launcher (controller friendly) -->
+        <Grid x:Name="ConfirmLayer" Visibility="Collapsed">
+            <Rectangle Fill="#B3000000"/>
+            <Border Width="560" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{DynamicResource T_F2171D26}" Padding="32"
+                    KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabNavigation="Contained">
+                <StackPanel>
+                    <TextBlock x:Name="ConfirmTitle" FontSize="26" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="ConfirmMessage" FontSize="17" TextWrapping="Wrap" Foreground="{StaticResource TextSoft}" Margin="0,12,0,0"/>
+                    <TextBlock x:Name="ConfirmHint" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource TextMuted}" Margin="0,12,0,0" Visibility="Collapsed"/>
+                    <Button x:Name="ConfirmNoButton" Style="{StaticResource PowerItem}" Height="56" FontSize="17" Margin="0,24,0,0" Click="OnConfirmNoClick"/>
+                    <Button x:Name="ConfirmYesButton" Style="{StaticResource PowerItem}" Height="56" FontSize="17" Margin="0,8,0,0" Click="OnConfirmYesClick"/>
+                </StackPanel>
             </Border>
         </Grid>
 

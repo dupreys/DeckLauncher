@@ -3,6 +3,12 @@ using DeckLauncher.Core.Steam;
 
 namespace DeckLauncher.Core;
 
+/// <summary>Filled by a download: true when it failed because of the network or throttling (try again later), not because nothing exists.</summary>
+public sealed class ArtAttempt
+{
+    public bool NetworkFailed { get; set; }
+}
+
 /// <summary>
 /// Automatic artwork from SteamGridDB for games that have none (Epic, manually added): looked up by name with the
 /// user's own API key, kept in the same cache folder as the Steam artwork and never downloaded twice.
@@ -11,13 +17,14 @@ public static class SteamGridDbArt
 {
     private const int MaxBytes = 8 * 1024 * 1024;
 
+    // "cover2": covers saved by older versions (often 660x930, which the 2:3 tile crops) are not reused.
     private static string Stem(Game game, StoreArtKind kind) =>
-        $"sgdb_{Safe(game.Source)}_{Safe(game.Id)}_{(kind == StoreArtKind.Cover ? "cover" : "hero")}";
+        $"sgdb_{Safe(game.Source)}_{Safe(game.Id)}_{(kind == StoreArtKind.Cover ? "cover2" : "hero")}";
 
     private static string Safe(string value) => string.Concat(value.Select(c => char.IsAsciiLetterOrDigit(c) ? c : '_'));
 
     /// <summary>Games that get SteamGridDB art automatically.</summary>
-    public static bool Applies(Game game) => game.Source is "Epic" or "Manual";
+    public static bool Applies(Game game) => game.Source is "Epic" or "Manual" or "GOG";
 
     // ---- Steam store screenshot (no key needed): for games that also exist on Steam ----
 
@@ -28,6 +35,66 @@ public static class SteamGridDbArt
         if (!Applies(game) || !Directory.Exists(cacheDir)) return null;
         return Directory.EnumerateFiles(cacheDir, ShotStem(game) + ".*")
             .FirstOrDefault(f => !f.EndsWith(".part", StringComparison.OrdinalIgnoreCase) && new FileInfo(f).Length > 0);
+    }
+
+    // ---- Steam's own cover (600x900) for games that also exist on Steam: no key needed, and it fits the tile exactly ----
+
+    private static string SteamCoverStem(Game game) => $"steamcover_{Safe(game.Source)}_{Safe(game.Id)}_cover";
+
+    public static string? CachedSteamCover(string cacheDir, Game game)
+    {
+        if (!Applies(game) || !Directory.Exists(cacheDir)) return null;
+        return Directory.EnumerateFiles(cacheDir, SteamCoverStem(game) + ".*")
+            .FirstOrDefault(f => !f.EndsWith(".part", StringComparison.OrdinalIgnoreCase) && new FileInfo(f).Length > 0);
+    }
+
+    /// <summary>The best cover that is not the store's own picture: Steam's, else SteamGridDB's.</summary>
+    public static string? CachedBestCover(string cacheDir, Game game) =>
+        CachedSteamCover(cacheDir, game) ?? Cached(cacheDir, game, StoreArtKind.Cover);
+
+    /// <summary>
+    /// Looks the game up in the Steam store by its exact name and saves its 600x900 library cover (the one the Steam tab uses).
+    /// Epic's and GOG's own pictures have other proportions and get cropped in the tile.
+    /// </summary>
+    public static async Task<string?> DownloadSteamCoverAsync(HttpClient http, string cacheDir, Game game, CancellationToken ct = default, ArtAttempt? attempt = null)
+    {
+        if (!Applies(game)) return null;
+        if (CachedSteamCover(cacheDir, game) is { } existing) return existing;
+
+        try
+        {
+            var appId = await SteamStoreSearch.FindAppIdAsync(http, game.OriginalName ?? game.Name, ct, attempt);
+            if (appId is null || !appId.All(char.IsAsciiDigit)) return null;
+
+            using var response = await http.GetAsync($"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/library_600x900.jpg", HttpCompletionOption.ResponseHeadersRead, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                if ((int)response.StatusCode is 429 or >= 500 && attempt is not null) attempt.NetworkFailed = true;
+                return null;
+            }
+            if (response.Content.Headers.ContentType?.MediaType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) != true) return null;
+            var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+            if (bytes.Length is < 2048 or > MaxBytes) return null;
+
+            try
+            {
+                Directory.CreateDirectory(cacheDir);
+                var path = Path.Combine(cacheDir, SteamCoverStem(game) + ".jpg");
+                var temp = path + ".part";
+                await File.WriteAllBytesAsync(temp, bytes, ct);
+                File.Move(temp, path, overwrite: true);
+                return path;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return null;
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            if (attempt is not null) attempt.NetworkFailed = true;
+            return null; // offline: tried again next start
+        }
     }
 
     private static string WallStem(Game game) => $"wallhaven_{Safe(game.Source)}_{Safe(game.Id)}_hero";
@@ -136,7 +203,11 @@ public static class SteamGridDbArt
     /// <summary>Picks the best-looking picture: tall for covers, wide for backgrounds.</summary>
     public static ArtImage? Pick(IEnumerable<ArtImage> images, StoreArtKind kind) =>
         kind == StoreArtKind.Cover
-            ? images.Where(i => IsAllowedUrl(i.Url)).OrderByDescending(i => i.Height > i.Width ? 1 : 0).FirstOrDefault()
+            // Covers: tall ones, and among them the closest to the tile's 2:3 (Steam's 600x900); 660x930 and 342x482 are a bit wider and get their sides cut.
+            ? images.Where(i => IsAllowedUrl(i.Url))
+                    .OrderByDescending(i => i.Height > i.Width ? 1 : 0)
+                    .ThenBy(i => i.Height > 0 ? Math.Abs((double)i.Width / i.Height - 2.0 / 3.0) : 9)
+                    .FirstOrDefault()
             // Backgrounds: still wider than tall, but the least wide ones first (they fill the screen better).
             : images.Where(i => IsAllowedUrl(i.Url))
                     .OrderBy(i => i.Height > 0 && i.Width >= i.Height * 1.5 ? 0 : 1)

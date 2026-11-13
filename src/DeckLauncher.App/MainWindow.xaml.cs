@@ -38,7 +38,7 @@ public partial class MainWindow : Window
         _clock.Tick += (_, _) => UpdateClock();
         _clock.Start();
         UpdateClock();
-        _toastTimer.Tick += (_, _) => { _toastTimer.Stop(); Toast.Visibility = Visibility.Collapsed; };
+        _toastTimer.Tick += (_, _) => { _toastTimer.Stop(); HideToast(); };
         BuildTabs();
         InitInput();
     }
@@ -58,6 +58,7 @@ public partial class MainWindow : Window
         ApplyFullscreen(App.Settings.StartFullscreen || XboxMode.Active);
         ApplyMouseMode();
         UpdateEpicAccountUi();
+        UpdateGogAccountUi();
         InitNotifications();
         InitBluetooth();
         _ = CheckForUpdateAsync(manual: false);
@@ -77,17 +78,28 @@ public partial class MainWindow : Window
 
     // ---- Library data -----------------------------------------------------------------------
 
+    private bool _refreshAgain;
+
     private async Task RefreshAsync()
     {
-        if (_refreshing) return;
+        if (_refreshing)
+        {
+            _refreshAgain = true; // asked while a refresh runs (a game was just installed, say): run once more when it ends
+            return;
+        }
         if (_accountChoice is not null && !_accountCanCancel) return; // waiting for the start-up account choice
         _refreshing = true;
         try
         {
-            var games = await FilterByAccountAsync(await _library.LoadAsync());
-            ApplyGames(games);
-            _ = DownloadArtAsync(games);
-            _ = RefreshNotInstalledAsync(games);
+            do
+            {
+                _refreshAgain = false;
+                var games = await FilterByAccountAsync(await _library.LoadAsync());
+                ApplyGames(games);
+                _ = DownloadArtAsync(games);
+                _ = RefreshNotInstalledAsync(games);
+            }
+            while (_refreshAgain);
         }
         finally
         {
@@ -110,7 +122,10 @@ public partial class MainWindow : Window
             catch (Exception ex) when (ex is InvalidOperationException or FormatException) { /* Epic answered something unexpected: the saved list stays */ }
             try { NotifyEpicUpdates(await _library.CheckEpicUpdatesAsync(installed)); }
             catch (Exception ex) when (ex is InvalidOperationException or FormatException) { /* an unexpected answer: no update notice */ }
-            if (epicChanged)
+            var gogChanged = false;
+            try { gogChanged = await _library.SyncGogAsync(force: false); }
+            catch (Exception ex) when (ex is InvalidOperationException or FormatException) { /* GOG answered something unexpected: the saved list stays */ }
+            if (epicChanged || gogChanged)
             {
                 games = await _library.LoadNotInstalledAsync(installed, SteamIdValue());
                 ApplyNotInstalled(games);
@@ -136,7 +151,7 @@ public partial class MainWindow : Window
         if (!changed) return;
 
         // Re-setting the grid takes the focus away, so only redo it when the Steam tab is the one in view, keeping the place.
-        if (_filter is "steam" or "epic") ApplyFilterKeepingPlace();
+        if (_filter is "steam" or "epic" or "gog") ApplyFilterKeepingPlace();
     }
 
     /// <summary>Redraws the list and puts the selector back on the same game, at the same scroll position (the user may be browsing).</summary>
@@ -166,9 +181,16 @@ public partial class MainWindow : Window
     private GameItem ItemFor(Game game)
     {
         var key = GameSorter.Key(game);
-        if (_itemCache.TryGetValue(key, out var item) && item.Matches(game)) return item;
+        if (_itemCache.TryGetValue(key, out var item))
+        {
+            if (item.Matches(game)) return item;
+            if (item.SameTile(game)) { item.UpdateArt(game); return item; } // only the pictures changed: the tile updates itself, no list rebuild
+        }
         return _itemCache[key] = new GameItem(game);
     }
+
+    private List<GameItem>? _homeRecent;
+    private int _homeCount;
 
     private void ApplyGames(List<Game> games)
     {
@@ -182,14 +204,17 @@ public partial class MainWindow : Window
             recent[0].IsFeatured = true; // the last played game is the wide one
             recent[0].EnsureWideLoaded();
         }
-        RecentRow.ItemsSource = recent;
+        var sameHome = _homeRecent is not null && _homeRecent.SequenceEqual(recent) && _homeCount == _all.Count;
+        _homeRecent = recent;
+        _homeCount = _all.Count;
+        if (!sameHome) RecentRow.ItemsSource = recent;
         MoreTile.Visibility = recent.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         RecentTitle.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
         EmptyText.Text = _library.AnyStoreFound
             ? "Nenhum jogo instalado foi encontrado. Instale um jogo na Steam ou na Epic, ou adicione um manualmente."
             : "Steam e Epic não foram encontradas neste PC. Instale uma delas ou adicione jogos manualmente.";
-        FillHomeStyles(recent, any, EmptyText.Text);
+        if (!sameHome) FillHomeStyles(recent, any, EmptyText.Text);
 
         ApplyFilter();
         if (_page == "Início" && !MenuOpen && !IsFocusInside(HomePage)) FocusHome();
@@ -199,7 +224,7 @@ public partial class MainWindow : Window
 
     private static readonly (string Key, string Title)[] TabDefs =
     {
-        ("all", "TODOS OS JOGOS"), ("steam", "STEAM"), ("epic", "EPIC"), ("manual", "ADICIONADOS"), ("fav", "FAVORITOS"), ("apps", "APLICATIVOS"),
+        ("all", "TODOS OS JOGOS"), ("steam", "STEAM"), ("epic", "EPIC"), ("gog", "GOG"), ("manual", "ADICIONADOS"), ("fav", "FAVORITOS"), ("apps", "APLICATIVOS"),
     };
 
     private void BuildTabs()
@@ -218,11 +243,13 @@ public partial class MainWindow : Window
     {
         "steam" => item.Source == SteamProvider.ProviderName,
         "epic" => item.Source == EpicProvider.ProviderName,
+        "gog" => item.Source == DeckLauncher.Core.Gog.GogProvider.ProviderName,
         "manual" => item.Source == ManualProvider.ProviderName,
         "fav" => item.IsFavorite,
         _ => true,
     };
 
+    private readonly Dictionary<string, int> _tabCounts = new();
     private int _fillGeneration;
     private const int FirstTiles = 24, TileBatch = 24;
 
@@ -255,8 +282,14 @@ public partial class MainWindow : Window
         foreach (var (key, title) in TabDefs)
         {
             var count = key == "apps" ? AppsCount : _all.Count(i => InFilter(i, key));
-            _tabs[key].Content = BuildTabLabel(title, count);
+            if (!_tabCounts.TryGetValue(key, out var shownCount) || shownCount != count)
+            {
+                _tabCounts[key] = count;
+                _tabs[key].Content = BuildTabLabel(title, count); // only when the number changed: a new label for every tab at every refresh was wasted work
+            }
+            if (key == "gog") _tabs[key].Visibility = count > 0 || LibraryService.GogConnected ? Visibility.Visible : Visibility.Collapsed; // only with GOG games installed or a GOG account connected
         }
+        if (_filter == "gog" && !_all.Any(i => InFilter(i, "gog")) && !LibraryService.GogConnected && _tabs.TryGetValue("all", out var allTab)) { allTab.IsChecked = true; return; }
 
         var text = SearchBox.Text.Trim();
         var onApps = _filter == "apps";
@@ -271,13 +304,18 @@ public partial class MainWindow : Window
 
         // Steam tab: the installed games first, then the owned ones that are not installed (shown dimmed).
         IEnumerable<GameItem> source = _all.Where(i => InFilter(i, _filter));
-        if (_filter is "steam" or "epic") source = source.Concat(_notInstalled.Where(i => InFilter(i, _filter)));
+        if (_filter is "steam" or "epic" or "gog") source = source.Concat(_notInstalled.Where(i => InFilter(i, _filter)));
         var shown = source.Where(i => text.Length == 0 || i.Name.Contains(text, StringComparison.CurrentCultureIgnoreCase)).ToList();
-        SetLibraryItems(shown, all);
-        ResetLibrarySelector();
+        // The same games in the same order (a refresh that found nothing new): leave the grid, the scroll and the focus alone.
+        if (!(LibGrid.ItemsSource is IList<GameItem> current && current.Count == shown.Count && current.SequenceEqual(shown)))
+        {
+            SetLibraryItems(shown, all);
+            ResetLibrarySelector();
+        }
         LibEmpty.Visibility = shown.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         LibEmpty.Text = _filter == "steam" && _library.NotInstalledProblem is not null && text.Length == 0 ? NotInstalledEmptyText()
             : _filter == "epic" && shown.Count == 0 && text.Length == 0 && !LibraryService.EpicConnected ? "Entre na sua conta da Epic em Configurações > Integrações para ver também os jogos que você tem e não instalou."
+            : _filter == "gog" && shown.Count == 0 && text.Length == 0 && !LibraryService.GogConnected ? "Entre na sua conta da GOG em Configurações > Integrações para ver também os jogos que você tem e não instalou."
             : _all.Count == 0 ? "Sua biblioteca está vazia." : "Nenhum jogo nesta lista.";
     }
 
@@ -418,12 +456,54 @@ public partial class MainWindow : Window
         OpenGame(item);
     }
 
+    private enum ToastKind { Info, Success, Warning, Error }
+
+    private static ToastKind ToastKindOf(string text)
+    {
+        var t = text.ToLowerInvariant();
+        if (t.Contains("não ") || t.Contains("nao ") || t.Contains("falh") || t.Contains("erro") || t.Contains("inválid") || t.Contains("acabou")) return ToastKind.Error;
+        if (t.Contains("bateria baixa") || t.Contains("aguarde") || t.Contains("encerre") || t.Contains("ligue ") || t.Contains("confirme")) return ToastKind.Warning;
+        if (t.Contains("terminou") || t.Contains("conectado") || t.Contains("adicionado") || t.Contains("desinstalado") || t.Contains("instalado")
+            || t.Contains("salvo") || t.Contains("encerrado") || t.Contains("trocada")) return ToastKind.Success;
+        return ToastKind.Info;
+    }
+
     private void ShowToast(string text)
     {
+        var (glyph, color) = ToastKindOf(text) switch
+        {
+            ToastKind.Success => ("\uE73E", Color.FromRgb(0x5B, 0xC1, 0x3E)),
+            ToastKind.Warning => ("\uE7BA", Color.FromRgb(0xF5, 0xB8, 0x3D)),
+            ToastKind.Error => ("\uE783", Color.FromRgb(0xE5, 0x53, 0x4B)),
+            _ => ("\uE946", Color.FromRgb(0x1A, 0x9F, 0xFF)),
+        };
+        var brush = new SolidColorBrush(color);
         ToastText.Text = UiText.T(text);
+        ToastGlyph.Text = glyph;
+        ToastGlyph.Foreground = brush;
+        ToastStripe.Fill = brush;
+        ToastBadge.Background = new SolidColorBrush(Color.FromArgb(0x38, color.R, color.G, color.B));
+
+        var wasShown = Toast.Visibility == Visibility.Visible && Toast.Opacity > 0.01;
         Toast.Visibility = Visibility.Visible;
+        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
+        var span = TimeSpan.FromMilliseconds(wasShown ? 120 : 260);
+        Toast.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(1, span) { EasingFunction = ease });
+        ToastShift.BeginAnimation(TranslateTransform.YProperty, new System.Windows.Media.Animation.DoubleAnimation(0, span) { EasingFunction = ease });
+
+        // Longer messages stay longer: about 3.5 s plus 40 ms per character, at most 9 s.
+        _toastTimer.Interval = TimeSpan.FromMilliseconds(Math.Min(9000, 3500 + ToastText.Text.Length * 40));
         _toastTimer.Stop();
         _toastTimer.Start();
+    }
+
+    private void HideToast()
+    {
+        var span = TimeSpan.FromMilliseconds(240);
+        var fade = new System.Windows.Media.Animation.DoubleAnimation(0, span);
+        fade.Completed += (_, _) => { if (Toast.Opacity <= 0.01) Toast.Visibility = Visibility.Collapsed; };
+        Toast.BeginAnimation(OpacityProperty, fade);
+        ToastShift.BeginAnimation(TranslateTransform.YProperty, new System.Windows.Media.Animation.DoubleAnimation(16, span));
     }
 
     // ---- Focus helpers ----------------------------------------------------------------------

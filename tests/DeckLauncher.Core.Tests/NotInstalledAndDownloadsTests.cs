@@ -1,3 +1,4 @@
+using System.Net.Http;
 using DeckLauncher.Core;
 using DeckLauncher.Core.Steam;
 using Xunit;
@@ -79,6 +80,34 @@ public class NotInstalledAndDownloadsTests
             new ArtImage("https://cdn2.steamgriddb.com/tall.png", "", 600, 900),
         }, StoreArtKind.Cover);
         Assert.EndsWith("tall.png", picked!.Url);
+    }
+
+    [Fact]
+    public void Cover_pick_prefers_the_2_3_proportion_of_the_tile()
+    {
+        var picked = SteamGridDbArt.Pick(new[]
+        {
+            new ArtImage("https://cdn2.steamgriddb.com/a.png", "", 660, 930), // 0.71: the tile cuts its sides
+            new ArtImage("https://cdn2.steamgriddb.com/b.png", "", 342, 482),
+            new ArtImage("https://cdn2.steamgriddb.com/c.png", "", 600, 900), // exactly 2:3
+        }, StoreArtKind.Cover);
+        Assert.EndsWith("c.png", picked!.Url);
+    }
+
+    [Fact]
+    public void Steam_store_search_failure_is_reported_so_it_is_retried()
+    {
+        var attempt = new ArtAttempt();
+        using var http = new HttpClient(new FailingHandler());
+        var id = DeckLauncher.Core.Steam.SteamStoreSearch.FindAppIdAsync(http, "Some Game That Is Not Cached", default, attempt).GetAwaiter().GetResult();
+        Assert.Null(id);
+        Assert.True(attempt.NetworkFailed);
+    }
+
+    private sealed class FailingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            throw new HttpRequestException("offline");
     }
 
     [Fact]

@@ -6,7 +6,7 @@
 
 <p align="center">
   Launcher de jogos para Windows com o visual do modo Big Picture, feito para controle, teclado e mouse.<br>
-  Reúne seus jogos da <b>Steam</b> e da <b>Epic</b>, jogos <b>adicionados manualmente</b> e baixa capas, fundos e logotipos sozinho.
+  Reúne seus jogos da <b>Steam</b>, da <b>Epic</b> e da <b>GOG</b>, jogos <b>adicionados manualmente</b> e baixa capas, fundos e logotipos sozinho.
 </p>
 
 <p align="center">
@@ -35,7 +35,7 @@
 - **Contas Steam:** com mais de uma conta Steam no PC, o launcher pergunta qual usar ao abrir (ou entra direto na última/numa fixa, em Configurações → Integrações) e mostra todos os jogos instalados no PC, de qualquer conta (cada perfil da Steam mantém os seus próprios saves). Clique na sua foto no topo para trocar de conta. O launcher não faz login na Steam: para jogar com outra conta, a Steam precisa estar logada nela.
 - **Dicas e avisos:** o rodapé mostra o que cada botão faz no item em foco; avisos rápidos de bateria baixa e de download concluído.
 - **Novidades, Amigos e Recomendados:** apertando **para baixo** na linha de jogos (ou escolhendo a aba abaixo dos cards). Mostra anúncios dos seus jogos da Steam, jogos atualizados neste PC, quem dos seus amigos está jogando agora, a atividade deles (o que jogaram nas últimas duas semanas) e o calendário de lançamentos. Só lê dados públicos da Steam com a sua chave de API; o launcher não faz login na sua conta nem envia mensagens.
-- **Biblioteca:** abas Todos / Steam / Epic / Adicionados / Favoritos / Aplicativos, busca por nome e grade de capas centralizada.
+- **Biblioteca:** abas Todos / Steam / Epic / GOG / Adicionados / Favoritos / Aplicativos, busca por nome e grade de capas centralizada.
 - **Não instalados:** na aba **Steam**, depois dos jogos instalados, aparecem esmaecidos os jogos da sua conta Steam que ainda não estão instalados; na página do jogo, **Instalar** pede à Steam para baixar (o progresso aparece em Downloads) e **Ver na loja** abre a página dele no cliente da Steam.
 - **Aplicativos:** atalhos com o ícone e o nome de Discord, Explorador de Arquivos, Microsoft Edge, Microsoft Store, Configurações e, se estiverem instalados, AMD Adrenalin e NVIDIA App; você também pode adicionar qualquer programa (.exe ou atalho) pelo botão + e remover com X.
 - **Mais controle nos aplicativos:** adicione também links de sites (YouTube, Netflix, Twitch…) com o favicon do site, mude a ordem dos cartões e oculte os que não usa (X ou botão direito do mouse sobre o cartão).
@@ -63,6 +63,7 @@
 - **Configurações:** Sistema (tela cheia, efeitos sonoros, usar o mouse, iniciar com o Windows, atualizar a biblioteca, limpar o cache), Interface, Integrações e Jogos.
 - **Interface:** **Preto OLED** (toda a interface em preto, em vez do azul escuro).
 - **Perfil:** a foto no canto superior direito abre um painel para trocar a foto (qualquer imagem do PC ou a da Steam) e o nome mostrado no launcher; a conta da Steam não é alterada.
+- **GOG:** jogos da GOG instalados no PC aparecem junto dos demais, numa aba própria, e abrem direto (sem precisar do Galaxy). Entrando na conta da GOG (Configurações > Integrações, recurso experimental), os jogos que você tem e não instalou aparecem esmaecidos; a página Lojas mostra o GOG Galaxy quando instalado.
 - **Desinstalar:** pela página do jogo, o launcher da Steam ou da Epic pergunta se quer remover; ao remover, o jogo some das listas e volta à aba da loja para instalar depois.
 - **Idiomas:** português, inglês e espanhol (Configurações > Interface), com o idioma do Windows como padrão.
 - **Rede e som:** painéis na barra superior com as conexões ativas (Wi-Fi/Ethernet) e o volume do Windows. No painel de som: liga/desliga o Bluetooth e guarda fones sem fio numa lista, conectando ao clicar ou automaticamente.

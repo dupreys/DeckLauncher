@@ -208,6 +208,11 @@ public partial class MainWindow
             InstallEpicGame(item);
             return;
         }
+        if (item.Game.Source == DeckLauncher.Core.Gog.GogProvider.ProviderName)
+        {
+            InstallGogGame(item);
+            return;
+        }
         try
         {
             Process.Start(new ProcessStartInfo(SteamDownloads.InstallUri(item.Game.Id)) { UseShellExecute = true })?.Dispose();

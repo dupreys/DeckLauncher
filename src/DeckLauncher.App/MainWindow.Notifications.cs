@@ -20,13 +20,14 @@ public partial class MainWindow
     private void InitNotifications()
     {
         var art = _library.Art;
-        art.Started += () =>
+        // The downloads report from worker threads, many times a second: hop to the interface thread and merge the updates.
+        art.Started += () => Dispatcher.BeginInvoke(() =>
         {
             if (art.Total >= 3) ShowToast("Baixando capas, logos e wallpapers… acompanhe no sino.");
-            UpdateBell();
-        };
-        art.Changed += UpdateBell;
-        art.Finished += () =>
+            QueueBell();
+        });
+        art.Changed += QueueBell;
+        art.Finished += () => Dispatcher.BeginInvoke(() =>
         {
             if (art.Saved > 0)
             {
@@ -38,7 +39,7 @@ public partial class MainWindow
                 if (art.Total >= 3) ShowToast("Arte baixada: " + string.Join(", ", parts) + ".");
             }
             UpdateBell();
-        };
+        });
         _gameDownloadTimer.Tick += async (_, _) => await PollGameDownloadsAsync();
         _gameDownloadTimer.Start();
         UpdateBell();
@@ -110,14 +111,25 @@ public partial class MainWindow
         if (NotifPanel.Visibility != Visibility.Visible) _unreadNotifications++;
     }
 
+    /// <summary>Asks for a bell update at low priority; many calls in a row become one.</summary>
+    private void QueueBell()
+    {
+        if (Interlocked.Exchange(ref _bellQueued0, 1) == 1) return;
+        Dispatcher.BeginInvoke(() => { Volatile.Write(ref _bellQueued0, 0); UpdateBell(); }, DispatcherPriority.Background);
+    }
+
+    private int _bellQueued0;
+
     private void UpdateBell()
     {
         var art = _library.Art;
-        var running = (art.Active ? art.Total - art.Done : 0) + _gameDownloads.Count(d => d.Status == DownloadStatus.Downloading) + _epicInstalling.Count;
+        var running = (art.Active ? art.Total - art.Done : 0) + _gameDownloads.Count(d => d.Status == DownloadStatus.Downloading) + _epicInstalling.Count + (_gogJob is not null ? 1 : 0);
         var number = running > 0 ? running : _unreadNotifications;
         BellBadge.Visibility = number > 0 ? Visibility.Visible : Visibility.Collapsed;
         BellBadgeText.Text = number > 99 ? "99+" : number.ToString();
         if (NotifPanel.Visibility == Visibility.Visible) FillNotifications();
+
+        UpdateGogJobUi();
 
         // The same progress on the Downloads page.
         ArtCard.Visibility = art.Active ? Visibility.Visible : Visibility.Collapsed;
@@ -182,7 +194,7 @@ public partial class MainWindow
             row.Children.Add(new TextBlock { Text = when.ToString("HH:mm"), FontSize = 12, Foreground = (System.Windows.Media.Brush)FindResource("TextMuted") });
             NotifList.Children.Add(row);
         }
-        NotifEmpty.Visibility = _notifications.Count == 0 && !art.Active && _gameDownloads.Count == 0 && _epicInstalling.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        NotifEmpty.Visibility = _notifications.Count == 0 && _gogJob is null && !art.Active && _gameDownloads.Count == 0 && _epicInstalling.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnNotifClearClick(object sender, RoutedEventArgs e)

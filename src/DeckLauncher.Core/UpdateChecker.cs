@@ -4,7 +4,10 @@ using System.Text.Json;
 namespace DeckLauncher.Core;
 
 /// <summary>What the latest GitHub release says.</summary>
-public sealed record UpdateInfo(Version Version, string Tag, string PageUrl);
+/// <param name="InstallerUrl">The release's DeckLauncher-Setup-*.exe on github.com (null when the release has none).</param>
+/// <param name="InstallerSize">Its size in bytes, as GitHub lists it (0 = unknown).</param>
+/// <param name="Sha256">Its SHA-256 as GitHub lists it ("digest" of the asset), lowercase hex; null when GitHub gives none.</param>
+public sealed record UpdateInfo(Version Version, string Tag, string PageUrl, string? InstallerUrl = null, long InstallerSize = 0, string? Sha256 = null);
 
 /// <summary>
 /// Looks for a newer release on GitHub (public API, no key). It only reports: the user opens the download page
@@ -12,6 +15,9 @@ public sealed record UpdateInfo(Version Version, string Tag, string PageUrl);
 /// </summary>
 public static class UpdateChecker
 {
+    private static readonly System.Text.RegularExpressions.Regex InstallerName = new(@"^DeckLauncher-Setup-[0-9A-Za-z.\-]+\.exe$", System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static readonly System.Text.RegularExpressions.Regex Sha256Hex = new("^[0-9a-fA-F]{64}$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
     /// <summary>"v1.2.3" or "1.2.3-beta" -> 1.2.3; null when it is not a version number.</summary>
     public static Version? ParseVersion(string? text)
     {
@@ -38,11 +44,32 @@ public static class UpdateChecker
             var version = ParseVersion(tag);
             if (version is null || tag is null || url is null) return null;
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || uri.Host != "github.com") return null; // only ever open a github.com page
-            return new UpdateInfo(version, tag, url);
+            var (installer, size, sha) = FindInstaller(root);
+            return new UpdateInfo(version, tag, url, installer, size, sha);
         }
         catch (JsonException)
         {
             return null;
+        }
+
+        static (string? Url, long Size, string? Sha) FindInstaller(JsonElement root)
+        {
+            if (!root.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array) return (null, 0, null);
+            foreach (var asset in assets.EnumerateArray())
+            {
+                if (asset.ValueKind != JsonValueKind.Object) continue;
+                var name = Text(asset, "name");
+                var url = Text(asset, "browser_download_url");
+                if (name is null || url is null || !InstallerName.IsMatch(name)) continue;
+                // Only a file of that name, served from a github.com release: nothing else is ever downloaded and run.
+                if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || uri.Host != "github.com"
+                    || !uri.AbsolutePath.Contains("/releases/download/", StringComparison.Ordinal) || !uri.AbsolutePath.EndsWith("/" + name, StringComparison.Ordinal)) continue;
+                var size = asset.TryGetProperty("size", out var s) && s.ValueKind == JsonValueKind.Number && s.TryGetInt64(out var n) ? n : 0;
+                var digest = Text(asset, "digest");
+                var sha = digest is not null && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) && Sha256Hex.IsMatch(digest[7..]) ? digest[7..].ToLowerInvariant() : null;
+                return (url, size, sha);
+            }
+            return (null, 0, null);
         }
 
         static bool Flag(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;

@@ -60,6 +60,8 @@ Name: "{autodesktop}\DeckLauncher"; Filename: "{app}\DeckLauncher.exe"; Tasks: d
 
 [Run]
 Filename: "{app}\DeckLauncher.exe"; Description: "{cm:LaunchProgram,DeckLauncher}"; Flags: nowait postinstall skipifsilent
+; Atualização feita de dentro do launcher (instalação silenciosa): abre o launcher de novo.
+Filename: "{app}\DeckLauncher.exe"; Flags: nowait skipifnotsilent
 
 #ifdef HasFse
 [Code]

@@ -152,3 +152,67 @@ internal sealed class FakeHandler : HttpMessageHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
         Task.FromResult(_respond(request));
 }
+
+public class UpdateInstallerTests
+{
+    private static string Release(string assetJson) =>
+        "{\"tag_name\":\"v1.2.0\",\"html_url\":\"https://github.com/o/r/releases/tag/v1.2.0\",\"assets\":[" + assetJson + "]}";
+
+    private const string Sha = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    [Fact]
+    public void Installer_asset_is_read_with_its_size_and_checksum()
+    {
+        var info = UpdateChecker.ParseLatestRelease(Release(
+            "{\"name\":\"DeckLauncher-Setup-1.2.0.exe\",\"size\":1234,\"digest\":\"sha256:" + Sha.ToUpperInvariant() + "\",\"browser_download_url\":\"https://github.com/o/r/releases/download/v1.2.0/DeckLauncher-Setup-1.2.0.exe\"}"));
+        Assert.NotNull(info);
+        Assert.Equal(1234, info!.InstallerSize);
+        Assert.Equal(Sha, info.Sha256);
+        Assert.True(UpdateInstaller.CanInstall(info));
+    }
+
+    [Theory]
+    [InlineData("evil.exe", "https://github.com/o/r/releases/download/v1.2.0/evil.exe")]
+    [InlineData("DeckLauncher-Setup-1.2.0.exe", "https://evil.example/o/r/releases/download/v1.2.0/DeckLauncher-Setup-1.2.0.exe")]
+    [InlineData("DeckLauncher-Setup-1.2.0.exe", "http://github.com/o/r/releases/download/v1.2.0/DeckLauncher-Setup-1.2.0.exe")]
+    [InlineData("DeckLauncher-Setup-1.2.0.exe", "https://github.com/o/r/archive/DeckLauncher-Setup-1.2.0.exe")]
+    public void Other_files_and_hosts_are_never_taken_as_the_installer(string name, string url)
+    {
+        var info = UpdateChecker.ParseLatestRelease(Release("{\"name\":\"" + name + "\",\"size\":10,\"browser_download_url\":\"" + url + "\"}"));
+        Assert.NotNull(info);
+        Assert.Null(info!.InstallerUrl);
+        Assert.False(UpdateInstaller.CanInstall(info));
+    }
+
+    [Fact]
+    public void A_release_without_size_or_checksum_is_not_installed_by_itself()
+    {
+        var info = UpdateChecker.ParseLatestRelease(Release(
+            "{\"name\":\"DeckLauncher-Setup-1.2.0.exe\",\"browser_download_url\":\"https://github.com/o/r/releases/download/v1.2.0/DeckLauncher-Setup-1.2.0.exe\"}"));
+        Assert.False(UpdateInstaller.CanInstall(info!));
+    }
+
+    [Fact]
+    public async Task Verify_checks_size_checksum_and_the_program_header()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "deck-upd-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            var file = Path.Combine(folder, "DeckLauncher-Setup-1.2.0.exe");
+            var bytes = new byte[] { (byte)'M', (byte)'Z', 1, 2, 3, 4 };
+            await File.WriteAllBytesAsync(file, bytes);
+            var sha = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant();
+            var url = "https://github.com/o/r/releases/download/v1.2.0/DeckLauncher-Setup-1.2.0.exe";
+            var version = new Version(1, 2, 0);
+
+            Assert.True(await UpdateInstaller.VerifyAsync(file, new UpdateInfo(version, "v1.2.0", "https://github.com/x", url, bytes.Length, sha)));
+            Assert.False(await UpdateInstaller.VerifyAsync(file, new UpdateInfo(version, "v1.2.0", "https://github.com/x", url, bytes.Length, Sha)));
+            Assert.False(await UpdateInstaller.VerifyAsync(file, new UpdateInfo(version, "v1.2.0", "https://github.com/x", url, bytes.Length + 1, sha)));
+
+            await File.WriteAllBytesAsync(file, new byte[] { 1, 2, 3, 4, 5, 6 });
+            Assert.False(await UpdateInstaller.VerifyAsync(file, new UpdateInfo(version, "v1.2.0", "https://github.com/x", url, 6, null)));
+        }
+        finally { Directory.Delete(folder, recursive: true); }
+    }
+}

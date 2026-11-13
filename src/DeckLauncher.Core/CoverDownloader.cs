@@ -13,13 +13,14 @@ public static class CoverDownloader
     private const string Cdn = "https://cdn.cloudflare.steamstatic.com/steam/apps";
 
     public static string CachePath(string cacheDir, Game game, StoreArtKind kind) =>
-        Path.Combine(cacheDir, $"{(game.Source == "Epic" ? "epic_" + SafeName(game.Id) : "steam_" + game.Id)}_{(kind == StoreArtKind.Cover ? "cover" : "hero")}.jpg");
+        Path.Combine(cacheDir, $"{(game.Source == "Epic" ? "epic_" + SafeName(game.Id) : game.Source == "GOG" ? "gog_" + SafeName(game.Id) : "steam_" + game.Id)}_{(kind == StoreArtKind.Cover ? "cover" : "hero")}.jpg");
 
     private static string SafeName(string id) => new(id.Select(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' ? c : '_').ToArray());
 
     public static IReadOnlyList<string> Urls(Game game, StoreArtKind kind) =>
         game.Source == "Epic"
             ? (EpicUrl(game, kind) is { } epic ? new[] { epic } : Array.Empty<string>())
+            : game.Source == "GOG" ? GogUrls(game, kind)
             : kind == StoreArtKind.Cover
         ? new[] { $"{Cdn}/{game.Id}/library_600x900.jpg", $"{Cdn}/{game.Id}/header.jpg" }
         : new[] { $"{Cdn}/{game.Id}/library_hero.jpg", $"{Cdn}/{game.Id}/page_bg_generated_v6b.jpg" };
@@ -77,8 +78,15 @@ public static class CoverDownloader
         return IsEpicImageUrl(url) ? url : null;
     }
 
+    /// <summary>GOG's cover sits at the address the library gives, plus a size suffix; the first suffix that answers is kept. (GOG documents none of this: if none works the game keeps the letter.)</summary>
+    private static IReadOnlyList<string> GogUrls(Game game, StoreArtKind kind) =>
+        kind == StoreArtKind.Cover && Gog.GogAccountClient.IsGogImageUrl(game.CoverUrl)
+            ? new[] { game.CoverUrl + "_product_card_v2_mobile_slider_639.jpg", game.CoverUrl + ".jpg" }
+            : Array.Empty<string>();
+
     private static bool HasStoreArt(Game game, StoreArtKind kind) =>
-        IsSteamAppId(game) || (game.Source == "Epic" && EpicUrl(game, kind) is not null);
+        IsSteamAppId(game) || (game.Source == "Epic" && EpicUrl(game, kind) is not null)
+        || (game.Source == "GOG" && kind == StoreArtKind.Cover && Gog.GogAccountClient.IsGogImageUrl(game.CoverUrl));
 
     private static bool IsSteamAppId(Game game) =>
         game.Source == "Steam" && game.Id.Length > 0 && game.Id.All(char.IsAsciiDigit);

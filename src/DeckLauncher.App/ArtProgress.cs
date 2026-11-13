@@ -38,14 +38,20 @@ public sealed class ArtProgress
     /// <summary>Everything that was queued is done.</summary>
     public event Action? Finished;
 
+    private readonly object _gate = new(); // the downloads report from several threads
+
     public ArtJob Begin(int covers, int logos, int wallpapers)
     {
         var counts = new[] { covers, logos, wallpapers };
         if (counts.Sum() > 0)
         {
-            var fresh = !Active;
-            if (fresh) { Array.Clear(_total); Array.Clear(_done); Array.Clear(_saved); }
-            for (var i = 0; i < 3; i++) _total[i] += counts[i];
+            bool fresh;
+            lock (_gate)
+            {
+                fresh = !Active;
+                if (fresh) { Array.Clear(_total); Array.Clear(_done); Array.Clear(_saved); }
+                for (var i = 0; i < 3; i++) _total[i] += counts[i];
+            }
             if (fresh) Started?.Invoke();
             Changed?.Invoke();
         }
@@ -54,26 +60,36 @@ public sealed class ArtProgress
 
     internal void Step(ArtItem kind, bool saved)
     {
-        var i = (int)kind;
-        if (_done[i] >= _total[i]) _total[i]++; // more work than counted
-        _done[i]++;
-        if (saved) _saved[i]++;
+        bool finished;
+        lock (_gate)
+        {
+            var i = (int)kind;
+            if (_done[i] >= _total[i]) _total[i]++; // more work than counted
+            _done[i]++;
+            if (saved) _saved[i]++;
+            finished = !Active;
+        }
         Changed?.Invoke();
-        if (!Active) Finished?.Invoke();
+        if (finished) Finished?.Invoke();
     }
 
     internal void Skip(int[] counts)
     {
         var any = false;
-        for (var i = 0; i < 3; i++)
+        bool finished;
+        lock (_gate)
         {
-            if (counts[i] <= 0) continue;
-            _done[i] = Math.Min(_total[i], _done[i] + counts[i]);
-            any = true;
+            for (var i = 0; i < 3; i++)
+            {
+                if (counts[i] <= 0) continue;
+                _done[i] = Math.Min(_total[i], _done[i] + counts[i]);
+                any = true;
+            }
+            finished = !Active;
         }
         if (!any) return;
         Changed?.Invoke();
-        if (!Active) Finished?.Invoke();
+        if (finished) Finished?.Invoke();
     }
 }
 
@@ -95,7 +111,7 @@ public sealed class ArtJob
         try { path = await download(); }
         finally
         {
-            if (_left[(int)kind] > 0) _left[(int)kind]--;
+            lock (_left) { if (_left[(int)kind] > 0) _left[(int)kind]--; }
             _progress.Step(kind, path is not null);
         }
         return path is not null;
@@ -103,7 +119,8 @@ public sealed class ArtJob
 
     public void End()
     {
-        _progress.Skip(_left);
-        Array.Clear(_left);
+        int[] rest;
+        lock (_left) { rest = (int[])_left.Clone(); Array.Clear(_left); }
+        _progress.Skip(rest);
     }
 }

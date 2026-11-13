@@ -47,4 +47,7 @@ public sealed record Game(
     // Epic catalog ids (needed for launch and store links)
     public string? CatalogNamespace { get; init; }
     public string? CatalogItemId { get; init; }
+
+    /// <summary>GOG: the name in the store address (gog.com/game/&lt;slug&gt;), for the store link of a game that is not installed.</summary>
+    public string? Slug { get; init; }
 }

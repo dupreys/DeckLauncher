@@ -51,6 +51,7 @@ public partial class MainWindow
 
     private void GoBack()
     {
+        if (ConfirmOpen) { UiSound.Play("back"); CloseConfirm(false); return; }
         if (OskOpen) { UiSound.Play("back"); CloseOsk(); return; }
         if (!MenuOpen && (MediaViewerOpen || PowerOpen || QuickOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen || ManageOpen || _page != "Início")) UiSound.Play("back");
         if (MediaViewerOpen) CloseMediaViewer();
@@ -70,14 +71,14 @@ public partial class MainWindow
 
     private void ToggleMenu()
     {
-        if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
+        if (ConfirmOpen || MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
         if (QuickOpen) CloseQuick();
         if (MenuOpen) CloseMenu(); else OpenMenu();
     }
 
     private void OpenSearch(bool keyboard)
     {
-        if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
+        if (ConfirmOpen || MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || AccountOpen || LaunchOverlayOpen) return;
         if (OskOpen) return;
         if (QuickOpen) CloseQuick();
         if (MenuOpen) MenuLayer.Visibility = Visibility.Collapsed;
@@ -227,7 +228,7 @@ public partial class MainWindow
         switch (_page)
         {
             case "Biblioteca":
-                CycleRadios(_tabs.Values.ToList(), delta);
+                CycleRadios(_tabs.Values.Where(t => t.Visibility == Visibility.Visible).ToList(), delta);
                 FocusLibrary(); // the selector always starts on the first game of the new list (an empty list keeps the tab)
                 break;
             case "Jogo": CycleRadios(new List<RadioButton> { GameTabAbout, GameTabAchievements, GameTabInfo }, delta); break;

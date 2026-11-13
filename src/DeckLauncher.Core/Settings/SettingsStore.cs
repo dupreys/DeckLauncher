@@ -8,7 +8,7 @@ public sealed class SettingsStore
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
     /// <summary>JSON names of the settings that hold secrets (stored encrypted, see <see cref="SecretProtector"/>).</summary>
-    private static readonly string[] SecretFields = { nameof(AppSettings.SteamWebApiKey), nameof(AppSettings.SteamGridDbApiKey), nameof(AppSettings.EpicTokens) };
+    private static readonly string[] SecretFields = { nameof(AppSettings.SteamWebApiKey), nameof(AppSettings.SteamGridDbApiKey), nameof(AppSettings.EpicTokens), nameof(AppSettings.GogTokens) };
 
     public SettingsStore(string? filePath = null) => FilePath = filePath ?? DefaultFilePath;
 

@@ -39,6 +39,7 @@ public partial class MainWindow
             var info = await UpdateChecker.CheckAsync(LibraryService.Http, UpdateRepository, CurrentVersion);
             App.Settings.LastUpdateCheck = DateTimeOffset.Now;
             _update = info;
+            if (info is null) { _updateFile = null; UpdateInstaller.Clean(UpdateDir); } // up to date: an installer left from the last update is no longer needed
             ShowUpdateState();
 
             if (info is not null && App.Settings.NotifiedUpdate != info.Tag)
@@ -47,11 +48,12 @@ public partial class MainWindow
                 ShowToast($"Nova versão {info.Tag} disponível. Veja em Configurações > Sistema.");
             }
             SaveSettings();
+            if (info is not null && App.Settings.AutoUpdate && !manual && CanSelfUpdate(info)) _ = DownloadUpdateAsync(info, false);
         }
         finally
         {
             _checkingUpdate = false;
-            UpdateButton.IsEnabled = true;
+            UpdateButton.IsEnabled = !_updateDownloading;
         }
     }
 
@@ -59,9 +61,25 @@ public partial class MainWindow
     {
         var current = CurrentVersion;
         var shown = $"{current.Major}.{current.Minor}.{Math.Max(current.Build, 0)}";
-        if (_update is { } info)
+        UpdateButton.IsEnabled = !_updateDownloading;
+        if (_updateDownloading && _update is { } loading)
         {
-            UpdateText.Text = $"Nova versão {info.Tag} disponível (você tem a {shown}). Baixe o instalador e execute para atualizar.";
+            UpdateText.Text = $"Baixando a versão {loading.Tag}… {(int)Math.Round(_updateProgress * 100)}%";
+            UpdateButton.Content = "BAIXANDO";
+        }
+        else if (_updateFile is not null && _update is { } ready)
+        {
+            UpdateText.Text = $"A versão {ready.Tag} está pronta (você tem a {shown}). O launcher fecha, instala e abre sozinho.";
+            UpdateButton.Content = "INSTALAR";
+        }
+        else if (_update is { } info && CanSelfUpdate(info))
+        {
+            UpdateText.Text = $"Nova versão {info.Tag} disponível (você tem a {shown}).";
+            UpdateButton.Content = "ATUALIZAR";
+        }
+        else if (_update is { } page)
+        {
+            UpdateText.Text = $"Nova versão {page.Tag} disponível (você tem a {shown}). Baixe o instalador e execute para atualizar.";
             UpdateButton.Content = "BAIXAR";
         }
         else
@@ -74,6 +92,8 @@ public partial class MainWindow
 
     private async void OnUpdateClick(object sender, RoutedEventArgs e)
     {
+        if (_updateFile is not null) { InstallUpdate(); return; }
+        if (_update is { } fresh && CanSelfUpdate(fresh)) { await DownloadUpdateAsync(fresh, installWhenReady: true); return; }
         if (_update is { } info)
         {
             try { Process.Start(new ProcessStartInfo(info.PageUrl) { UseShellExecute = true })?.Dispose(); }

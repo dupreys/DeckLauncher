@@ -14,6 +14,7 @@ internal sealed class ArtTriedStore
     private Dictionary<string, long> _map = new();
     private bool _loaded;
     private bool _dirty;
+    private readonly object _gate = new(); // the downloads run on several threads
 
     public ArtTriedStore(string file) => _file = file;
 
@@ -36,40 +37,62 @@ internal sealed class ArtTriedStore
 
     public bool Contains(string key)
     {
-        Load();
-        return _map.TryGetValue(key, out var at) && Now - at < Ttl.TotalSeconds;
+        lock (_gate)
+        {
+            Load();
+            return _map.TryGetValue(key, out var at) && Now - at < Ttl.TotalSeconds;
+        }
     }
 
     /// <summary>True when the key was not tried recently (it is now marked as tried).</summary>
     public bool Add(string key)
     {
-        Load();
-        if (Contains(key)) return false;
-        _map[key] = Now;
-        _dirty = true;
-        return true;
+        lock (_gate)
+        {
+            Load();
+            if (Contains(key)) return false;
+            _map[key] = Now;
+            _dirty = true;
+            return true;
+        }
+    }
+
+    /// <summary>Forgets one attempt (it failed because of the network, so it is tried again at the next refresh).</summary>
+    public void Remove(string key)
+    {
+        lock (_gate)
+        {
+            Load();
+            if (_map.Remove(key)) _dirty = true;
+        }
     }
 
     public void Clear()
     {
-        _map = new();
-        _loaded = true;
-        _dirty = false;
-        try { if (File.Exists(_file)) File.Delete(_file); }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* the cache folder is being removed anyway */ }
+        lock (_gate)
+        {
+            _map = new();
+            _loaded = true;
+            _dirty = false;
+            try { if (File.Exists(_file)) File.Delete(_file); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* the cache folder is being removed anyway */ }
+        }
     }
 
     public void Save()
     {
-        if (!_dirty) return;
-        try
+        lock (_gate)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
-            var temp = _file + ".part";
-            File.WriteAllText(temp, JsonSerializer.Serialize(_map));
-            File.Move(temp, _file, overwrite: true);
-            _dirty = false;
+            if (!_dirty) return;
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
+                var temp = _file + ".part";
+                File.WriteAllText(temp, JsonSerializer.Serialize(_map));
+                File.Move(temp, _file, overwrite: true);
+                _dirty = false;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* saved with the next batch */ }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { /* saved with the next batch */ }
     }
 }

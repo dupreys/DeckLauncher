@@ -78,9 +78,11 @@ public partial class MainWindow
     private async void LoadStoreLogos()
     {
         var steam = SteamLogo; var epic = EpicLogo;
-        var (steamPicture, epicPicture) = await Task.Run(() => (StoreIcon("steam", "store-steam.png"), StoreIcon("com.epicgames.launcher", "store-epic.png")));
+        var galaxy = GalaxyLogo;
+        var (steamPicture, epicPicture, galaxyPicture) = await Task.Run(() => (StoreIcon("steam", "store-steam.png"), StoreIcon("com.epicgames.launcher", "store-epic.png"), StoreIcon(null, "store-gog.png", LibraryService.GalaxyExe)));
         ShowStoreLogo(steam, SteamIcon, SteamLabel, steamPicture);
         ShowStoreLogo(epic, EpicIcon, EpicLabel, epicPicture);
+        ShowStoreLogo(galaxy, GalaxyIcon, GalaxyLabel, galaxyPicture);
         UpdateStoreTiles();
     }
 
@@ -91,17 +93,20 @@ public partial class MainWindow
         var epicInstalled = ProtocolCommand("com.epicgames.launcher") is not null;
         StoreSteamButton.Visibility = steamInstalled ? Visibility.Visible : Visibility.Collapsed;
         StoreEpicButton.Visibility = epicInstalled ? Visibility.Visible : Visibility.Collapsed;
-        StoresEmpty.Visibility = steamInstalled || epicInstalled ? Visibility.Collapsed : Visibility.Visible;
-        if (_page == "Lojas" && !StoreSteamButton.IsKeyboardFocusWithin && !StoreEpicButton.IsKeyboardFocusWithin) FocusStores();
+        var galaxyInstalled = LibraryService.GalaxyExe is not null;
+        StoreGalaxyButton.Visibility = galaxyInstalled ? Visibility.Visible : Visibility.Collapsed;
+        StoresEmpty.Visibility = steamInstalled || epicInstalled || galaxyInstalled ? Visibility.Collapsed : Visibility.Visible;
+        if (_page == "Lojas" && !StoreSteamButton.IsKeyboardFocusWithin && !StoreEpicButton.IsKeyboardFocusWithin && !StoreGalaxyButton.IsKeyboardFocusWithin) FocusStores();
     }
 
     private void FocusStores()
     {
         if (StoreSteamButton.Visibility == Visibility.Visible) StoreSteamButton.Focus();
         else if (StoreEpicButton.Visibility == Visibility.Visible) StoreEpicButton.Focus();
+        else if (StoreGalaxyButton.Visibility == Visibility.Visible) StoreGalaxyButton.Focus();
     }
 
-    private static BitmapSource? StoreIcon(string scheme, string file)
+    private static BitmapSource? StoreIcon(string? scheme, string file, string? exe = null)
     {
         try
         {
@@ -116,7 +121,8 @@ public partial class MainWindow
                 bitmap.Freeze();
                 return bitmap;
             }
-            return ProtocolCommand(scheme) is { } command ? ShellThumbnail.Get(command.Exe, 256, 256, iconOnly: true) : null;
+            if (exe is not null) return ShellThumbnail.Get(exe, 256, 256, iconOnly: true);
+            return scheme is not null && ProtocolCommand(scheme) is { } command ? ShellThumbnail.Get(command.Exe, 256, 256, iconOnly: true) : null;
         }
         catch (Exception)
         {

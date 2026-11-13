@@ -17,7 +17,7 @@ public sealed class GameItem : INotifyPropertyChanged
 
     public GameItem(Game game) => Game = game;
 
-    public Game Game { get; }
+    public Game Game { get; private set; }
 
     public string Name => Game.Name;
 
@@ -77,13 +77,32 @@ public sealed class GameItem : INotifyPropertyChanged
 
     /// <summary>True when nothing the tile shows has changed, so the same item can be reused after a refresh.</summary>
     public bool Matches(Game other) =>
-        Game.Name == other.Name && Game.CoverPath == other.CoverPath && Game.BackdropPath == other.BackdropPath && Game.LogoPath == other.LogoPath;
+        Game.NotInstalled == other.NotInstalled && Game.ExecutablePath == other.ExecutablePath && Game.InstallPath == other.InstallPath
+        && Game.Name == other.Name && Game.CoverPath == other.CoverPath && Game.BackdropPath == other.BackdropPath && Game.LogoPath == other.LogoPath;
+
+    /// <summary>Same tile (name, state, folder), only the pictures differ: the item can take the new pictures instead of being replaced, so the lists are not rebuilt.</summary>
+    public bool SameTile(Game other) =>
+        Game.NotInstalled == other.NotInstalled && Game.ExecutablePath == other.ExecutablePath && Game.InstallPath == other.InstallPath && Game.Name == other.Name;
+
+    /// <summary>Takes new picture paths (UI thread). A picture the tile already showed is loaded again from the new file.</summary>
+    public void UpdateArt(Game other)
+    {
+        var coverChanged = other.CoverPath != Game.CoverPath;
+        var wideChanged = (other.BackdropPath ?? other.CoverPath) != (Game.BackdropPath ?? Game.CoverPath);
+        var logoChanged = other.LogoPath != Game.LogoPath;
+        var hadCover = _coverRequested;
+        var hadWide = _wideRequested;
+        Game = other;
+        if (coverChanged) { _coverRequested = false; if (hadCover) EnsureCoverLoaded(); }
+        if (wideChanged || logoChanged) { _wideRequested = false; if (hadWide) EnsureWideLoaded(); }
+    }
 
     public void EnsureCoverLoaded()
     {
         if (_coverRequested || Game.CoverPath is null) return;
         _coverRequested = true;
-        _ = LoadAsync(Game.CoverPath, 300, image => { _cover = image; Raise(nameof(Cover)); });
+        var cover = Game.CoverPath;
+        _ = LoadAsync(cover, 300, image => { if (Game.CoverPath != cover) return; _cover = image; Raise(nameof(Cover)); }); // an older picture arriving late is dropped
     }
 
     public void EnsureWideLoaded()
@@ -92,8 +111,8 @@ public sealed class GameItem : INotifyPropertyChanged
         if (_wideRequested) return;
         _wideRequested = true;
         var path = Game.BackdropPath ?? Game.CoverPath;
-        if (path is not null) _ = LoadAsync(path, 1000, image => { _wide = image; Raise(nameof(Wide)); });
-        if (Game.LogoPath is { } logo) _ = LoadAsync(logo, 600, image => { _logo = image; Raise(nameof(Logo)); });
+        if (path is not null) _ = LoadAsync(path, 1000, image => { if ((Game.BackdropPath ?? Game.CoverPath) != path) return; _wide = image; Raise(nameof(Wide)); });
+        if (Game.LogoPath is { } logo) _ = LoadAsync(logo, 600, image => { if (Game.LogoPath != logo) return; _logo = image; Raise(nameof(Logo)); });
     }
 
     /// <summary>The full-size background for the screen behind the tiles; null when the game has none.</summary>

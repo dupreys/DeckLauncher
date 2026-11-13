@@ -276,6 +276,7 @@ public partial class MainWindow
         ShowAppearanceChecks();
         ShowAccountChecks();
         AutostartSwitch.IsChecked = Autostart.IsEnabled();
+        AutoUpdateSwitch.IsChecked = App.Settings.AutoUpdate;
         SettingsKeyBox.Text = App.Settings.SteamGridDbApiKey ?? "";
         SteamKeyBox.Text = App.Settings.SteamWebApiKey ?? "";
         _loadingSettings = false;
@@ -299,6 +300,11 @@ public partial class MainWindow
     private void OnStoreClick(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string store }) return;
+        if (store == "gog")
+        {
+            OpenGalaxy();
+            return;
+        }
         var epic = store == "epic";
         try
         {
@@ -448,7 +454,7 @@ public partial class MainWindow
         SetInterface.Visibility = tag == "Interface" ? Visibility.Visible : Visibility.Collapsed;
         SetIntegrations.Visibility = tag == "Integrations" ? Visibility.Visible : Visibility.Collapsed;
         SetGames.Visibility = tag == "Games" ? Visibility.Visible : Visibility.Collapsed;
-        if (tag == "Integrations") UpdateEpicAccountUi();
+        if (tag == "Integrations") { UpdateEpicAccountUi(); UpdateGogAccountUi(); }
     }
 
     private void ApplyFullscreen(bool fullscreen)

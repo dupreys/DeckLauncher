@@ -13,7 +13,7 @@ public partial class MainWindow
 {
     private CancellationTokenSource? _uninstallCts;
 
-    private void OnUninstallClick(object sender, RoutedEventArgs e)
+    private async void OnUninstallClick(object sender, RoutedEventArgs e)
     {
         if (_gameItem is not { } item || item.Game.NotInstalled) return;
         var game = item.Game;
@@ -25,6 +25,10 @@ public partial class MainWindow
 
         if (game.Source == SteamProvider.ProviderName)
         {
+            if (!await AskConfirmAsync($"Desinstalar {item.Name}?",
+                    "A Steam vai abrir a janela dela para confirmar e remover o jogo.",
+                    "Desinstalar", "Cancelar",
+                    "A janela da Steam não aceita o controle: confirme com o mouse ou com Enter no teclado.")) return;
             try { Process.Start(new ProcessStartInfo(SteamDownloads.UninstallUri(game.Id)) { UseShellExecute = true })?.Dispose(); }
             catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or ArgumentException)
             {
@@ -37,9 +41,61 @@ public partial class MainWindow
         {
             OpenEpicLibrary(item);
         }
+        else if (game.Source == DeckLauncher.Core.Gog.GogProvider.ProviderName)
+        {
+            if (App.Settings.GogInstalls.FirstOrDefault(g => g.Id == game.Id) is { } own)
+            {
+                if (!await UninstallOwnGogGameAsync(item, own)) return;
+                WatchUninstall(game);
+                return;
+            }
+            if (DeckLauncher.Core.Gog.GogProvider.FindUninstaller(game) is not { } uninstaller)
+            {
+                ShowToast($"Não encontrei o desinstalador de {item.Name}. Desinstale pelo Windows (Configurações > Aplicativos).");
+                return;
+            }
+            if (!await AskConfirmAsync($"Desinstalar {item.Name}?",
+                    "O desinstalador do jogo vai abrir em uma janela própria.",
+                    "Desinstalar", "Cancelar",
+                    "Essa janela não aceita o controle: use o mouse ou o teclado.")) return;
+            try { Process.Start(new ProcessStartInfo(uninstaller) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(uninstaller)! })?.Dispose(); }
+            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+            {
+                ShowToast($"Não foi possível abrir o desinstalador de {item.Name}.");
+                return;
+            }
+            ShowToast($"Confirme a desinstalação de {item.Name} na janela que abriu.");
+        }
         else return;
 
         WatchUninstall(game);
+    }
+
+    /// <summary>A GOG game the launcher installed itself has no uninstaller: its folder (inside Games\\GOG) is removed after a confirmation.</summary>
+    private async Task<bool> UninstallOwnGogGameAsync(GameItem item, DeckLauncher.Core.Gog.GogOwnInstall own)
+    {
+        var root = System.IO.Path.GetFullPath(GogGamesRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var folder = System.IO.Path.GetFullPath(own.Folder);
+        if (!folder.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        {
+            ShowToast($"Não encontrei o desinstalador de {item.Name}. Apague a pasta do jogo à mão.");
+            return false;
+        }
+        if (!await AskConfirmAsync($"Desinstalar {item.Name}?",
+                "A pasta do jogo e os saves dentro dela serão apagados do disco.",
+                "Desinstalar", "Cancelar")) return false;
+        try
+        {
+            if (Directory.Exists(folder)) Directory.Delete(folder, true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowToast($"Não foi possível apagar a pasta de {item.Name}. Feche o jogo e tente de novo.");
+            return false;
+        }
+        App.Settings.GogInstalls.RemoveAll(g => g.Id == own.Id);
+        SaveSettings();
+        return true;
     }
 
     /// <summary>The Epic launcher has no direct uninstall link, so it opens on the library, where the game's menu has Uninstall.</summary>
@@ -68,7 +124,8 @@ public partial class MainWindow
         _uninstallCts?.Cancel();
         var cts = _uninstallCts = new CancellationTokenSource();
         var key = GameSorter.Key(game);
-        var tab = game.Source == SteamProvider.ProviderName ? "steam" : "epic";
+        var gogKeeps = LibraryService.GogConnected; // with a GOG account the game stays in the GOG tab, to install again
+        var tab = game.Source == SteamProvider.ProviderName ? "steam" : game.Source == EpicProvider.ProviderName ? "epic" : gogKeeps ? "gog" : "gogless";
         try
         {
             for (var tick = 1; tick <= 180; tick++)
@@ -84,15 +141,15 @@ public partial class MainWindow
                 }
                 if (_all.Any(i => GameSorter.Key(i.Game) == key && !i.Game.NotInstalled)) continue;
 
-                var title = tab == "steam" ? "Steam" : "Epic";
-                var message = $"{game.Name} desinstalado. Ele continua na aba {title} para instalar de novo.";
+                var title = tab == "steam" ? "Steam" : tab == "gog" ? "GOG" : "Epic";
+                var message = tab == "gogless" ? $"{game.Name} desinstalado." : $"{game.Name} desinstalado. Ele continua na aba {title} para instalar de novo.";
                 ShowToast(message);
                 AddNotification(message);
                 if (_page == "Jogo" && _gameItem is { } open && GameSorter.Key(open.Game) == key)
                 {
                     _detailsCts?.Cancel();
                     ShowPage("Biblioteca");
-                    if (_tabs.TryGetValue(tab, out var radio)) radio.IsChecked = true;
+                    if (_tabs.TryGetValue(tab == "gogless" ? "all" : tab, out var radio)) radio.IsChecked = true;
                     FocusPage();
                 }
                 return;

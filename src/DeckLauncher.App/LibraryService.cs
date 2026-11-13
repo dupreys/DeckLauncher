@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Http;
 using DeckLauncher.Core;
 using DeckLauncher.Core.Epic;
+using DeckLauncher.Core.Gog;
 using DeckLauncher.Core.Manual;
 using DeckLauncher.Core.Settings;
 using DeckLauncher.Core.Steam;
@@ -34,6 +35,7 @@ internal sealed class LibraryService
         {
             new SteamProvider(steamPath),
             new EpicProvider(),
+            new DeckLauncher.Core.Gog.GogProvider(() => GogProvider.ReadRegistry().Concat(App.Settings.GogInstalls.Select(g => g.ToEntry())).ToList()),
             new ManualProvider(() => App.Settings.ManualGames),
         };
     }
@@ -91,6 +93,7 @@ internal sealed class LibraryService
     {
         var games = await LoadSteamNotInstalledAsync(installed, steamId);
         games.AddRange(await Task.Run(() => EpicNotInstalled(installed)));
+        games.AddRange(await Task.Run(() => GogNotInstalled(installed)));
         return games.OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
 
@@ -196,6 +199,99 @@ internal sealed class LibraryService
         }
     }
 
+    // ---- GOG: the account's library (web sign-in) ---------------------------------------------
+
+    /// <summary>Why the GOG list could not be updated: null, "signin" (the session ended) or "fetch" (no connection or GOG did not answer).</summary>
+    public string? GogProblem { get; private set; }
+
+    public static bool GogConnected => GogTokens.FromJson(App.Settings.GogTokens) is not null;
+
+    /// <summary>Reads the GOG library when the account is connected and the last read is older than six hours (or <paramref name="force"/>). True when the list changed.</summary>
+    public async Task<bool> SyncGogAsync(bool force)
+    {
+        var tokens = GogTokens.FromJson(App.Settings.GogTokens);
+        if (tokens is null) return false;
+        var settings = App.Settings;
+        if (!force && settings.GogSyncedAt is { } last && DateTimeOffset.Now - last < TimeSpan.FromHours(6) && settings.GogLibrary.Count > 0) return false;
+
+        var client = new GogAccountClient(Http);
+        try
+        {
+            var fresh = await client.EnsureFreshAsync(tokens);
+            if (!ReferenceEquals(fresh, tokens))
+            {
+                settings.GogTokens = fresh.ToJson();
+                SaveEpicSettings(); // GOG replaces the refresh token at each use: keep the new one at once
+            }
+            var games = await client.ReadLibraryAsync(fresh);
+            var changed = games.Count != settings.GogLibrary.Count || games.Zip(settings.GogLibrary).Any(p => p.First.Id != p.Second.Id);
+            settings.GogLibrary = games;
+            settings.GogSyncedAt = DateTimeOffset.Now;
+            GogProblem = null;
+            SaveEpicSettings();
+            return changed;
+        }
+        catch (GogSignInException)
+        {
+            settings.GogTokens = null; // the session ended: the list stays, the user signs in again
+            GogProblem = "signin";
+            SaveEpicSettings();
+            return false;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            GogProblem = "fetch";
+            return false;
+        }
+    }
+
+    /// <summary>The GOG games of the account that are not installed on this PC.</summary>
+    private List<Game> GogNotInstalled(IReadOnlyList<Game> installed)
+    {
+        var ids = installed.Where(g => g.Source == GogProvider.ProviderName).Select(g => g.Id).ToHashSet(StringComparer.Ordinal);
+        var games = new List<Game>();
+        foreach (var owned in App.Settings.GogLibrary)
+        {
+            if (ids.Contains(owned.Id)) continue;
+            var game = new Game(GogProvider.ProviderName, owned.Id, owned.Title)
+            {
+                NotInstalled = true,
+                Slug = owned.Slug,
+                CoverUrl = owned.ImageBase,
+            };
+            if (App.Settings.HiddenGames.ContainsKey(GameSorter.Key(game))) continue;
+            games.Add(WithCachedArt(GameOverrides.Apply(game, App.Settings.GameOverrides)));
+        }
+        return games;
+    }
+
+    /// <summary>The GOG session ready to use (refreshed when needed); null when the account is not connected or the session ended.</summary>
+    public async Task<GogTokens?> FreshGogTokensAsync()
+    {
+        var tokens = GogTokens.FromJson(App.Settings.GogTokens);
+        if (tokens is null) return null;
+        try
+        {
+            var fresh = await new GogAccountClient(Http).EnsureFreshAsync(tokens);
+            if (!ReferenceEquals(fresh, tokens))
+            {
+                App.Settings.GogTokens = fresh.ToJson();
+                SaveEpicSettings();
+            }
+            return fresh;
+        }
+        catch (GogSignInException)
+        {
+            App.Settings.GogTokens = null;
+            GogProblem = "signin";
+            SaveEpicSettings();
+            return null;
+        }
+    }
+
+    /// <summary>The program of GOG Galaxy when it is installed.</summary>
+    public static string? GalaxyExe => GalaxyClient.FindExe();
+
     public static void SaveEpicSettings()
     {
         try { App.Store.Save(App.Settings); }
@@ -258,7 +354,8 @@ internal sealed class LibraryService
     /// <summary>Downloads Steam's own cover for not-installed games that have none (at most 150 per run, four at a time). True when something new was saved.</summary>
     public async Task<bool> DownloadNotInstalledCoversAsync(IReadOnlyList<Game> games)
     {
-        var todo = games.Where(g => g.CoverPath is null && !_artTried.Contains(GameSorter.Key(g) + "#cover")).Take(150).ToList();
+        var todo = games.Where(g => g.CoverPath is null && !_artTried.Contains(GameSorter.Key(g) + "#cover") && g.Source is not (EpicProvider.ProviderName or GogProvider.ProviderName))
+            .OrderBy(g => g.Source == SteamProvider.ProviderName ? 1 : 0).Take(150).ToList();
         var job = Art.Begin(todo.Count, 0, 0);
         var fetched = false;
         using var gate = new SemaphoreSlim(4);
@@ -283,13 +380,37 @@ internal sealed class LibraryService
         return fetched;
     }
 
+    /// <summary>A game whose cover is missing or is only the store's own picture (Epic/GOG), so Steam's or SteamGridDB's can replace it.</summary>
+    /// <summary>The user's own choice (Manage art) or a cover set by hand: it is never replaced by an automatic one.</summary>
+    private bool HasOwnCover(Game game)
+    {
+        if (game.CoverPath is null) return false;
+        return game.CoverPath != SteamGridDbArt.CachedSteamCover(ArtCacheDir, game)
+               && game.CoverPath != SteamGridDbArt.Cached(ArtCacheDir, game, StoreArtKind.Cover)
+               && game.CoverPath != CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Cover);
+    }
+
+    /// <summary>Steam's 600x900 cover is the preferred one: wanted whenever the game has none yet, even if a SteamGridDB or the store's picture is already there.</summary>
+    private bool WantsSteamCover(Game game) =>
+        SteamGridDbArt.Applies(game) && !HasOwnCover(game) && SteamGridDbArt.CachedSteamCover(ArtCacheDir, game) is null;
+
+    private bool WantsBetterCover(Game game)
+    {
+        if (!SteamGridDbArt.Applies(game) || game.Source == "Manual") return game.CoverPath is null && SteamGridDbArt.Applies(game);
+        if (SteamGridDbArt.CachedBestCover(ArtCacheDir, game) is not null) return false;
+        return game.CoverPath is null || game.CoverPath == CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Cover);
+    }
+
     /// <summary>Logos and wallpapers for the Epic games that are not installed (a few per run; games already tried are not tried again).</summary>
     public async Task<bool> DownloadEpicNotInstalledArtAsync(IReadOnlyList<Game> games)
     {
-        var pending = games.Where(g => g.Source == "Epic"
+        var pending = await Task.Run(() => games.Where(g => g.Source is "Epic" or "GOG"
             && ((g.LogoPath is null && !_artTried.Contains(GameSorter.Key(g) + "#logo"))
-                || (g.BackdropPath is null && !_artTried.Contains(GameSorter.Key(g) + "#epicwall"))))
-            .Take(100).ToList();
+                || (WantsSteamCover(g) && !_artTried.Contains(GameSorter.Key(g) + "#steamcover2"))
+                || (!string.IsNullOrWhiteSpace(App.Settings.SteamGridDbApiKey) && WantsBetterCover(g) && !_artTried.Contains(GameSorter.Key(g) + "#sgdbcover2"))
+                || (g.BackdropPath is null && !_artTried.Contains(GameSorter.Key(g) + "#epicwall")
+                    && !(g.Source == "GOG" && _artTried.Contains(GameSorter.Key(g) + "#sgdbhero")))))
+            .OrderBy(g => g.Source == GogProvider.ProviderName ? 0 : 1).Take(200).ToList());
         return pending.Count > 0 && await DownloadMissingArtAsync(pending);
     }
 
@@ -315,9 +436,14 @@ internal sealed class LibraryService
         if (game.Source == EpicProvider.ProviderName && game.CoverUrl is null && game.WideUrl is null && game.LogoUrl is null
             && App.Settings.EpicLibrary.FirstOrDefault(e => string.Equals(e.AppName, game.Id, StringComparison.OrdinalIgnoreCase)) is { } owned)
             game = game with { CoverUrl = owned.CoverUrl, WideUrl = owned.WideUrl, LogoUrl = owned.LogoUrl }; // installed Epic game: Epic's own pictures
-        var cover = game.CoverPath ?? CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Cover)
-                    ?? SteamGridDbArt.Cached(ArtCacheDir, game, StoreArtKind.Cover);
-        var hero = game.Source == EpicProvider.ProviderName
+        if (game.Source == GogProvider.ProviderName && game.CoverUrl is null
+            && App.Settings.GogLibrary.FirstOrDefault(e => e.Id == game.Id) is { ImageBase: { } image })
+            game = game with { CoverUrl = image }; // installed GOG game: GOG's own cover
+        // Covers of other stores: Steam's 600x900 first, then SteamGridDB, and the store's own picture last (other proportions: it gets cropped).
+        var cover = game.CoverPath ?? SteamGridDbArt.CachedBestCover(ArtCacheDir, game) ?? CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Cover);
+        var hero = game.Source == GogProvider.ProviderName
+            ? game.BackdropPath ?? SteamGridDbArt.Cached(ArtCacheDir, game, StoreArtKind.Backdrop) ?? SteamGridDbArt.CachedWideHero(ArtCacheDir, game) // GOG: SteamGridDB first
+            : game.Source == EpicProvider.ProviderName
             ? game.BackdropPath ?? CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Backdrop) ?? SteamGridDbArt.CachedWideHero(ArtCacheDir, game) // Epic's own picture first
             : game.BackdropPath ?? SteamGridDbArt.CachedWideHero(ArtCacheDir, game) ?? CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Backdrop);
         var logo = game.LogoPath ?? LogoDownloader.Cached(ArtCacheDir, game) ?? LogoDownloader.FindSteamLocal(SteamPath, game);
@@ -333,10 +459,21 @@ internal sealed class LibraryService
     /// </summary>
     public async Task<bool> DownloadMissingArtAsync(IReadOnlyList<Game> games)
     {
+        // One run at a time: a refresh that starts while the last one is still downloading waits (and then finds most of it tried already)
+        // instead of running the same lookups twice in parallel.
+        await _artRun.WaitAsync();
+        try { return await DownloadMissingArtCoreAsync(games); }
+        finally { _artRun.Release(); }
+    }
+
+    private readonly SemaphoreSlim _artRun = new(1, 1);
+
+    private async Task<bool> DownloadMissingArtCoreAsync(IReadOnlyList<Game> games)
+    {
         var fetched = false;
         var gridKey = App.Settings.SteamGridDbApiKey;
         var gridRejected = false;
-        var (coverCount, logoCount, wallCount) = CountArtWork(games, gridKey is not null);
+        var (coverCount, logoCount, wallCount) = await Task.Run(() => CountArtWork(games, gridKey is not null)); // many small file checks: not on the interface thread
         var job = Art.Begin(coverCount, logoCount, wallCount);
 
         using var gate = new SemaphoreSlim(4);
@@ -362,18 +499,35 @@ internal sealed class LibraryService
 
                 if (SteamGridDbArt.Applies(game))
                 {
-                    if (game.Source == EpicProvider.ProviderName)
+                    if (game.Source == GogProvider.ProviderName && gridKey is not null && !gridRejected && game.BackdropPath is null
+                        && SteamGridDbArt.Cached(ArtCacheDir, game, StoreArtKind.Backdrop) is null && _artTried.Add(GameSorter.Key(game) + "#sgdbhero"))
                     {
-                        // Epic's own cover and wide picture first (from the catalog, no key needed).
-                        if (game.CoverPath is null && CoverDownloader.Urls(game, StoreArtKind.Cover).Count > 0 && _artTried.Add(GameSorter.Key(game) + "#epiccover")
-                            && await job.RunAsync(ArtItem.Cover, () => CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Cover)))
-                            fetched = true;
+                        var rejectedHero = false;
+                        if (await job.RunAsync(ArtItem.Wallpaper, async () =>
+                            {
+                                try { return await SteamGridDbArt.DownloadAsync(Http, gridKey, ArtCacheDir, game, StoreArtKind.Backdrop); }
+                                catch (UnauthorizedAccessException) { rejectedHero = true; return null; }
+                            })) fetched = true;
+                        if (rejectedHero) gridRejected = true;
+                    }
+                    // Cover: the game's Steam cover when it is on Steam (same as the Steam tab), then SteamGridDB, then the store's own picture.
+                    if (WantsSteamCover(game) && _artTried.Add(GameSorter.Key(game) + "#steamcover2"))
+                    {
+                        var attempt = new ArtAttempt();
+                        if (await job.RunAsync(ArtItem.Cover, () => SteamGridDbArt.DownloadSteamCoverAsync(Http, ArtCacheDir, game, default, attempt))) fetched = true;
+                        if (attempt.NetworkFailed) _artTried.Remove(GameSorter.Key(game) + "#steamcover2"); // Steam was busy or unreachable: not "not found"
+                    }
+
+                    if (game.Source is EpicProvider.ProviderName || (game.Source == GogProvider.ProviderName && gridKey is null))
+                    {
+                        // Epic's own wide picture first (from the catalog, no key needed).
                         if (game.BackdropPath is null && _artTried.Add(GameSorter.Key(game) + "#epicwall")
                             && CoverDownloader.Urls(game, StoreArtKind.Backdrop).Count > 0
                             && await job.RunAsync(ArtItem.Wallpaper, () => CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Backdrop)))
                             fetched = true;
                     }
-                    var hasOfficialWide = CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Backdrop) is not null;
+                    var hasOfficialWide = CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Backdrop) is not null
+                                          || (game.Source == GogProvider.ProviderName && SteamGridDbArt.Cached(ArtCacheDir, game, StoreArtKind.Backdrop) is not null);
 
                     if (!hasOfficialWide && SteamGridDbArt.CachedSteamShot(ArtCacheDir, game) is null && _artTried.Add(GameSorter.Key(game) + "#shot")
                         && await job.RunAsync(ArtItem.Wallpaper, () => SteamGridDbArt.DownloadSteamShotAsync(Http, ArtCacheDir, game)))
@@ -383,8 +537,8 @@ internal sealed class LibraryService
                         && await job.RunAsync(ArtItem.Wallpaper, () => SteamGridDbArt.DownloadWallhavenAsync(Http, ArtCacheDir, game)))
                         fetched = true;
 
-                    if (gridKey is not null && !gridRejected && game.CoverPath is null && CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Cover) is null
-                        && _artTried.Add(GameSorter.Key(game) + "#sgdb"))
+                    if (gridKey is not null && !gridRejected && WantsBetterCover(game) && SteamGridDbArt.CachedBestCover(ArtCacheDir, game) is null
+                        && _artTried.Add(GameSorter.Key(game) + "#sgdbcover2"))
                     {
                         var rejected = false;
                         if (await job.RunAsync(ArtItem.Cover, async () =>
@@ -404,6 +558,12 @@ internal sealed class LibraryService
                             })) fetched = true;
                         if (rejected) gridRejected = true;
                     }
+                    // The store's own cover only when nothing better was found.
+                    if (game.Source is EpicProvider.ProviderName or GogProvider.ProviderName && SteamGridDbArt.CachedBestCover(ArtCacheDir, game) is null
+                        && CoverDownloader.Cached(ArtCacheDir, game, StoreArtKind.Cover) is null && CoverDownloader.Urls(game, StoreArtKind.Cover).Count > 0
+                        && _artTried.Add(GameSorter.Key(game) + "#officialcover")
+                        && await job.RunAsync(ArtItem.Cover, () => CoverDownloader.DownloadAsync(Http, ArtCacheDir, game, StoreArtKind.Cover)))
+                        fetched = true;
                     return;
                 }
 
@@ -419,7 +579,7 @@ internal sealed class LibraryService
             await Task.WhenAll(games.Select(async game =>
             {
                 await gate.WaitAsync();
-                try { await ProcessAsync(game); }
+                try { await Task.Run(() => ProcessAsync(game)); } // parsing the answers happens off the interface thread
                 finally { gate.Release(); }
             }));
         }
@@ -441,7 +601,7 @@ internal sealed class LibraryService
             if (game.LogoPath is null && !_artTried.Contains(key + "#logo")) logos++;
             if (SteamGridDbArt.Applies(game))
             {
-                if (game.Source == EpicProvider.ProviderName)
+                if (game.Source is EpicProvider.ProviderName or GogProvider.ProviderName)
                 {
                     if (game.CoverPath is null && CoverDownloader.Urls(game, StoreArtKind.Cover).Count > 0 && !_artTried.Contains(key + "#epiccover")) covers++;
                     if (game.BackdropPath is null && CoverDownloader.Urls(game, StoreArtKind.Backdrop).Count > 0 && !_artTried.Contains(key + "#epicwall")) walls++;

@@ -73,6 +73,9 @@ public sealed class AppSettings
     /// <summary>Look for a newer GitHub release at startup (at most once a day).</summary>
     public bool CheckForUpdates { get; set; } = true;
 
+    /// <summary>Download a newer release by itself and offer to install it (the installer is checked against the size and SHA-256 GitHub lists).</summary>
+    public bool AutoUpdate { get; set; } = true;
+
     public DateTimeOffset? LastUpdateCheck { get; set; }
 
     /// <summary>How the library is ordered: "Recent", "Name" or "Size".</summary>
@@ -146,6 +149,19 @@ public sealed class AppSettings
     /// <summary>Epic library items that the catalog said are not games (add-ons, tools): not asked about again.</summary>
     public List<string> EpicSkipped { get; set; } = new();
 
+    /// <summary>The GOG sign-in (access and refresh tokens as JSON), stored encrypted. Never the password.</summary>
+    public string? GogTokens { get; set; }
+
+    public string? GogAccountName { get; set; }
+
+    /// <summary>The games of the GOG library, read on the last sync (kept so the list shows at once and offline).</summary>
+    public List<DeckLauncher.Core.Gog.GogLibraryGame> GogLibrary { get; set; } = new();
+
+    public DateTimeOffset? GogSyncedAt { get; set; }
+
+    /// <summary>GOG games the launcher downloaded itself (they have no GOG Galaxy registry entry).</summary>
+    public List<DeckLauncher.Core.Gog.GogOwnInstall> GogInstalls { get; set; } = new();
+
     /// <summary>Wireless headsets the user saved in the sound panel (Windows must already have them paired).</summary>
     public List<SavedBluetoothDevice> BluetoothDevices { get; set; } = new();
 
@@ -187,6 +203,13 @@ public sealed class AppSettings
             .Where(g => g is not null && !string.IsNullOrWhiteSpace(g.AppName) && !string.IsNullOrWhiteSpace(g.Title)
                         && !string.IsNullOrWhiteSpace(g.CatalogNamespace) && !string.IsNullOrWhiteSpace(g.CatalogItemId))
             .GroupBy(g => g.AppName, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
+        GogTokens = string.IsNullOrWhiteSpace(GogTokens) ? null : GogTokens;
+        GogLibrary = (GogLibrary ?? new())
+            .Where(g => g is not null && !string.IsNullOrWhiteSpace(g.Id) && !string.IsNullOrWhiteSpace(g.Title))
+            .GroupBy(g => g.Id, StringComparer.Ordinal).Select(g => g.First()).ToList();
+        GogInstalls = (GogInstalls ?? new())
+            .Where(g => g is not null && !string.IsNullOrWhiteSpace(g.Id) && !string.IsNullOrWhiteSpace(g.Folder) && !string.IsNullOrWhiteSpace(g.Exe))
+            .GroupBy(g => g.Id, StringComparer.Ordinal).Select(g => g.First()).ToList();
         ManualGames = (ManualGames ?? new())
             .Where(g => g is not null && !string.IsNullOrWhiteSpace(g.Id) && !string.IsNullOrWhiteSpace(g.ExePath))
             .GroupBy(g => g.Id, StringComparer.Ordinal).Select(g => g.First()).ToList();

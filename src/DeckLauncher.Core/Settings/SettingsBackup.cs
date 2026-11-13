@@ -18,7 +18,7 @@ public static class SettingsBackup
 
     private static readonly string[] Excluded =
     {
-        nameof(AppSettings.SteamWebApiKey), nameof(AppSettings.SteamGridDbApiKey), nameof(AppSettings.EpicTokens),
+        nameof(AppSettings.SteamWebApiKey), nameof(AppSettings.SteamGridDbApiKey), nameof(AppSettings.EpicTokens), nameof(AppSettings.GogTokens),
         nameof(AppSettings.LastUpdateCheck),
         nameof(AppSettings.LastSeenVersion),
         nameof(AppSettings.NotifiedUpdate),

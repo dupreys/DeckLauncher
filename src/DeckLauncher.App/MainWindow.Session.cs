@@ -104,7 +104,8 @@ public partial class MainWindow
         PlayButton.Content = same ? "Retomar" : notInstalled ? "Instalar" : "Jogar";
         StorePageButton.Visibility = _gameItem?.Game.Source == DeckLauncher.Core.Steam.SteamProvider.ProviderName ? Visibility.Visible : Visibility.Collapsed;
         var source = _gameItem?.Game.Source;
-        var fromStore = source == DeckLauncher.Core.Steam.SteamProvider.ProviderName || source == DeckLauncher.Core.Epic.EpicProvider.ProviderName;
+        var fromStore = source == DeckLauncher.Core.Steam.SteamProvider.ProviderName || source == DeckLauncher.Core.Epic.EpicProvider.ProviderName
+                       || source == DeckLauncher.Core.Gog.GogProvider.ProviderName;
         UninstallButton.Visibility = !notInstalled && fromStore ? Visibility.Visible : Visibility.Collapsed;
     }
 
