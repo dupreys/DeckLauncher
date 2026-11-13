@@ -201,6 +201,7 @@ public static partial class AppTexts
         new[] { "Arte baixada: {0}.", "Art downloaded: {0}.", "Arte descargado: {0}." },
         new[] { "Baixando capas, logos e wallpapers… acompanhe no sino.", "Downloading covers, logos and wallpapers… follow it in the bell.", "Descargando portadas, logos y fondos… síguelo en la campana." },
         new[] { "Baixando capas, logos e wallpapers", "Downloading covers, logos and wallpapers", "Descargando portadas, logos y fondos" },
+        new[] { "{0} de {1}", "{0} of {1}", "{0} de {1}" },
         new[] { "*{0} de {1} · {2}", "{0} of {1} · {2}", "{0} de {1} · {2}" },
         new[] { "Atualização disponível: {0} (Epic). Abra o Epic Games Launcher para atualizar.", "Update available: {0} (Epic). Open the Epic Games Launcher to update.", "Actualización disponible: {0} (Epic). Abre el Epic Games Launcher para actualizar." },
         new[] { "Atualização disponível: {0} (Epic).", "Update available: {0} (Epic).", "Actualización disponible: {0} (Epic)." },
