@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="DeckLauncher" Icon="Assets/app.ico" Width="1280" Height="720" Background="{DynamicResource Bg}" Foreground="{StaticResource Text}"
-        WindowState="Maximized" WindowStyle="None" KeyDown="OnKeyDown" Loaded="OnLoaded" Activated="OnActivated" Deactivated="OnDeactivated">
+        WindowState="Maximized" WindowStyle="None" KeyDown="OnKeyDown" Loaded="OnLoaded" Activated="OnActivated" Deactivated="OnDeactivated" SizeChanged="OnWindowSizeChanged">
     <Grid x:Name="RootGrid">
         <!-- Big background picture of the focused game (filled in step 2) + fade into the page colour -->
         <Grid x:Name="HeroLayer" RenderTransformOrigin="0.5,0.4">
@@ -61,7 +61,7 @@
                 <TextBlock x:Name="RecentTitle" Text="Jogos recentes" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource TextSoft}" Margin="28,0,0,4"/>
                 <TextBlock x:Name="EmptyText" Visibility="Collapsed" FontSize="17" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" Margin="0,0,0,40"/>
                 <ScrollViewer x:Name="RecentScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" Focusable="False">
-                    <StackPanel x:Name="RecentHost" Orientation="Horizontal" Margin="28,12,0,12" RequestBringIntoView="OnRecentBringIntoView">
+                    <StackPanel x:Name="RecentHost" Orientation="Horizontal" Margin="28,24,0,12" RequestBringIntoView="OnRecentBringIntoView">
                     <ItemsControl x:Name="RecentRow">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
@@ -265,7 +265,7 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Button Style="{StaticResource CarouselTile}" Click="OnTileClick" GotKeyboardFocus="OnCarouselTileFocus" Loaded="OnTileLoaded">
+                            <Button Style="{DynamicResource CarouselTileStyle}" Click="OnTileClick" GotKeyboardFocus="OnCarouselTileFocus" Loaded="OnTileLoaded">
                                 <Button.Background>
                                     <ImageBrush ImageSource="{Binding Cover}" Stretch="UniformToFill"/>
                                 </Button.Background>
@@ -718,6 +718,16 @@
                                     <ToggleButton x:Name="AccentOrange" Style="{StaticResource Swatch}" Background="#FF8A2B" Tag="Orange" Click="OnAccentClick" AutomationProperties.Name="Laranja"/>
                                     <ToggleButton x:Name="AccentPink" Style="{StaticResource Swatch}" Background="#FF5FA2" Tag="Pink" Click="OnAccentClick" AutomationProperties.Name="Rosa"/>
                                     <ToggleButton x:Name="AccentRed" Style="{StaticResource Swatch}" Background="#FF4B4B" Tag="Red" Click="OnAccentClick" AutomationProperties.Name="Vermelho"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SettingsRow}">
+                            <StackPanel>
+                                <TextBlock Text="Formato dos cards" FontSize="19"/>
+                                <TextBlock Text="Retrato é o formato de capa de jogo. Quadrado é o estilo do PlayStation e do Xbox: a capa preenche o card inteiro (um pouco do alto e do pé da imagem fica de fora). Vale para a biblioteca e para a tela inicial (Clássico, Cinema, Carrossel e Painel)." FontSize="13" Foreground="{StaticResource TextMuted}" Margin="0,3,0,12" TextWrapping="Wrap"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <ToggleButton x:Name="ShapePoster" Style="{StaticResource SegButton}" Content="Retrato" Tag="Poster" Click="OnCardShapeClick"/>
+                                    <ToggleButton x:Name="ShapeSquare" Style="{StaticResource SegButton}" Content="Quadrado" Tag="Square" Click="OnCardShapeClick"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>

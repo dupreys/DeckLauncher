@@ -28,12 +28,24 @@ public class AppearanceSettingsTests
         Assert.Equal(expected, settings.CardSize);
     }
 
+    [Theory]
+    [InlineData("Square", "Square")]
+    [InlineData("Poster", "Poster")]
+    [InlineData("round", "Poster")]
+    public void Card_shape_falls_back_to_poster(string saved, string expected)
+    {
+        var settings = new AppSettings { CardShape = saved };
+        settings.Normalize();
+        Assert.Equal(expected, settings.CardShape);
+    }
+
     [Fact]
     public void Defaults_keep_the_current_look()
     {
         var settings = new AppSettings();
         Assert.Equal("Blue", settings.AccentName);
         Assert.Equal("Medium", settings.CardSize);
+        Assert.Equal("Poster", settings.CardShape);
         Assert.False(settings.BigClock);
     }
 }

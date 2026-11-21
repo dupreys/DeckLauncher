@@ -21,7 +21,7 @@ internal sealed class EpicLoginWindow : Window
     {
         Title = UiText.T("Entrar na Epic Games");
         Width = 520;
-        Height = 760;
+        Height = Math.Min(760, SystemParameters.WorkArea.Height * 0.92); // a small screen (4K TV at high scaling) must not cut the window off
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = System.Windows.Media.Brushes.Black;
         Content = new Grid { Children = { _web } };

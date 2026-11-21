@@ -24,6 +24,7 @@ public partial class MainWindow
     private void ApplyAppearance()
     {
         ApplyAccent();
+        ApplyCardShape();
         ApplyCardSize();
         ApplyBigClock();
     }
@@ -51,6 +52,20 @@ public partial class MainWindow
         LibCursor.Visibility = Visibility.Collapsed;
     }
 
+    /// <summary>Poster cards (tall covers, cropped to fill) or square cards (the whole cover fitted inside, nothing cut).</summary>
+    private void ApplyCardShape()
+    {
+        var square = App.Settings.CardShape == "Square";
+        var resources = Application.Current.Resources;
+        resources["LibTileH"] = square ? 244.0 : 366.0;
+        resources["GameTileW"] = square ? 250.0 : 207.0;
+        resources["GameTileH"] = square ? 250.0 : 311.0;
+        resources["CinemaW"] = square ? 200.0 : 170.0;
+        resources["CinemaH"] = square ? 200.0 : 232.0;
+        resources["CarouselTileStyle"] = FindResource(square ? "CarouselTileSquare" : "CarouselTile");
+        LibCursor.Visibility = Visibility.Collapsed;
+    }
+
     private void ApplyBigClock()
     {
         var big = App.Settings.BigClock;
@@ -65,12 +80,16 @@ public partial class MainWindow
     {
         SetChoice(App.Settings.AccentName, (AccentBlue, "Blue"), (AccentGreen, "Green"), (AccentPurple, "Purple"),
                   (AccentOrange, "Orange"), (AccentPink, "Pink"), (AccentRed, "Red"));
+        SetChoice(App.Settings.CardShape, (ShapePoster, "Poster"), (ShapeSquare, "Square"));
         SetChoice(App.Settings.CardSize, (SizeSmall, "Small"), (SizeMedium, "Medium"), (SizeLarge, "Large"));
         BigClockSwitch.IsChecked = App.Settings.BigClock;
     }
 
     private void OnAccentClick(object sender, RoutedEventArgs e) =>
         OnChoiceClick(sender, key => App.Settings.AccentName = key, ShowAppearanceChecks, ApplyAccent);
+
+    private void OnCardShapeClick(object sender, RoutedEventArgs e) =>
+        OnChoiceClick(sender, key => App.Settings.CardShape = key, ShowAppearanceChecks, ApplyCardShape);
 
     private void OnCardSizeClick(object sender, RoutedEventArgs e) =>
         OnChoiceClick(sender, key => App.Settings.CardSize = key, ShowAppearanceChecks, ApplyCardSize);

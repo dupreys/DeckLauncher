@@ -36,6 +36,9 @@ public sealed class AppSettings
     /// <summary>Size of the game cards in the Library: "Small", "Medium" (default) or "Large".</summary>
     public string CardSize { get; set; } = "Medium";
 
+    /// <summary>Shape of the game cards: "Poster" (tall cover) or "Square" (PlayStation/Xbox style, the cover fitted inside).</summary>
+    public string CardShape { get; set; } = "Poster";
+
     /// <summary>Bigger clock in the top bar and on the "Sala" home.</summary>
     public bool BigClock { get; set; }
 
@@ -189,6 +192,7 @@ public sealed class AppSettings
         if (!SteamLoginUsers.IsSteamId64(FixedAccountId)) FixedAccountId = null;
         if (!SteamLoginUsers.IsSteamId64(LastAccountId)) LastAccountId = null;
         if (CardSize is not ("Small" or "Medium" or "Large")) CardSize = "Medium";
+        if (CardShape is not ("Poster" or "Square")) CardShape = "Poster";
         SteamWebApiKey = string.IsNullOrWhiteSpace(SteamWebApiKey) ? null : SteamWebApiKey.Trim();
         SteamGridDbApiKey = string.IsNullOrWhiteSpace(SteamGridDbApiKey) ? null : SteamGridDbApiKey.Trim();
         if (LibrarySort is not ("Recent" or "Name" or "Size")) LibrarySort = "Recent";
