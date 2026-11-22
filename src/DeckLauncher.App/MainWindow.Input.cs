@@ -148,7 +148,7 @@ public partial class MainWindow
         if (!IsActive) return;
         SetHints(true);
 
-        if (MediaViewerOpen)
+        if (MediaViewerOpen && !ConfirmOpen)
         {
             HandleViewerButton(button);
             return;
@@ -249,6 +249,8 @@ public partial class MainWindow
     /// <summary>X on a game tile or on the game page: add to or remove from the favourites.</summary>
     private void ToggleFavoriteOfFocused()
     {
+        if (ConfirmOpen) return;
+        if (TryDeleteFocusedMedia()) return;
         if (OpenAppMenuForFocused()) return;
         GameItem? item = Keyboard.FocusedElement is FrameworkElement { DataContext: GameItem focusedItem } ? focusedItem : null;
         if (item is null && _page == "Jogo") item = _gameItem;

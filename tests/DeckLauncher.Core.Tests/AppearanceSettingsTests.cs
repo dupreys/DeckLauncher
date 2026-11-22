@@ -49,3 +49,22 @@ public class AppearanceSettingsTests
         Assert.False(settings.BigClock);
     }
 }
+
+public class AvatarPresetTests
+{
+    [Fact]
+    public void Preset_needs_a_picture_and_a_valid_name()
+    {
+        var ok = new AppSettings { CustomAvatarPath = "x.png", AvatarPreset = "avatar-03" };
+        ok.Normalize();
+        Assert.Equal("avatar-03", ok.AvatarPreset);
+
+        var noPicture = new AppSettings { AvatarPreset = "avatar-03" };
+        noPicture.Normalize();
+        Assert.Null(noPicture.AvatarPreset);
+
+        var bad = new AppSettings { CustomAvatarPath = "x.png", AvatarPreset = "..\\evil" };
+        bad.Normalize();
+        Assert.Null(bad.AvatarPreset);
+    }
+}

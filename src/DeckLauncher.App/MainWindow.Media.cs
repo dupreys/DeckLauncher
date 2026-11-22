@@ -195,7 +195,7 @@ public partial class MainWindow
             ? "Nenhuma captura por aqui ainda.\nTire prints ou grave vídeos com o Game Bar do Windows (Win + G) e eles aparecem aqui."
             : $"A pasta de capturas ainda não existe:\n{folder}\nO Game Bar a cria na primeira captura (Win + G).";
 
-        if (!MenuOpen && _page == "Mídias") FocusMedia(Math.Min(_mediaIndex, found.Count - 1));
+        if (!MenuOpen && !MediaViewerOpen && !ConfirmOpen && _page == "Mídias") FocusMedia(Math.Min(_mediaIndex, found.Count - 1));
     }
 
     private Button BuildMediaTile(MediaFile file, int index, out Image image)
@@ -354,13 +354,18 @@ public partial class MainWindow
     private string ViewerHelpText(bool video)
     {
         var pad = _padHints;
+        return ViewerHelpBase(video, pad) + "      " + UiText.T(pad ? "X  Excluir" : "Del  Excluir");
+    }
+
+    private static string ViewerHelpBase(bool video, bool pad)
+    {
         if (video)
             return pad
-                ? "A  Pausar / continuar      ◀ ▶  Voltar / avançar 10 s      ▲ ▼  Volume      LB / RB  Anterior / próximo      B  Fechar"
-                : "Espaço  Pausar / continuar      ← →  Voltar / avançar 10 s      ↑ ↓  Volume      PgUp / PgDn  Anterior / próximo      Esc  Fechar";
+                ? UiText.T("A  Pausar / continuar      ◀ ▶  Voltar / avançar 10 s      ▲ ▼  Volume      LB / RB  Anterior / próximo      B  Fechar")
+                : UiText.T("Espaço  Pausar / continuar      ← →  Voltar / avançar 10 s      ↑ ↓  Volume      PgUp / PgDn  Anterior / próximo      Esc  Fechar");
         return pad
-            ? "◀ ▶  ou  LB / RB  Anterior / próxima      B  Fechar"
-            : "← →  Anterior / próxima      Esc  Fechar";
+            ? UiText.T("◀ ▶  ou  LB / RB  Anterior / próxima      B  Fechar")
+            : UiText.T("← →  Anterior / próxima      Esc  Fechar");
     }
 
     private void StopVideo()
@@ -501,16 +506,20 @@ public partial class MainWindow
             case GamepadButton.Down: ChangeViewerVolume(-0.1); break;
             case GamepadButton.LeftShoulder: StepViewer(-1); break;
             case GamepadButton.RightShoulder: StepViewer(+1); break;
+            case GamepadButton.X: _ = DeleteMediaAsync(_mediaIndex, fromViewer: true); return;
         }
         if (button is not GamepadButton.B) PokeViewerBar(showAlways: true);
     }
 
     private void OnViewerPreviewKey(object sender, KeyEventArgs e)
     {
+        if (ConfirmOpen) return; // the question has the keyboard
+        if (e.Key == Key.Delete && !MediaViewerOpen) { if (TryDeleteFocusedMedia()) e.Handled = true; return; }
         if (!MediaViewerOpen) return;
         var video = _media[_mediaIndex].IsVideo;
         switch (e.Key)
         {
+            case Key.Delete: _ = DeleteMediaAsync(_mediaIndex, fromViewer: true); e.Handled = true; return;
             case Key.Escape: UiSound.Play("back"); CloseMediaViewer(); break;
             case Key.Space or Key.Enter: ToggleVideo(); break;
             case Key.Left: if (video) SeekVideo(-10); else StepViewer(-1); break;

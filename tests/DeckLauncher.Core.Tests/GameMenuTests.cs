@@ -99,3 +99,30 @@ public class PlayTrackerTests
         Assert.Equal(played, game.LastPlayed);
     }
 }
+
+public class GameDescriptionTests
+{
+    [Fact]
+    public void Gog_description_loses_its_html()
+    {
+        var d = GameInfo.ParseGogProduct("""{"description":{"lead":"Um <b>RPG</b> &amp; mais<br>outra linha","full":"x"}}""");
+        Assert.Equal("Um RPG & mais outra linha", d?.Description);
+    }
+
+    [Fact]
+    public void Long_text_is_cut_at_a_word()
+    {
+        var text = GameInfo.CleanText(string.Join(" ", Enumerable.Repeat("palavra", 200)));
+        Assert.NotNull(text);
+        Assert.True(text!.Length <= 602);
+        Assert.EndsWith("…", text);
+    }
+
+    [Fact]
+    public void Missing_description_is_null()
+    {
+        Assert.Null(GameInfo.ParseGogProduct("""{"title":"x"}"""));
+        Assert.Null(GameInfo.CleanText("  <br> "));
+        Assert.Equal("brazilian", GameInfo.SteamLanguage("pt"));
+    }
+}

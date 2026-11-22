@@ -98,6 +98,9 @@ public sealed class AppSettings
     /// <summary>Path of the picture the user chose (a copy kept in the app data folder).</summary>
     public string? CustomAvatarPath { get; set; }
 
+    /// <summary>Which of the launcher's own pictures was chosen ("avatar-03"), so the profile screen can mark it. Null for a Steam or own photo.</summary>
+    public string? AvatarPreset { get; set; }
+
     // Optional keys the user creates on the services' own sites (stored only on this PC)
     /// <summary>Steam Web API key: needed for the online friends list.</summary>
     public string? SteamWebApiKey { get; set; }
@@ -182,6 +185,7 @@ public sealed class AppSettings
         CustomName = string.IsNullOrWhiteSpace(CustomName) ? null : CustomName.Trim();
         if (CustomName is { Length: > MaxNameLength }) CustomName = CustomName[..MaxNameLength];
         if (string.IsNullOrWhiteSpace(CustomAvatarPath)) CustomAvatarPath = null;
+        if (CustomAvatarPath is null || AvatarPreset is not { Length: <= 20 } || !System.Text.RegularExpressions.Regex.IsMatch(AvatarPreset, "^avatar-[0-9]{2}$")) AvatarPreset = null;
 
         PlaySessions = PlayHistory.Clean(PlaySessions);
         Wallpaper = (Wallpaper ?? "").Trim();

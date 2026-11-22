@@ -8,13 +8,14 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>DeckLauncher.App</RootNamespace>
     <AssemblyName>DeckLauncher</AssemblyName>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>
     <Resource Include="Assets\app.ico" />
+    <Resource Include="Assets\Avatars\*.png" />
     <Resource Include="Assets\Sounds\*.wav" />
     <!-- Optional store logos (Lojas page): drop store-steam.png / store-epic.png here and they ship next to the program. -->
     <None Include="Assets\store-*.png" CopyToOutputDirectory="PreserveNewest" />

@@ -290,7 +290,9 @@ public partial class MainWindow
             group.Children.Add(_heroShift);
             HeroLayer.RenderTransform = group;
         }
-        HeroBlurInner.RenderTransform = HeroLayer.RenderTransform; // the blurred part under the cards follows the same movement
+        // The blurred band under the cards stays still at the middle zoom: a blur that moves is redrawn every frame (the most expensive thing on screen at 4K),
+        // and in a band this soft nobody sees the difference.
+        HeroBlurInner.RenderTransform = new ScaleTransform(1.08, 1.08);
 
         var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
         // 30 frames a second look the same for a drift this slow and cost half the work.
@@ -321,6 +323,7 @@ public partial class MainWindow
         _heroShift.BeginAnimation(TranslateTransform.YProperty, null);
         _heroScale.ScaleX = _heroScale.ScaleY = 1;
         _heroShift.X = _heroShift.Y = 0;
+        HeroBlurInner.RenderTransform = Transform.Identity;
     }
 
     // ---- Page and menu transitions -----------------------------------------------------------

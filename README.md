@@ -57,12 +57,12 @@
 - **Menu durante o jogo:** segure **Select + B por 2 segundos** para abrir o menu do launcher por cima do jogo. O jogo continua aberto em segundo plano e mudo; no menu lateral aparece o jogo atual com **Voltar ao jogo** e **Encerrar jogo**.
 
 ### Mídias
-- Mostra as capturas do Game Bar do Windows (pasta `Vídeos\Captures`) em miniaturas. Fotos e vídeos abrem dentro do launcher, só para visualizar.
+- Mostra as capturas do Game Bar do Windows (pasta `Vídeos\Captures`) em miniaturas. Fotos e vídeos abrem dentro do launcher, só para visualizar. Para excluir, use X no controle (ou Delete no teclado) sobre a captura ou dentro do visualizador; o arquivo vai para a Lixeira do Windows, com confirmação.
 
 ### Sistema
 - **Configurações:** Sistema (tela cheia, efeitos sonoros, usar o mouse, iniciar com o Windows, atualizar a biblioteca, limpar o cache), Interface, Integrações e Jogos.
 - **Interface:** **Preto OLED** (toda a interface em preto, em vez do azul escuro).
-- **Perfil:** a foto no canto superior direito abre um painel para trocar a foto (qualquer imagem do PC ou a da Steam) e o nome mostrado no launcher; a conta da Steam não é alterada.
+- **Perfil:** a foto no canto superior direito abre um cartão para trocar a foto (a da Steam, qualquer imagem do PC ou uma das 12 imagens prontas do launcher), o nome mostrado e a conta Steam; a conta da Steam não é alterada.
 - **GOG:** jogos da GOG instalados no PC aparecem junto dos demais, numa aba própria, e abrem direto (sem precisar do Galaxy). Entrando na conta da GOG (Configurações > Integrações, recurso experimental), os jogos que você tem e não instalou aparecem esmaecidos; a página Lojas mostra o GOG Galaxy quando instalado.
 - **Desinstalar:** pela página do jogo, o launcher da Steam ou da Epic pergunta se quer remover; ao remover, o jogo some das listas e volta à aba da loja para instalar depois.
 - **Idiomas:** português, inglês e espanhol (Configurações > Interface), com o idioma do Windows como padrão.

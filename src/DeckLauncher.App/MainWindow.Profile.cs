@@ -2,6 +2,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -96,15 +97,27 @@ public partial class MainWindow
 
     private void OnProfileClick(object sender, RoutedEventArgs e) => OpenProfile();
 
+    private static readonly (string Id, string Name)[] AvatarPresets =
+    {
+        ("avatar-01", "Controle"), ("avatar-02", "Fantasma"), ("avatar-03", "Estrela"), ("avatar-04", "Coração"),
+        ("avatar-05", "Raio"), ("avatar-06", "Coroa"), ("avatar-07", "Planeta"), ("avatar-08", "Diamante"),
+        ("avatar-09", "Escudo"), ("avatar-10", "Gota"), ("avatar-11", "Lua"), ("avatar-12", "Alvo"),
+    };
+
+    private readonly Dictionary<string, Button> _profileChoices = new();
+    private readonly Dictionary<string, string> _profileChoiceNames = new();
+
     private void OpenProfile()
     {
         if (PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return;
         if (QuickOpen) CloseQuick();
         if (MenuOpen) CloseMenu(true);
         if (App.Settings.AvatarUrl is null) _ = FetchSteamProfileAsync();
+        if (_profileChoices.Count == 0) BuildProfileChoices();
         UpdateProfilePanel();
         ProfilePanel.Visibility = Visibility.Visible;
-        ProfilePhotoButton.Focus();
+        var current = App.Settings.AvatarPreset ?? (string.IsNullOrWhiteSpace(App.Settings.CustomAvatarPath) && _profileChoices["steam"].Visibility == Visibility.Visible ? "steam" : "file");
+        (_profileChoices.TryGetValue(current, out var tile) ? tile : _profileChoices["file"]).Focus();
     }
 
     private void CloseProfile()
@@ -114,24 +127,98 @@ public partial class MainWindow
         ProfileButton.Focus();
     }
 
+    /// <summary>The row of pictures: the Steam photo, "from this PC" and the launcher's own pack. Built once; the rings are refreshed in place.</summary>
+    private void BuildProfileChoices()
+    {
+        AddChoice("steam", "Foto da Steam", null, null);
+        AddChoice("file", "Escolher uma foto do computador...", "\uE838", null);
+        foreach (var (id, name) in AvatarPresets)
+        {
+            var brush = new ImageBrush(new BitmapImage(new Uri($"pack://application:,,,/Assets/Avatars/{id}.png"))) { Stretch = Stretch.UniformToFill };
+            AddChoice(id, name, null, brush);
+        }
+    }
+
+    private void AddChoice(string id, string name, string? glyph, Brush? picture)
+    {
+        var button = new Button { Style = (Style)FindResource("AvatarChoice"), Tag = id, Background = picture ?? (Brush)FindResource("PanelRaised") };
+        if (glyph is not null) button.Content = new System.Windows.Controls.TextBlock { Text = glyph, Style = (Style)FindResource("Icon"), FontSize = 28, Foreground = (Brush)FindResource("TextSoft") };
+        else if (picture is null) button.Content = new System.Windows.Controls.TextBlock { Text = "\uE77B", Style = (Style)FindResource("Icon"), FontSize = 30, Foreground = (Brush)FindResource("TextSoft") };
+        _profileChoiceNames[id] = name;
+        button.Click += OnProfileChoiceClick;
+        button.GotKeyboardFocus += (_, _) => ProfileChoiceLabel.Text = UiText.T(name);
+        _profileChoices[id] = button;
+        ProfileChoices.Children.Add(button);
+    }
+
     private void UpdateProfilePanel()
     {
         ProfileSwitchButton.Visibility = HasSeveralAccounts ? Visibility.Visible : Visibility.Collapsed;
         ProfileName.Text = DisplayName;
         ProfileNameBox.Text = App.Settings.CustomName ?? "";
         var hasCustom = !string.IsNullOrWhiteSpace(App.Settings.CustomAvatarPath);
-        var hasSteam = !string.IsNullOrWhiteSpace(App.Settings.AvatarUrl);
-        ProfileSub.Text = hasCustom ? "Foto escolhida por você" : hasSteam ? "Foto da Steam" : "Sem foto";
+        var hasSteam = !string.IsNullOrWhiteSpace(App.Settings.AvatarUrl) || (_activeSteamId is { } id && File.Exists(AvatarCachePath(id)));
+        var preset = App.Settings.AvatarPreset;
+        ProfileSub.Text = UiText.T(preset is not null ? "Foto do launcher" : hasCustom ? "Foto escolhida por você" : hasSteam ? "Foto da Steam" : "Sem foto");
         ProfileRemovePhotoButton.IsEnabled = hasCustom;
-        ProfileSteamPhotoButton.IsEnabled = hasCustom && hasSteam; // only useful when a chosen photo is hiding it
-        ProfileSteamPhotoButton.Visibility = hasSteam ? Visibility.Visible : Visibility.Collapsed;
+
+        // the Steam tile shows the Steam photo, or is hidden when there is none
+        var steamTile = _profileChoices["steam"];
+        steamTile.Visibility = hasSteam ? Visibility.Visible : Visibility.Collapsed;
+        var steamPicture = _steamAvatar ?? (_activeSteamId is { } sid ? LoadLocalImage(AvatarCachePath(sid)) : null);
+        if (steamPicture is not null)
+        {
+            steamTile.Background = new ImageBrush(steamPicture) { Stretch = Stretch.UniformToFill };
+            steamTile.Content = null;
+        }
+
+        var accent = (Brush)FindResource("Accent");
+        var selected = preset ?? (hasCustom ? null : hasSteam ? "steam" : null);
+        foreach (var (key, tile) in _profileChoices) tile.BorderBrush = key == selected ? accent : Brushes.Transparent;
+        ProfileChoiceLabel.Text = selected is not null && _profileChoiceNames.TryGetValue(selected, out var name) ? UiText.T(name) : "";
     }
 
     private void OnProfileBackClick(object sender, RoutedEventArgs e) => CloseProfile();
 
     private void OnProfileDimClick(object sender, MouseButtonEventArgs e) => CloseProfile();
 
-    private async void OnProfilePhotoClick(object sender, RoutedEventArgs e)
+    private async void OnProfileChoiceClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string id }) return;
+        if (id == "file") { await ChooseOwnPhotoAsync(); return; }
+        if (id == "steam") { await UseSteamPhotoAsync(); return; }
+        await UsePresetAsync(id);
+    }
+
+    private async Task UsePresetAsync(string id)
+    {
+        try
+        {
+            var info = System.Windows.Application.GetResourceStream(new Uri($"pack://application:,,,/Assets/Avatars/{id}.png"));
+            if (info is null) return;
+            Directory.CreateDirectory(SettingsStore.DefaultDirectory);
+            var copy = Path.Combine(SettingsStore.DefaultDirectory, $"{id}-{DateTime.Now:yyyyMMddHHmmss}.png");
+            await using (var output = File.Create(copy))
+            {
+                await using var input = info.Stream;
+                await input.CopyToAsync(output);
+            }
+            DeleteOldAvatar();
+            App.Settings.CustomAvatarPath = copy;
+            App.Settings.AvatarPreset = id;
+            SaveSettings();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowToast("Não foi possível salvar a foto.");
+            return;
+        }
+        await RefreshAvatarAsync();
+        UpdateProfilePanel();
+        ShowToast("Foto atualizada");
+    }
+
+    private async Task ChooseOwnPhotoAsync()
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
@@ -158,6 +245,7 @@ public partial class MainWindow
             File.Copy(dialog.FileName, copy, true);
             DeleteOldAvatar();
             App.Settings.CustomAvatarPath = copy;
+            App.Settings.AvatarPreset = null;
             SaveSettings();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -171,10 +259,11 @@ public partial class MainWindow
         ShowToast("Foto atualizada");
     }
 
-    private async void OnProfileSteamPhotoClick(object sender, RoutedEventArgs e)
+    private async Task UseSteamPhotoAsync()
     {
         DeleteOldAvatar();
         App.Settings.CustomAvatarPath = null;
+        App.Settings.AvatarPreset = null;
         SaveSettings();
         await RefreshAvatarAsync();
         UpdateProfilePanel();
@@ -185,11 +274,12 @@ public partial class MainWindow
     {
         DeleteOldAvatar();
         App.Settings.CustomAvatarPath = null;
+        App.Settings.AvatarPreset = null;
         SaveSettings();
         await RefreshAvatarAsync();
         UpdateProfilePanel();
         ShowToast("Foto removida");
-        ProfilePhotoButton.Focus();
+        _profileChoices["file"].Focus();
     }
 
     private void OnProfileSaveNameClick(object sender, RoutedEventArgs e)

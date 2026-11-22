@@ -18,10 +18,10 @@
                     <GradientStop Color="#FF000000" Offset="0.86"/>
                 </LinearGradientBrush>
             </Grid.OpacityMask>
-            <!-- Same slow zoom and drift as the sharp wallpaper (the transform is shared in StartHeroDrift) -->
+            <!-- Fixed at the middle zoom of the sharp wallpaper (see StartHeroDrift): a moving blur would be redrawn every frame -->
             <Grid x:Name="HeroBlurInner" RenderTransformOrigin="0.5,0.4">
-                <Image x:Name="HeroBlurPrev" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0"/>
-                <Image x:Name="HeroBlurImage" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+                <Image x:Name="HeroBlurPrev" RenderOptions.BitmapScalingMode="LowQuality" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0"/>
+                <Image x:Name="HeroBlurImage" RenderOptions.BitmapScalingMode="LowQuality" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center"/>
             </Grid>
         </Grid>
         <!-- A light, even dimming of the whole wallpaper on the home -->
@@ -1137,7 +1137,7 @@
         </Grid>
 
         <!-- Confirmation inside the launcher (controller friendly) -->
-        <Grid x:Name="ConfirmLayer" Visibility="Collapsed">
+        <Grid x:Name="ConfirmLayer" Visibility="Collapsed" Panel.ZIndex="500">
             <Rectangle Fill="#B3000000"/>
             <Border Width="560" HorizontalAlignment="Center" VerticalAlignment="Center" Background="{DynamicResource T_F2171D26}" Padding="32"
                     KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabNavigation="Contained">
@@ -1253,32 +1253,48 @@
                 </StackPanel>
             </StackPanel>
         </Grid>
-        <!-- Profile: photo and name -->
+        <!-- Profile: photo, name and account -->
         <Grid x:Name="ProfilePanel" Visibility="Collapsed">
             <Rectangle Fill="#E6000000" MouseDown="OnProfileDimClick"/>
-            <StackPanel Width="560" VerticalAlignment="Center" KeyboardNavigation.DirectionalNavigation="Contained">
-                <TextBlock Text="PERFIL" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Accent}" HorizontalAlignment="Center"/>
-                <Border Width="132" Height="132" Margin="0,14,0,10" Background="{DynamicResource PanelRaised}" BorderBrush="{DynamicResource Focus}" BorderThickness="3">
+            <Border Width="760" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="24" Background="{DynamicResource T_F2171D26}" Padding="40,34,40,30">
+                <StackPanel KeyboardNavigation.DirectionalNavigation="Contained">
                     <Grid>
-                        <TextBlock Text="&#xE77B;" Style="{StaticResource Icon}" FontSize="64" Foreground="{StaticResource TextMuted}"/>
-                        <Image x:Name="ProfileImage" Stretch="UniformToFill"/>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Border Width="132" Height="132" CornerRadius="66" Background="{DynamicResource PanelRaised}" BorderBrush="{DynamicResource Accent}" BorderThickness="4">
+                            <Grid>
+                                <TextBlock Text="&#xE77B;" Style="{StaticResource Icon}" FontSize="64" Foreground="{StaticResource TextMuted}"/>
+                                <Image x:Name="ProfileImage" Width="124" Height="124" Stretch="UniformToFill">
+                                    <Image.Clip><EllipseGeometry Center="62,62" RadiusX="62" RadiusY="62"/></Image.Clip>
+                                </Image>
+                            </Grid>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="28,0,0,0">
+                            <TextBlock Text="PERFIL" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Accent}"/>
+                            <TextBlock x:Name="ProfileName" FontSize="34" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                            <TextBlock x:Name="ProfileSub" FontSize="15" Foreground="{StaticResource TextMuted}" Margin="0,2,0,0"/>
+                            <Button x:Name="ProfileSwitchButton" Style="{StaticResource PowerItem}" Height="44" FontSize="16" Width="270" HorizontalAlignment="Left" Margin="0,12,0,0" Content="Trocar de conta Steam..." Click="OnProfileSwitchClick"/>
+                        </StackPanel>
                     </Grid>
-                </Border>
-                <TextBlock x:Name="ProfileName" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                <TextBlock x:Name="ProfileSub" FontSize="14" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,22"/>
-                <Button x:Name="ProfilePhotoButton" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Alterar foto..." Click="OnProfilePhotoClick"/>
-                <Button x:Name="ProfileSteamPhotoButton" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Usar a foto da Steam" Click="OnProfileSteamPhotoClick"/>
-                <Button x:Name="ProfileRemovePhotoButton" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Remover foto" Click="OnProfileRemovePhotoClick"/>
-                <Border Height="3" Background="{DynamicResource T_0D1117}"/>
-                <TextBlock Text="Nome no launcher" FontSize="15" Foreground="{StaticResource TextSoft}" Margin="0,14,0,6"/>
-                <TextBox x:Name="ProfileNameBox" FontSize="18" Padding="10,8" MaxLength="24" Background="{DynamicResource Panel}" Foreground="White"
-                         BorderBrush="{DynamicResource Focus}" CaretBrush="White"/>
-                <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Margin="0,12,0,0" Content="Salvar nome" Click="OnProfileSaveNameClick"/>
-                <Border Height="3" Background="{DynamicResource T_0D1117}"/>
-                <Button x:Name="ProfileSwitchButton" Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Trocar de conta Steam..." Click="OnProfileSwitchClick"/>
-                <Border Height="3" Background="{DynamicResource T_0D1117}"/>
-                <Button Style="{StaticResource PowerItem}" Height="56" FontSize="18" Content="Voltar" Click="OnProfileBackClick"/>
-            </StackPanel>
+
+                    <TextBlock Text="ESCOLHA UMA FOTO" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="0,30,0,6"/>
+                    <WrapPanel x:Name="ProfileChoices" Margin="-6,0,0,0"/>
+                    <TextBlock x:Name="ProfileChoiceLabel" FontSize="15" Foreground="{StaticResource TextSoft}" Margin="0,6,0,0" MinHeight="22"/>
+
+                    <TextBlock Text="NOME NO LAUNCHER" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="0,22,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <TextBox x:Name="ProfileNameBox" FontSize="18" Padding="14,10" MaxLength="24" Background="{DynamicResource Panel}" Foreground="White"
+                                 BorderBrush="{DynamicResource Focus}" CaretBrush="White" VerticalContentAlignment="Center"/>
+                        <Button Grid.Column="1" Style="{StaticResource PowerItem}" Width="170" Height="46" FontSize="17" Margin="12,0,0,0" Content="Salvar nome" Click="OnProfileSaveNameClick"/>
+                    </Grid>
+
+                    <Grid Margin="0,26,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <Button x:Name="ProfileRemovePhotoButton" Style="{StaticResource PowerItem}" Height="50" FontSize="17" Content="Remover foto" Click="OnProfileRemovePhotoClick"/>
+                        <Button Grid.Column="2" Style="{StaticResource PowerItem}" Height="50" FontSize="17" Content="Voltar" Click="OnProfileBackClick"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
         </Grid>
         <!-- Which Steam account to use: shown when the launcher opens (depending on the setting) and from the profile photo -->
         <Grid x:Name="AccountPanel" Visibility="Collapsed" Background="{DynamicResource T_FF05080C}">

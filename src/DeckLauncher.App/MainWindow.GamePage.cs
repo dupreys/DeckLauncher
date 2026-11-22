@@ -86,7 +86,7 @@ public partial class MainWindow
             if (cts.IsCancellationRequested) return;
 
             GameAbout.Text = details.Description
-                ?? (item.Game.Source == SteamProvider.ProviderName ? "" : "Sem descrição disponível para este jogo.");
+                ?? (item.Game.Source == SteamProvider.ProviderName ? "" : UiText.T("Sem descrição disponível para este jogo."));
             GamePlayers.Text = details.PlayersNow is { } now ? $"{now.ToString("N0", Portuguese)} jogadores agora na Steam" : "";
             BuildInfoRows(item, details);
         }

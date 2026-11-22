@@ -43,6 +43,7 @@ public partial class MainWindow
             return ("DIGITAR", extras);
         }
         if (AccountOpen) return ("ESCOLHER", extras);
+        if (MediaViewerOpen && !ConfirmOpen) { extras.Add(("X", "#E04B4B", "EXCLUIR")); return ("SELECIONAR", extras); }
         if (MediaViewerOpen || PowerOpen || ManageOpen || OptionsOpen || ProfileOpen || LaunchOverlayOpen) return ("SELECIONAR", extras);
 
         var focused = Keyboard.FocusedElement as FrameworkElement;
@@ -54,6 +55,7 @@ public partial class MainWindow
             select = item.IsRunning ? "VOLTAR AO JOGO" : "ABRIR";
             extras.Add(("X", "#2B7DE0", item.IsFavorite ? "DESFAVORITAR" : "FAVORITAR"));
         }
+        else if (!overlay && _page == "Mídias" && focused is Button media && MediaGrid.Children.Contains(media)) extras.Add(("X", "#E04B4B", "EXCLUIR"));
         else if (!overlay && ReferenceEquals(focused, PlayButton)) select = "JOGAR";
         else if (!overlay && focused is { Tag: AppEntry })
         {
