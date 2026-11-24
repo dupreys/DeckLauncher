@@ -444,7 +444,26 @@ public partial class MainWindow
             FocusSettingsNav();
             return true;
         }
+
+        // Up / down: when no control is left in that direction the page still scrolls, so text below the last switch (About, paths) can be read with the controller.
+        if (InSettingsContent(focus) && direction is FocusNavigationDirection.Up or FocusNavigationDirection.Down)
+        {
+            var neighbour = focus is UIElement element ? element.PredictFocus(direction) as DependencyObject : null;
+            if (neighbour is not null && InSettingsContent(neighbour)) return false; // a normal step; the page follows the focus (OnSettingsScrollFocus)
+            var down = direction == FocusNavigationDirection.Down;
+            var target = down ? SettingsScroll.VerticalOffset + SettingsScroll.ViewportHeight * 0.7 : SettingsScroll.VerticalOffset - SettingsScroll.ViewportHeight * 0.7;
+            if (!down && target < 40) target = 0;
+            SettingsScroll.ScrollToVerticalOffset(Math.Clamp(target, 0, SettingsScroll.ScrollableHeight));
+            return true;
+        }
         return false;
+    }
+
+    /// <summary>The control that got focus is brought into view with some room around it, so its whole row (and the one after) is visible.</summary>
+    private void OnSettingsScrollFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (e.NewFocus is not FrameworkElement element || !InSettingsContent(element)) return;
+        element.BringIntoView(new Rect(-24, -48, element.ActualWidth + 48, element.ActualHeight + 120));
     }
 
     private void OnSettingsNavChecked(object sender, RoutedEventArgs e)

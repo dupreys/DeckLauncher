@@ -163,10 +163,8 @@ public partial class MainWindow
         HeroImagePrev.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, span));
         HeroImage.Source = image;
         HeroImage.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, span));
-        HeroBlurPrev.Source = HeroBlurImage.Source;
-        HeroBlurPrev.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, span));
+        // The blurred copy changes at once: fading it would redraw the blur (cached as a bitmap) on every frame of the crossfade, on every move of the cursor.
         HeroBlurImage.Source = image;
-        HeroBlurImage.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, span));
     }
 
     // ---- Smooth scrolling of the recent games row --------------------------------------------
@@ -236,10 +234,20 @@ public partial class MainWindow
     }
 
     /// <summary>The average colour of a picture, favouring vivid areas, brightened so it reads as light.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ImageSource, object> ColorCache = new();
+
     private static Color DominantColor(ImageSource? source)
     {
         var fallback = Color.FromRgb(0x1A, 0x9F, 0xFF);
         if (source is not BitmapSource { PixelWidth: > 0, PixelHeight: > 0 } bitmap) return fallback;
+        if (ColorCache.TryGetValue(bitmap, out var known)) return (Color)known; // the same picture comes back often while moving along a row
+        var result = ComputeDominantColor(bitmap, fallback);
+        ColorCache.AddOrUpdate(bitmap, result);
+        return result;
+    }
+
+    private static Color ComputeDominantColor(BitmapSource bitmap, Color fallback)
+    {
         try
         {
             var scaled = new TransformedBitmap(bitmap, new ScaleTransform(24.0 / bitmap.PixelWidth, 24.0 / bitmap.PixelHeight));
@@ -290,9 +298,6 @@ public partial class MainWindow
             group.Children.Add(_heroShift);
             HeroLayer.RenderTransform = group;
         }
-        // The blurred band under the cards stays still at the middle zoom: a blur that moves is redrawn every frame (the most expensive thing on screen at 4K),
-        // and in a band this soft nobody sees the difference.
-        HeroBlurInner.RenderTransform = new ScaleTransform(1.08, 1.08);
 
         var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
         // 30 frames a second look the same for a drift this slow and cost half the work.
@@ -323,7 +328,6 @@ public partial class MainWindow
         _heroShift.BeginAnimation(TranslateTransform.YProperty, null);
         _heroScale.ScaleX = _heroScale.ScaleY = 1;
         _heroShift.X = _heroShift.Y = 0;
-        HeroBlurInner.RenderTransform = Transform.Identity;
     }
 
     // ---- Page and menu transitions -----------------------------------------------------------

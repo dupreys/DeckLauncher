@@ -117,7 +117,10 @@ public sealed class GameItem : INotifyPropertyChanged
 
     /// <summary>The full-size background for the screen behind the tiles; null when the game has none.</summary>
     public Task<ImageSource?> LoadBackdropAsync() =>
-        Game.BackdropPath is { } path ? ImageLoader.LoadAsync(path, 1920) : Task.FromResult<ImageSource?>(null);
+        Game.BackdropPath is { } path ? ImageLoader.LoadBackdropAsync(path) : Task.FromResult<ImageSource?>(null);
+
+    /// <summary>The background when it was already decoded (moving back to a game just seen costs nothing).</summary>
+    public ImageSource? CachedBackdrop => Game.BackdropPath is { } path ? ImageLoader.TryGetBackdrop(path) : null;
 
     private static async Task LoadAsync(string path, int width, Action<ImageSource?> apply)
     {
@@ -132,6 +135,36 @@ internal static class ImageLoader
 {
     // A big library asks for hundreds of pictures at once: decode a few at a time so the interface and the pool threads stay free.
     private static readonly SemaphoreSlim Gate = new(Math.Clamp(Environment.ProcessorCount / 2, 2, 4));
+
+    // Backgrounds have their own lane (they must not wait behind hundreds of covers) and the last few stay decoded.
+    private static readonly SemaphoreSlim BackdropGate = new(1);
+    private static readonly Dictionary<string, ImageSource> Backdrops = new();
+    private static readonly Queue<string> BackdropOrder = new();
+    private const int BackdropsKept = 6;
+
+    public static ImageSource? TryGetBackdrop(string path)
+    {
+        lock (Backdrops) return Backdrops.TryGetValue(path, out var image) ? image : null;
+    }
+
+    public static async Task<ImageSource?> LoadBackdropAsync(string path)
+    {
+        if (TryGetBackdrop(path) is { } known) return known;
+        await BackdropGate.WaitAsync();
+        try
+        {
+            if (TryGetBackdrop(path) is { } again) return again;
+            var image = await Task.Run(() => Decode(path, 1920));
+            if (image is null) return null;
+            lock (Backdrops)
+            {
+                if (Backdrops.TryAdd(path, image)) BackdropOrder.Enqueue(path);
+                while (BackdropOrder.Count > BackdropsKept) Backdrops.Remove(BackdropOrder.Dequeue());
+            }
+            return image;
+        }
+        finally { BackdropGate.Release(); }
+    }
 
     /// <summary>Decodes an image on a pool thread at a reduced size and freezes it for cross-thread use.</summary>
     public static async Task<ImageSource?> LoadAsync(string path, int decodeWidth)

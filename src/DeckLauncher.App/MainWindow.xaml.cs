@@ -350,7 +350,14 @@ public partial class MainWindow : Window
         _heroItem = item;
         CaptionTitle.Text = item.Name;
         CaptionSub.Text = item.RecentText;
-        var image = await item.LoadBackdropAsync();
+        var image = item.CachedBackdrop;
+        if (image is null)
+        {
+            // Moving quickly across the row: wait a moment so only the card where the cursor stops gets its background decoded.
+            await Task.Delay(70);
+            if (!ReferenceEquals(_heroItem, item)) return;
+            image = await item.LoadBackdropAsync();
+        }
         if (!ReferenceEquals(_heroItem, item)) return; // ignore pictures that arrive after the focus moved on
         SetHero(image);
         SetGlow(item.Cover ?? image);

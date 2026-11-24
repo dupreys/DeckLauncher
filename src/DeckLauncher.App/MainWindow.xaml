@@ -8,20 +8,22 @@
         <Grid x:Name="HeroLayer" RenderTransformOrigin="0.5,0.4">
             <Image x:Name="HeroImagePrev" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0"/>
             <Image x:Name="HeroImage" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center"/>
-        </Grid>
-        <!-- Under the cards the wallpaper is blurred and dimmed (like the Steam Big Picture) so the texts there stay readable -->
-        <Grid x:Name="HeroBlurLayer" IsHitTestVisible="False" Visibility="Collapsed">
-            <Grid.Effect><BlurEffect Radius="12" KernelType="Gaussian" RenderingBias="Performance"/></Grid.Effect>
-            <Grid.OpacityMask>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Color="#00000000" Offset="0.74"/>
-                    <GradientStop Color="#FF000000" Offset="0.86"/>
-                </LinearGradientBrush>
-            </Grid.OpacityMask>
-            <!-- Fixed at the middle zoom of the sharp wallpaper (see StartHeroDrift): a moving blur would be redrawn every frame -->
-            <Grid x:Name="HeroBlurInner" RenderTransformOrigin="0.5,0.4">
-                <Image x:Name="HeroBlurPrev" RenderOptions.BitmapScalingMode="LowQuality" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0"/>
-                <Image x:Name="HeroBlurImage" RenderOptions.BitmapScalingMode="LowQuality" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+            <!-- Under the cards the wallpaper is blurred and dimmed (like the Steam Big Picture) so the texts there stay readable.
+                 It lives INSIDE the wallpaper's own layer, so the slow zoom and drift move both exactly together (a separate layer drifted apart and looked distorted).
+                 The blur is drawn once into a bitmap (CacheMode), so moving it costs almost nothing. -->
+            <Grid x:Name="HeroBlurLayer" IsHitTestVisible="False" Visibility="Collapsed">
+                <Grid.CacheMode><BitmapCache/></Grid.CacheMode>
+                <Grid.OpacityMask>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#00000000" Offset="0.74"/>
+                        <GradientStop Color="#FF000000" Offset="0.86"/>
+                    </LinearGradientBrush>
+                </Grid.OpacityMask>
+                <Grid x:Name="HeroBlurInner">
+                    <Grid.Effect><BlurEffect Radius="12" KernelType="Gaussian" RenderingBias="Performance"/></Grid.Effect>
+                    <Image x:Name="HeroBlurPrev" RenderOptions.BitmapScalingMode="LowQuality" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center" Opacity="0"/>
+                    <Image x:Name="HeroBlurImage" RenderOptions.BitmapScalingMode="LowQuality" Stretch="UniformToFill" VerticalAlignment="Top" HorizontalAlignment="Center"/>
+                </Grid>
             </Grid>
         </Grid>
         <!-- A light, even dimming of the whole wallpaper on the home -->
@@ -526,7 +528,7 @@
                     <RadioButton Style="{StaticResource SettingsNav}" GroupName="SettingsNav" Tag="Games" Content="Jogos" Checked="OnSettingsNavChecked" GotKeyboardFocus="OnSettingsNavFocus"/>
                 </StackPanel>
             </Border>
-            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Hidden" Focusable="False">
+            <ScrollViewer x:Name="SettingsScroll" Grid.Column="1" VerticalScrollBarVisibility="Hidden" Focusable="False" GotKeyboardFocus="OnSettingsScrollFocus">
                 <Grid Margin="54,24,54,30">
                     <StackPanel x:Name="SetSystem">
                         <TextBlock Text="Sistema" FontSize="32" FontWeight="SemiBold" Margin="0,0,0,18"/>
