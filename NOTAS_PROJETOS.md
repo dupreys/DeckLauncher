@@ -395,7 +395,7 @@
 - **Card quadrado / seleção:** a capa usa `UniformToFill` nos dois formatos. No estilo `GameTile` (cards da Início Clássica) a moldura branca de seleção agora é uma camada própria (`Outline`) por cima de tudo, o zoom é aplicado a tile e moldura juntos e a capa fica num `Border ClipToBounds`; `RecentHost` ganhou 12 px a mais de folga em cima. Motivo: com o card quadrado a moldura sumia em cima e embaixo (só os lados apareciam). A causa exata não foi confirmada sem executar o programa; se voltar a acontecer, o próximo passo é inspecionar a árvore visual com o Snoop.
 - **Escala da tela (ajuste):** o fator só vale para telas que não são ~1920x1080 (entre 0,97 e 1,03 fica 1 e não há `LayoutTransform`), e é arredondado para baixo em passos de 0,05. Tirado o `UseLayoutRounding` do `RootGrid`. Motivo: depois da correção de 4K a moldura de seleção dos cards sumia em cima e embaixo (fator fracionário como 0,999 + arredondamento de layout).
 
-## v1.0.8
+## v1.0.9
 
 - **Perfil redesenhado**: cartão arredondado com foto redonda, nome e conta; uma grade de fotos (Steam, escolher do computador e 12 imagens prontas do launcher: controle, fantasma, estrela, coração, raio, coroa, planeta, diamante, escudo, gota, lua, alvo), com o nome da opção embaixo e a escolhida marcada. Nome e "Trocar de conta Steam" no mesmo cartão.
 - **Mídias: excluir direto do launcher.** X no controle (ou Delete no teclado) sobre uma captura/vídeo, ou dentro do visualizador, abre a confirmação do launcher ("Cancelar" já vem selecionado) e envia o arquivo para a Lixeira do Windows.
@@ -405,9 +405,9 @@
 - **Confirmações**: não há mais nenhum aviso do Windows com botões no launcher; só restam os seletores de arquivo (escolher .exe/imagem), que o Windows exige.
 - **Desempenho**: o desfoque do wallpaper acompanha o movimento do papel de parede, mas sem ser recalculado a cada quadro (principal causa de lentidão em 4K); brilho do card selecionado mais leve.
 - **Configurações com o controle:** nas abas Sistema, Interface, Integrações e Jogos agora dá para descer até o final da página (antes parava no último botão e o resto, como o bloco Sobre, só aparecia com o mouse). Ao chegar no último controle, descer rola a página; subir volta ao topo; e o item em foco aparece com folga em volta.
-- Versão do aplicativo ajustada para 1.0.8.
+- Versão do aplicativo ajustada para 1.0.9.
 
-## Notas técnicas v1.0.8
+## Notas técnicas v1.0.9
 - **Rolagem das Configurações:** `SettingsScroll` + `OnSettingsScrollFocus` (BringIntoView com margem) e, em `TrySettingsMove`, cima/baixo sem vizinho focável rola 70% da altura visível (`ScrollToVerticalOffset`).
 - **Teclado nas janelas de login:** `LoginWindowBase` (WebView2 + teclado embaixo, não por cima, por causa do "airspace" do WebView2) é a base de `EpicLoginWindow`/`GogLoginWindow`. Um `Gamepad` próprio (o da janela principal ignora a entrada quando ela não está ativa). O texto vai para o campo focado da página por `ExecuteScriptAsync` (setter nativo do `value` + evento `input`, que funciona com React); só a tecla apertada é enviada, nada é lido de volta nem registrado.
 - **Descrições:** `GameInfo.FetchAsync` usa a Steam no idioma do launcher (`SteamLanguage`); GOG usa `api.gog.com/products/<id>?expand=description` (`ParseGogProduct`, `CleanText` tira HTML e corta em ~600 caracteres); Epic/manuais/GOG sem texto buscam o appid por nome exato (`SteamStoreSearch`) e usam o `appdetails` dele. Resultados com sucesso ficam em cache na sessão.

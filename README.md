@@ -40,7 +40,7 @@
 - **Aplicativos:** atalhos com o ícone e o nome de Discord, Explorador de Arquivos, Microsoft Edge, Microsoft Store, Configurações e, se estiverem instalados, AMD Adrenalin e NVIDIA App; você também pode adicionar qualquer programa (.exe ou atalho) pelo botão + e remover com X.
 - **Mais controle nos aplicativos:** adicione também links de sites (YouTube, Netflix, Twitch…) com o favicon do site, mude a ordem dos cartões e oculte os que não usa (X ou botão direito do mouse sobre o cartão).
 - **Amigos online:** na aba AMIGOS da tela inicial, os amigos que estão online aparecem com o status; escolher um deles abre a conversa no cliente oficial da Steam (o launcher não faz login nem envia mensagens).
-- **Atualizações:** ao abrir, o launcher avisa se há uma versão nova no GitHub; em Configurações > Sistema > Atualizações você verifica na hora e abre a página de download.
+- **Atualizações:** ao abrir, o launcher procura uma versão nova no GitHub. Com **Atualizar sozinho** ligado (Configurações > Sistema, padrão), ele baixa o instalador em segundo plano, confere o tamanho e o SHA-256 e pergunta se pode instalar; ao aceitar, fecha, instala e reabre sozinho (só na cópia instalada pelo instalador). Em Configurações > Sistema > Atualizações você também verifica na hora.
 - **Página do jogo:** logotipo sobre o banner, botão **Jogar**, última sessão, tempo de jogo, loja, favorito, descrição, informações e quantos jogadores estão na Steam agora.
 - **Renomear e esconder:** botão "..." na página do jogo. Os jogos escondidos voltam em Configurações > Jogos.
 - **Gerenciar arte:** escolha à mão capas, fundos, logotipos e capturas de tela, ou restaure o padrão.
@@ -60,10 +60,10 @@
 - Mostra as capturas do Game Bar do Windows (pasta `Vídeos\Captures`) em miniaturas. Fotos e vídeos abrem dentro do launcher, só para visualizar. Para excluir, use X no controle (ou Delete no teclado) sobre a captura ou dentro do visualizador; o arquivo vai para a Lixeira do Windows, com confirmação.
 
 ### Sistema
-- **Configurações:** Sistema (tela cheia, efeitos sonoros, usar o mouse, iniciar com o Windows, atualizar a biblioteca, limpar o cache), Interface, Integrações e Jogos.
-- **Interface:** **Preto OLED** (toda a interface em preto, em vez do azul escuro).
+- **Configurações:** Sistema (tela cheia, efeitos sonoros, usar o mouse, iniciar com o Windows, atualizar a biblioteca, limpar o cache, atualizar sozinho, atualizações e informações sobre a versão), Interface, Integrações e Jogos. Com o controle dá para descer até o final de cada aba.
+- **Interface:** estilo da tela inicial, cor de destaque, **formato dos cards** (Retrato ou Quadrado, estilo PlayStation/Xbox), tamanho dos cards, relógio grande e **Preto OLED** (toda a interface em preto, em vez do azul escuro). A interface se ajusta sozinha a qualquer tamanho de tela, inclusive TV 4K.
 - **Perfil:** a foto no canto superior direito abre um cartão para trocar a foto (a da Steam, qualquer imagem do PC ou uma das 12 imagens prontas do launcher), o nome mostrado e a conta Steam; a conta da Steam não é alterada.
-- **GOG:** jogos da GOG instalados no PC aparecem junto dos demais, numa aba própria, e abrem direto (sem precisar do Galaxy). Entrando na conta da GOG (Configurações > Integrações, recurso experimental), os jogos que você tem e não instalou aparecem esmaecidos; a página Lojas mostra o GOG Galaxy quando instalado.
+- **GOG:** jogos da GOG instalados no PC aparecem junto dos demais, numa aba própria, e abrem direto (sem precisar do Galaxy). Entrando na conta da GOG (Configurações > Integrações, recurso experimental), os jogos que você tem e não instalou aparecem esmaecidos; a página Lojas mostra o GOG Galaxy quando instalado. Instalar, pausar, cancelar e desinstalar jogos da GOG funciona dentro do launcher (os downloads aparecem no sino). As janelas de login da Epic e da GOG têm teclado na tela para o controle (Y abre; A digita, X apaga, B fecha).
 - **Desinstalar:** pela página do jogo, o launcher da Steam ou da Epic pergunta se quer remover; ao remover, o jogo some das listas e volta à aba da loja para instalar depois.
 - **Idiomas:** português, inglês e espanhol (Configurações > Interface), com o idioma do Windows como padrão.
 - **Rede e som:** painéis na barra superior com as conexões ativas (Wi-Fi/Ethernet) e o volume do Windows. No painel de som: liga/desliga o Bluetooth e guarda fones sem fio numa lista, conectando ao clicar ou automaticamente.
